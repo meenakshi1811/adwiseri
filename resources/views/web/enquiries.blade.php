@@ -32,7 +32,7 @@ Enquries
 
 <div class="table-wrapper">
 
-<table class="fl-table table table-hover table-responsive p-0 m-0">
+<table class="fl-table table table-hover table-responsive p-0 m-0" id="clientTable">
 
 <thead>
 
@@ -164,7 +164,6 @@ Yes
 </div>
 
 @endsection
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
 
 <script>
 
