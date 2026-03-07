@@ -1,0 +1,149 @@
+
+@extends('admin.layout.main')
+
+@section('main-section')
+
+@php
+
+use App\Models\UserRoles;
+$client_roles = UserRoles::where('user_id','=',$user->id)->where('module','=','Clients')->first();
+$application_roles = UserRoles::where('user_id','=',$user->id)->where('module','=','Applications')->first();
+$communication_roles = UserRoles::where('user_id','=',$user->id)->where('module','=','Communication')->first();
+$invoice_roles = UserRoles::where('user_id','=',$user->id)->where('module','=','Invoices')->first();
+$payment_roles = UserRoles::where('user_id','=',$user->id)->where('module','=','Payments')->first();
+$report_roles = UserRoles::where('user_id','=',$user->id)->where('module','=','Reports')->first();
+$subscription_roles = UserRoles::where('user_id','=',$user->id)->where('module','=','Subscription')->first();
+$setting_roles = UserRoles::where('user_id','=',$user->id)->where('module','=','Settings')->first();
+$support_roles = UserRoles::where('user_id','=',$user->id)->where('module','=','Support')->first();
+@endphp
+
+        <div class="col-lg-10 column-client">
+            <div class="client-dashboard">
+                <div class="client-btn d-flex justify-content-between align-items-center mt-3 ">
+                    <form class="form-inline d-flex justify-content-between w-100">
+                        <h3 class="text-primary text-center flex-grow-1 text-center m-0">Payments</h3>
+                        @if(!$user->is_support)
+                    <!-- <p>
+                      <a href="{{ route('add_ar_payments') }}" class="m-0">Add AR (Payments Received) Record</a>
+                      <a href="{{ route('add_ap_payments') }}" class="m-0">Add AP (Payments Made) Record</a>
+                    </p> -->
+                    @endif
+
+                    {{-- <form class="form-inline d-flex justify-content-between w-100">
+                        <h3 class="text-primary">Payments</h3>
+                        <a href="{{ route('add_ar_payments') }}" class="m-0">Add (AR)</a>
+                        <a href="{{ route('payments_export') }}" class="m-0">Add (Ap)</a>
+                        {{-- <div class="d-flex ">
+                            <input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search">
+                        </div> --}}
+                      {{-- </form>  --}}
+                      {{-- <i class="fa-solid fa-magnifying-glass"></i> --}}
+                </div>
+                <div class="row m-0 pb-2">
+
+
+                    <div class="col-6 border p-1 text-center bg-info text-white tab-anchor">
+                        Accounts Receivables &nbsp;&nbsp;  (Payments Received)
+                      </div>
+                      <div class="col-6 border p-1 text-center tab-anchor top_modules" onclick="window.location.href = '{{ route('admin_payment_made') }}';">
+                       Accounts Payable &nbsp;&nbsp; (Payments Made)
+                    </div>
+
+                 </div>
+
+
+                 @if(count($paymentAR ) != 0)
+                <div class="table-wrapper">
+                    <table class="fl-table table table-hover p-0 m-0" id="clientTable">
+                        <thead>
+                        <tr>
+                            <th class="p-1 text-center">Sr No.</th>
+                            <th class="p-1 text-center">InvoiceID</th>
+                            <th class="p-1 text-center">Client Name (ID)</th>
+                            <th class="p-1 text-center">Service Offered</th>
+                            <th class="p-1 text-center">Payment Mode</th>
+                            <th class="p-1 text-center">Amount To Pay</th>
+                            <th class="p-1 text-center">Paid Amount</th>
+                            <th class="p-1 text-center">Outstanding</th>
+                            <th class="p-1 text-center">Payment Date</th>
+                            <!-- <th class="p-1 text-center">InvoiceID</th> -->
+                        </tr>
+                        </thead>
+                        <tbody>
+
+                         @foreach($paymentAR  as $key=>$payment)
+                            <tr>
+                               <td class="p-1 text-center">{{ $key+1 }}</td>
+                               <td class="p-1 text-center">{{ $payment->invoice_no }}</td>
+                               <td class="p-1 text-center">{{ $payment->client ? $payment->client->name .'('.$payment->client_id.')' : ''}} </td>
+                               <td class="p-1 text-center">{{ $payment->application ? $payment->application->application_name : $payment->service_description;}}</td>
+                               <td class="p-1 text-center">{{$payment->payment_mode}}</td>
+                               <td class="p-1 text-center">{{$payment->amount}}</td>
+                               <td class="p-1 text-center"> {{  $payment->paid_amount}}</td>
+                               <td class="p-1 text-center"> {{  ($payment->amount - $payment->paid_amount)}}</td>
+                               <td class="p-1 text-center">{{  \Carbon\Carbon::parse($payment->payment_date)->format('d-m-Y') }}</td>
+                               <!-- <td class="p-1 text-center">{{$payment->invoice_no}}</td> -->
+                            </tr>
+
+                           @endforeach
+                        <tbody>
+                    </table>
+                </div>
+                @else
+                <p class="text-secondary px-3">No Payment Records to show</p>
+                @endif
+            </div>
+        </div>
+
+    </div>
+
+</div>
+<script>
+    function deleteinvoice(id){
+      var localtime = new Date();
+        var conf = confirm('Delete Invoice');
+        if(conf == true){
+            window.location.href = "delete_payment/"+id+"/"+localtime.toString()+"";
+        }
+    }
+</script>
+@if(session()->has('payments_received'))
+  <script>
+    Swal.fire({
+      icon: 'success',
+      title: 'Success',
+      text: "{{ session('payments_received') }}" // Wrap in double quotes
+    });
+  </script>
+@endif
+@if(session()->has('user_added'))
+  <script>
+    Swal.fire({
+      icon: 'success',
+      title: 'Success',
+      text: 'User Added Successfully.'
+    })
+  </script>
+
+@endif
+@if(session()->has('deleted'))
+  <script>
+    Swal.fire({
+      icon: 'success',
+      title: 'Success',
+      text: 'Payment Deleted Successfully!'
+    })
+  </script>
+
+@endif
+@if(session()->has('user_limit'))
+  <script>
+    Swal.fire({
+      icon: 'warning',
+      title: 'User Limit!',
+      text: 'Upgrade membership to add more Users!'
+    })
+  </script>
+
+@endif
+@endsection()

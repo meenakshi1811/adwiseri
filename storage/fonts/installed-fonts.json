@@ -1,0 +1,24 @@
+{
+    "font awesome 6 brands": {
+        "normal": "font_awesome_6_brands_normal_14a348a7b8f303c720f5b71ebe104673"
+    },
+    "font awesome 6 free": {
+        "normal": "D:\\Upwork Projects\\Project 1 - Adwiseri\\adwiseri\\storage\\fonts\/font_awesome_6_free_normal_05a8e4157ec18d2fbe177f2c01ee2e6e",
+        "900": "font_awesome_6_free_900_5dcbce935361265a4c85924af7b00695"
+    },
+    "font awesome 5 brands": {
+        "normal": "font_awesome_5_brands_normal_14a348a7b8f303c720f5b71ebe104673"
+    },
+    "font awesome 5 free": {
+        "900": "D:\\Upwork Projects\\Project 1 - Adwiseri\\adwiseri\\storage\\fonts\/font_awesome_5_free_900_5dcbce935361265a4c85924af7b00695",
+        "normal": "font_awesome_5_free_normal_05a8e4157ec18d2fbe177f2c01ee2e6e"
+    },
+    "fontawesome": {
+        "normal": "fontawesome_normal_90320d6848002102ab261126e2aea574"
+    },
+    "lato": {
+        "300": "D:\\Upwork Projects\\Project 1 - Adwiseri\\adwiseri\\storage\\fonts\/lato_300_f0c6ee3e35bb77a61aee3101d2b14826",
+        "normal": "D:\\Upwork Projects\\Project 1 - Adwiseri\\adwiseri\\storage\\fonts\/lato_normal_ed3f4ee6166e4a8d875402747e6fb7a0",
+        "bold": "lato_bold_67cbea2936080f3d5601566280ed0b77"
+    }
+}

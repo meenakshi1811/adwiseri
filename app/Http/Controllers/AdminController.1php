@@ -1,0 +1,2679 @@
+<?php
+
+namespace App\Http\Controllers;
+// date_default_timezone_set("Asia/Kolkata");
+
+use DB;
+use Auth;
+use Hash;
+use App;
+use Mail;
+use Session;
+use Cookie;
+use Validator;
+use Carbon\Carbon;
+use Illuminate\Http\Request;
+use DateTime;
+use DateTimeZone;
+
+use App\Mail\Invoicemail;
+use App\Models\User;
+use App\Models\Clients;
+use App\Models\Currency;
+use App\Models\Countries;
+use App\Models\States;
+use App\Models\Contactus;
+use App\Models\Membership;
+use App\Models\Features;
+use App\Models\About_Advisori;
+use App\Models\Messages;
+use App\Models\Activities;
+use App\Models\Invoices;
+use App\Models\Subscriber_Categories;
+use App\Models\Subscriber_Sub_Categories;
+use App\Models\Client_jobs;
+use App\Models\Client_Docs;
+use App\Models\Applications;
+use App\Models\Application_assignments;
+use App\Models\Internal_Invoices;
+use App\Models\Client_discussions;
+use App\Models\Tickets;
+use App\Models\Faq;
+use App\Models\Invoice_settings;
+use App\Models\DemoRequests;
+use App\Models\UserRoles;
+use App\Models\Referrals;
+use App\Models\Internal_communications;
+
+
+class AdminController extends Controller
+{
+    public function index()
+    {
+        //return view('admin.web_home_page');
+    }
+
+    public function admin_dashboard()
+    {
+        $user = Auth::user();
+        if($user){
+            $clients = Clients::get();
+            $users = User::where('user_type','=','User')->get();
+            $subscribers = User::where('user_type','=','Subscriber')->get();
+            $price_plans = Membership::get();
+            $invoices = Invoices::get();
+            $countries = Countries::get();
+            $activities = Activities::orderBy('created_at','desc')->limit(15)->get();
+            $allactivities = Activities::get();
+            $applications = Applications::get();
+            $discussions = Client_discussions::get();
+            $tickets = Tickets::get();
+            $total_users = array();
+            foreach($users as $usr){
+                $categ = $usr->designation;
+                $categ_app = 0;
+                foreach($users as $u){
+                    if($categ == $u->designation){
+                        $categ_app += 1;
+                    }
+                }
+                $total_users[$categ] = $categ_app;
+            }
+            $total_countries = array();
+            foreach($countries as $contry){
+                $categ = $contry->country_name;
+                $categ_app = 0;
+                foreach($applications as $app){
+                    if($categ == $app->application_country){
+                        $categ_app += 1;
+                    }
+                }
+                $total_countries[$categ] = $categ_app;
+            }
+            $total_subscribers = array();
+            foreach($price_plans as $plan){
+                $categ = $plan->plan_name;
+                $categ_app = 0;
+                foreach($subscribers as $subs){
+                    if($categ == $subs->membership){
+                        $categ_app += 1;
+                    }
+                }
+                $total_subscribers[$categ] = $categ_app;
+            }
+            $total_clients = array();
+            foreach($countries as $contry){
+                $categ = $contry->country_name;
+                $categ_app = 0;
+                foreach($clients as $app){
+                    if($categ == $app->country){
+                        $categ_app += 1;
+                    }
+                }
+                $total_clients[$categ] = $categ_app;
+            }
+            $total_applications = array();
+            foreach($applications as $appl){
+                $categ = $appl->application_name;
+                $categ_app = 0;
+                foreach($applications as $app){
+                    if($categ == $app->application_name){
+                        $categ_app += 1;
+                    }
+                }
+                $total_applications[$categ] = $categ_app;
+            }
+            $total_payments = array();
+            foreach($invoices as $appl){
+                $categ = $appl->payment_mode;
+                $categ_app = 0;
+                foreach($invoices as $app){
+                    if($categ == $app->payment_mode){
+                        $categ_app += 1;
+                    }
+                }
+                $total_payments[$categ] = $categ_app;
+            }
+            $total_tickets = array();
+            foreach($tickets as $tick){
+                $categ = $tick->status;
+                $categ_app = 0;
+                foreach($tickets as $ticket){
+                    if($categ == $ticket->status){
+                        $categ_app += 1;
+                    }
+                }
+                $total_tickets[$categ] = $categ_app;
+            }
+            $total_discussions = array();
+            foreach($discussions as $disc){
+                $categ = $disc->communication_type;
+                $categ_app = 0;
+                foreach($discussions as $discus){
+                    if($categ == $discus->communication_type){
+                        $categ_app += 1;
+                    }
+                }
+                $total_discussions[$categ] = $categ_app;
+            }
+            $total_activities = array();
+            foreach($allactivities as $act){
+                $categ = $act->activity_name;
+                $categ_app = 0;
+                foreach($allactivities as $actv){
+                    if($categ == $actv->activity_name){
+                        $categ_app += 1;
+                    }
+                }
+                $total_activities[$categ] = $categ_app;
+            }
+            $page = "dashboard";
+            return view('admin.dashboard', compact('user','tickets','page','total_users','total_payments','total_discussions','total_countries','total_subscribers','clients','users','subscribers','invoices','countries','activities','applications','total_clients','total_applications','total_tickets','total_activities'));
+        }
+        else{
+            return redirect()->route('login');
+        }
+
+    }
+
+    public function admin_profile()
+    {
+        $user = Auth::user();
+        $countries = Countries::all();
+        foreach($countries as $country){
+            if($country->country_name == $user->country){
+                $states = States::where('country_id','=',$country->id)->get();
+            }
+        }
+        $page = "profile";
+        return view('admin.admin_profile',compact('user','countries','states','page'));
+    }
+
+    public function demo_requests()
+    {
+        $user = Auth::user();
+        $demos = DemoRequests::orderBy('created_at','desc')->get();
+        $page = "demo_request";
+        return view('admin.demo_request',compact('user','demos','page'));
+    }
+
+    public function demo_status($id=null, $localtime=null)
+    {
+        if(!empty($id)){//edit the page.
+            $user = Auth::user();
+            if($user){
+                $demo = DemoRequests::find($id);
+                if($demo->status == "true"){
+                    $demo->status = "false";
+                }
+                else{
+                    $demo->status = "true";
+                }
+                $demo->save();
+                return back()->with('status_updated','status is changed');
+            }
+            else{
+                return redirect()->route('login');
+            }
+        }
+        else{//view the page.
+            return back();
+        }
+    }
+
+    public function update_admin_profile(Request $request){
+        $user = Auth::user();
+        if (isset($request->profile)) {
+            $country = Countries::find($request->country);
+            $user->name = $request['name'];
+            $user->phone = $request['phone'];
+            $user->organization = $request['organization'];
+            $user->address_line = $request['address_line'];
+            $user->country = $country->country_name;
+            $user->state = $request['state'];
+            $user->city = $request['city'];
+            $user->pincode = $request['pincode'];
+            $user->save();
+            return back()->with('success','Profile updated');
+            $activity = new Activities();
+            $activity->user_id = $user->id;
+            $activity->user_name = $user->name;
+            $activity->activity_name = "Admin Profile Updated";
+            $activity->activity_detail = "".$user->name." Updates his profile at ".$request->local_time;
+            $activity->activity_icon = "user.png";
+            $activity->local_time = $request->local_time;
+            $activity->save();
+            return back()->with('success','Profile Updated Successfully!');
+        }
+        elseif(isset($request->profile_image)){
+            if($request->hasFile('profile_img')){
+                $file = $request->file('profile_img');
+                $extension = $file->getClientOriginalName();
+                $filename = time().$extension;
+                $file->move('web_assets/users/user'.$user->id.'/', $filename);
+                $user->profile_img = $filename;
+            }
+            $user->save();
+            $activity = new Activities();
+            $activity->user_id = $user->id;
+            $activity->user_name = $user->name;
+            $activity->activity_name = "Admin Profile Updated";
+            $activity->activity_detail = "".$user->name." Updates his profile at ".$request->local_time;
+            $activity->activity_icon = "user.png";
+            $activity->local_time = $request->local_time;
+            $activity->save();
+            return back()->with('success','Profile Updated Successfully!');
+        }
+        elseif(isset($request->logo_image)){
+            if($request->hasFile('organization_logo')){
+                $file = $request->file('organization_logo');
+                $extension = $file->getClientOriginalName();
+                $filename = time().$extension;
+                $file->move('web_assets/users/user'.$user->id.'/', $filename);
+                $user->organization_logo = $filename;
+            }
+            $user->save();
+            $activity = new Activities();
+            $activity->user_id = $user->id;
+            $activity->user_name = $user->name;
+            $activity->activity_name = "Organization Logo Updated";
+            $activity->activity_detail = "".$user->name." Updates organization logo at ".$request->local_time;
+            $activity->activity_icon = "user.png";
+            $activity->local_time = $request->local_time;
+            $activity->save();
+            return back()->with('logo_updated','Logo Updated Successfully!');
+        }
+    }
+
+    public function subscribers()
+    {
+        $subscribers = User::where('user_type','=','Subscriber')->orderBy('created_at','desc')->get();
+        $user = Auth::user();
+        $page = "subscriber";
+        return view('admin.subscribers', compact('subscribers','user','page'));
+    }
+
+    public function new_subscriber()
+    {
+        $subscribers = User::where('user_type','=','Subscriber')->get();
+        $countries = Countries::get();
+        $subscriber_categories = Subscriber_Categories::get();
+        $membership = Membership::get();
+        $user = Auth::user();
+        $tzlist = DateTimeZone::listIdentifiers(DateTimeZone::ALL);
+        $page = "subscriber";
+        return view('admin.add_subscriber', compact('subscribers','user','tzlist','page','countries','subscriber_categories','membership'));
+    }
+
+    public function update_subscriber($id)
+    {
+        $subscriber = User::find($id);
+        $countries = Countries::get();
+        foreach($countries as $country){
+            if($country->country_name == $subscriber->country){
+                $states = States::where('country_id','=',$country->id)->get();
+                break;
+            }
+            else{
+                $states = array();
+            }
+        }
+        $subscriber_categories = Subscriber_Categories::get();
+        $subscriber_subcategories = Subscriber_Sub_Categories::get();
+        $membership = Membership::get();
+        $tzlist = DateTimeZone::listIdentifiers(DateTimeZone::ALL);
+        $user = Auth::user();
+        $page = "subscriber";
+        return view('admin.add_subscriber', compact('subscriber','user','tzlist','page','countries','states','subscriber_subcategories','subscriber_categories','membership'));
+    }
+
+    public function register_new_subscriber(request $request)
+    {
+        // print_r($request->all());
+        // exit();
+        function get_referral(){
+            $ch = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            $ref = "";
+            for($i=0; $i<8; $i++){
+                $ref = $ref.$ch[rand(0, strlen($ch)-1)];
+            }
+            $referal = User::where('referral','=',$ref)->first();
+            if($referal){
+                get_referral();
+            }
+            else{
+                return $ref;
+            }
+        }
+        $user = Auth::user();
+        if(isset($request->id)){
+            $country = Countries::find($request->country);
+            $data = User::find($request->id);
+            $data->name = $request['name'];
+            $data->phone = $request['phone'];
+            $data->category = $request['category'];
+            $data->sub_category = $request['subcategory'];
+            $data->other_subcategory = $request['other'];
+            $data->membership = $request['membership'];
+            $data->membership_start_date = new DateTime("now");
+            $data->membership_expiry_date = (new DateTime("now"))->modify("+90 days");
+            $data->organization = $request['organization'];
+            $data->designation = $request['designation'];
+            $data->employee_strength = $request['employee_strength'];
+            $data->address_line = $request['address_line'];
+            $data->country = $country->country_name;
+            $data->state = $request['state'];
+            $data->city = $request['city'];
+            $data->pincode = $request['pincode'];
+            $data->timezone = $request['timezone'];
+            // print_r($requet->$data);
+            // die();
+            $data->save();
+            $activity = new Activities();
+            $activity->subscriber_id = $user->id;
+            $activity->user_id = $user->id;
+            $activity->user_name = $user->name;
+            $activity->activity_name = "Subscriber Data Update";
+            $activity->activity_detail = "Subscriber ".$request->name." data updated by ".$user->name." at ".date('d M, Y H:i:s');
+            $activity->activity_icon = "user.png";
+            $activity->save();
+            return redirect()->route('subscribers')->with('user_updated',"user updated successfully");
+        }
+        else{
+            $data = new User();
+            $this->validate($request,
+            [
+                'name' => 'required|string|max:255',
+                'phone' => 'required|unique:users',
+                'email' => 'required|string|email|max:255|unique:users',
+                'category' => 'required|string|max:255',
+                'subcategory' => 'required|string|max:255',
+                'organization' => 'required|string|max:255',
+                'designation' => 'required|string|max:255',
+                'country' => 'required|string|max:255',
+                'state' => 'required|string|max:255',
+                'city' => 'required|string|max:255',
+                'pincode' => 'required',
+                'password' => 'required|string|min:8',
+            ]);
+            $country = Countries::find($request->country);
+            $data->user_type = "Subscriber";
+            $data->name = $request['name'];
+            $data->phone = $request['phone'];
+            $data->email = $request['email'];
+            $data->status = 'true';
+            $data->category = $request['category'];
+            $data->sub_category = $request['subcategory'];
+            $data->other_subcategory = $request['other'];
+            $data->membership = $request['membership'];
+            $data->membership_type = "Free";
+            $data->membership_start_date = new DateTime("now");
+            $data->membership_expiry_date = (new DateTime("now"))->modify("+90 days");
+            $data->wallet = 0;
+            $data->referral = get_referral();
+            $data->organization = $request['organization'];
+            $data->designation = $request['designation'];
+            $data->employee_strength = $request['employee_strength'];
+            $data->address_line = $request['address_line'];
+            $data->country = $country->country_name;
+            $data->state = $request['state'];
+            $data->city = $request['city'];
+            $data->pincode = $request['pincode'];
+            $data->timezone = $request['timezone'];
+            $data->password = Hash::make($request['password']);
+            $crcode = $country->currency;
+            $currency = Currency::where('currency_code','=',$crcode)->first();
+            if($currency){
+                $data->currency = $currency->currency_code."(".$currency->currency_symbol.")";
+            }
+            else{
+                $data->currency = "USD($)";
+            }
+            // print_r($requet->$data);
+            // die();
+            $data->save();
+
+            $role = UserRoles::where('user_id','=',$data->id)->get();
+            if($role){
+                foreach($role as $r)
+                {
+                    $r->delete();
+                }
+            }
+            $clients = new UserRoles();
+            $clients->user_id = $data->id;
+            // $clients->subscriber_id = '';
+            $clients->name = $data->name;
+            $clients->email = $data->email;
+            $clients->module = "Clients";
+            $clients->read_only = 1;
+            $clients->write_only = 1;
+            $clients->update_only = 1;
+            $clients->delete_only = 1;
+            $clients->read_write_only = 1;
+            $clients->save();
+
+            $applications = new UserRoles();
+            $applications->user_id = $data->id;
+            // $applications->subscriber_id = '';
+            $applications->name = $data->name;
+            $applications->email = $data->email;
+            $applications->module = "Applications";
+            $applications->read_only = 1;
+            $applications->write_only = 1;
+            $applications->update_only = 1;
+            $applications->delete_only = 1;
+            $applications->read_write_only = 1;
+            $applications->save();
+
+            $communication = new UserRoles();
+            $communication->user_id = $data->id;
+            // $communication->subscriber_id = '';
+            $communication->name = $data->name;
+            $communication->email = $data->email;
+            $communication->module = "Communication";
+            $communication->read_only = 1;
+            $communication->write_only = 1;
+            $communication->update_only = 1;
+            $communication->delete_only = 1;
+            $communication->read_write_only = 1;
+            $communication->save();
+
+            $invoices = new UserRoles();
+            $invoices->user_id = $data->id;
+            // $invoices->subscriber_id = '';
+            $invoices->name = $data->name;
+            $invoices->email = $data->email;
+            $invoices->module = "Invoices";
+            $invoices->read_only = 1;
+            $invoices->write_only = 1;
+            $invoices->update_only = 1;
+            $invoices->delete_only = 1;
+            $invoices->read_write_only = 1;
+            $invoices->save();
+
+            $payments = new UserRoles();
+            $payments->user_id = $data->id;
+            // $payments->subscriber_id = '';
+            $payments->name = $data->name;
+            $payments->email = $data->email;
+            $payments->module = "Payments";
+            $payments->read_only = 1;
+            $payments->write_only = 1;
+            $payments->update_only = 1;
+            $payments->delete_only = 1;
+            $payments->read_write_only = 1;
+            $payments->save();
+
+            $reports = new UserRoles();
+            $reports->user_id = $data->id;
+            // $reports->subscriber_id = '';
+            $reports->name = $data->name;
+            $reports->email = $data->email;
+            $reports->module = "Reports";
+            $reports->read_only = 1;
+            $reports->write_only = 1;
+            $reports->update_only = 1;
+            $reports->delete_only = 1;
+            $reports->read_write_only = 1;
+            $reports->save();
+
+            $subscription = new UserRoles();
+            $subscription->user_id = $data->id;
+            // $subscription->subscriber_id = '';
+            $subscription->name = $data->name;
+            $subscription->email = $data->email;
+            $subscription->module = "Subscription";
+            $subscription->read_only = 1;
+            $subscription->write_only = 1;
+            $subscription->update_only = 1;
+            $subscription->delete_only = 1;
+            $subscription->read_write_only = 1;
+            $subscription->save();
+
+            $settings = new UserRoles();
+            $settings->user_id = $data->id;
+            // $settings->subscriber_id = '';
+            $settings->name = $data->name;
+            $settings->email = $data->email;
+            $settings->module = "Settings";
+            $settings->read_only = 1;
+            $settings->write_only = 1;
+            $settings->update_only = 1;
+            $settings->delete_only = 1;
+            $settings->read_write_only = 1;
+            $settings->save();
+
+            $support = new UserRoles();
+            $support->user_id = $data->id;
+            // $support->subscriber_id = '';
+            $support->name = $data->name;
+            $support->email = $data->email;
+            $support->module = "Support";
+            $support->read_only = 1;
+            $support->write_only = 1;
+            $support->update_only = 1;
+            $support->delete_only = 1;
+            $support->read_write_only = 1;
+            $support->save();
+
+
+            $activity = new Activities();
+            $activity->subscriber_id = $user->id;
+            $activity->user_id = $user->id;
+            $activity->user_name = $user->name;
+            $activity->activity_name = "New Subscriber Added";
+            $activity->activity_detail = "New Subscriber ".$request->name." added by ".$user->name." at ".date('d M, Y H:i:s');
+            $activity->activity_icon = "user.png";
+            $activity->save();
+            return redirect()->route('subscribers')->with('user_added',"user added successfully");
+        }
+    }
+
+    public function subscriber_status($id=null, $localtime=null)
+    {
+        if(!empty($id)){//edit the page.
+            $user = Auth::user();
+            if($user){
+                $subscriber = User::find($id);
+                if($subscriber->status == "true"){
+                    $subscriber->status = "false";
+                    if($subscriber->user_type == "Subscriber"){
+                        $users = User::where('added_by','=',$subscriber->id)->get();
+                        if(count($users)>0){
+                            foreach($users as $u){
+                                $u->status = "false";
+                                $u->save();
+                            }
+                        }
+                    }
+                }
+                else{
+                    $subscriber->status = "true";
+                    if($subscriber->user_type == "Subscriber"){
+                        $users = User::where('added_by','=',$subscriber->id)->get();
+                        if(count($users)>0){
+                            foreach($users as $u){
+                                $u->status = "true";
+                                $u->save();
+                            }
+                        }
+                    }
+                }
+                $subscriber->save();
+                $activity = new Activities();
+                $activity->subscriber_id = $user->id;
+                $activity->user_id = $user->id;
+                $activity->user_name = $user->name;
+                if($subscriber->user_type == "Subscriber"){
+                    $activity->activity_name = "Subscriber Status Updated";
+                }
+                else{
+                    $activity->activity_name = "User Status Updated";
+                }
+                $activity->activity_detail = "".$subscriber->name." Status updated by ".$user->name." at ".$localtime;
+                $activity->activity_icon = "user.png";
+                $activity->local_time = $localtime;
+                $activity->save();
+                return back()->with('status_updated','status is changed');
+            }
+            else{
+                return redirect()->route('login');
+            }
+        }
+        else{//view the page.
+            return back();
+        }
+    }
+
+    public function manage_users()
+    {
+        $siteusers = User::where('user_type','=','User')->orderBy('created_at','desc')->get();
+        $user = Auth::user();
+        $page = "users";
+        return view('admin.users', compact('siteusers','user','page'));
+    }
+
+    public function new_user()
+    {
+        $subscribers = User::where('user_type','=','Subscriber')->get();
+        $countries = Countries::get();
+        $subscriber_categories = Subscriber_Categories::get();
+        $membership = Membership::get();
+        $user = Auth::user();
+        $tzlist = DateTimeZone::listIdentifiers(DateTimeZone::ALL);
+        $page = "users";
+        return view('admin.add_users', compact('subscribers','user','tzlist','page','countries','subscriber_categories','membership'));
+    }
+
+    public function siteuser_update($id)
+    {
+        $siteuser = User::find($id);
+        $countries = Countries::get();
+        foreach($countries as $country){
+            if($country->country_name == $siteuser->country){
+                $states = States::where('country_id','=',$country->id)->get();
+            }
+        }
+        $user = Auth::user();
+        $tzlist = DateTimeZone::listIdentifiers(DateTimeZone::ALL);
+        $page = "users";
+        return view('admin.add_users', compact('siteuser','user','tzlist','page','countries','states'));
+    }
+
+    public function register_new_user(request $request)
+    {
+        // print_r($request->all());
+        // exit();
+        $user = Auth::user();
+        if(isset($request->id)){
+            $country = Countries::find($request->country);
+            $data = User::find($request->id);
+            $data->name = $request['name'];
+            $data->phone = $request['phone'];
+            $data->dob = $request['dob'];
+            $data->designation = $request['designation'];
+            $data->address_line = $request['address_line'];
+            $data->country = $country->country_name;
+            $data->state = $request['state'];
+            $data->city = $request['city'];
+            $data->pincode = $request['pincode'];
+            $data->timezone = $request['timezone'];
+            // print_r($requet->$data);
+            // die();
+            $data->save();
+            $activity = new Activities();
+            $activity->subscriber_id = $user->id;
+            $activity->user_id = $user->id;
+            $activity->user_name = $user->name;
+            $activity->activity_name = "User Data Update";
+            $activity->activity_detail = "User ".$request->name." data updated by ".$user->name." at ".date('d M, Y H:i:s');
+            $activity->activity_icon = "user.png";
+            $activity->save();
+            return redirect()->route('manage_users')->with('user_updated',"user updated successfully");
+        }
+        else{
+            $data = new User();
+            $subscriber = User::find($request->subscriber);
+            $siteusers = User::where('added_by','=',$subscriber->id)->get();
+            $membership_plan = Membership::where('plan_name','=',$subscriber->membership)->first();
+            if(count($siteusers) >= $membership_plan->no_of_users ){
+                return back()->with('user_limit','Upgrade membership to add more users.');
+            }
+            $this->validate($request,
+            [
+                'name' => 'required|string|max:255',
+                'phone' => 'required|unique:users',
+                'email' => 'required|string|email|max:255|unique:users',
+                'dob' => 'required',
+                'designation' => 'required|string|max:255',
+                'country' => 'required|string|max:255',
+                'state' => 'required|string|max:255',
+                'city' => 'required|string|max:255',
+                'pincode' => 'required',
+                'password' => 'required|string|min:8',
+            ]);
+            $country = Countries::find($request->country);
+            $data->user_type = "User";
+            $data->added_by = $subscriber->id;
+            $data->name = $request['name'];
+            $data->phone = $request['phone'];
+            $data->email = $request['email'];
+            $data->dob = $request['dob'];
+            $data->status = 'true';
+            $data->category = $subscriber->category;
+            $data->sub_category = $subscriber->sub_category;
+            $data->other_subcategory = $subscriber->other_subcategory;
+            $data->membership = $subscriber->membership;
+            $data->membership_type = $subscriber->membership_type;
+            $data->membership_start_date = $subscriber->membership_start_date;
+            $data->membership_expiry_date = $subscriber->membership_expiry_date;
+            $data->wallet = $subscriber->wallet;
+            $data->referral = $subscriber->referral;
+            $data->organization = $subscriber->organization;
+            $data->designation = $request['designation'];
+            $data->employee_strength = $subscriber->employee_strength;
+            $data->address_line = $request['address_line'];
+            $data->country = $country->country_name;
+            $data->state = $request['state'];
+            $data->city = $request['city'];
+            $data->pincode = $request['pincode'];
+            $data->timezone = $request['timezone'];
+            $crcode = $country->currency;
+            $currency = Currency::where('currency_code','=',$crcode)->first();
+            if($currency){
+                $data->currency = $currency->currency_code."(".$currency->currency_symbol.")";
+            }
+            else{
+                $data->currency = "USD($)";
+            }
+            $data->password = Hash::make($request['password']);
+            // print_r($requet->$data);
+            // die();
+            $data->save();
+
+            $role = UserRoles::where('user_id','=',$data->id)->get();
+            if($role){
+                foreach($role as $r)
+                {
+                    $r->delete();
+                }
+            }
+            $clients = new UserRoles();
+            $clients->user_id = $data->id;
+            $clients->subscriber_id = $data->added_by;
+            $clients->name = $data->name;
+            $clients->email = $data->email;
+            $clients->module = "Clients";
+            $clients->read_only = 1;
+            $clients->write_only = 1;
+            $clients->update_only = 1;
+            $clients->delete_only = 1;
+            $clients->read_write_only = 1;
+            $clients->save();
+
+            $applications = new UserRoles();
+            $applications->user_id = $data->id;
+            $applications->subscriber_id = $data->added_by;
+            $applications->name = $data->name;
+            $applications->email = $data->email;
+            $applications->module = "Applications";
+            $applications->read_only = 1;
+            $applications->write_only = 1;
+            $applications->update_only = 1;
+            $applications->delete_only = 1;
+            $applications->read_write_only = 1;
+            $applications->save();
+
+            $communication = new UserRoles();
+            $communication->user_id = $data->id;
+            $communication->subscriber_id = $data->added_by;
+            $communication->name = $data->name;
+            $communication->email = $data->email;
+            $communication->module = "Communication";
+            $communication->read_only = 1;
+            $communication->write_only = 1;
+            $communication->update_only = 1;
+            $communication->delete_only = 1;
+            $communication->read_write_only = 1;
+            $communication->save();
+
+            $invoices = new UserRoles();
+            $invoices->user_id = $data->id;
+            $invoices->subscriber_id = $data->added_by;
+            $invoices->name = $data->name;
+            $invoices->email = $data->email;
+            $invoices->module = "Invoices";
+            $invoices->read_only = 1;
+            $invoices->write_only = 1;
+            $invoices->update_only = 1;
+            $invoices->delete_only = 1;
+            $invoices->read_write_only = 1;
+            $invoices->save();
+
+            $payments = new UserRoles();
+            $payments->user_id = $data->id;
+            $payments->subscriber_id = $data->added_by;
+            $payments->name = $data->name;
+            $payments->email = $data->email;
+            $payments->module = "Payments";
+            $payments->read_only = 1;
+            $payments->write_only = 1;
+            $payments->update_only = 1;
+            $payments->delete_only = 1;
+            $payments->read_write_only = 1;
+            $payments->save();
+
+            $reports = new UserRoles();
+            $reports->user_id = $data->id;
+            $reports->subscriber_id = $data->added_by;
+            $reports->name = $data->name;
+            $reports->email = $data->email;
+            $reports->module = "Reports";
+            $reports->read_only = 0;
+            $reports->write_only = 0;
+            $reports->update_only = 0;
+            $reports->delete_only = 0;
+            $reports->read_write_only = 0;
+            $reports->save();
+
+            $subscription = new UserRoles();
+            $subscription->user_id = $data->id;
+            $subscription->subscriber_id = $data->added_by;
+            $subscription->name = $data->name;
+            $subscription->email = $data->email;
+            $subscription->module = "Subscription";
+            $subscription->read_only = 0;
+            $subscription->write_only = 0;
+            $subscription->update_only = 0;
+            $subscription->delete_only = 0;
+            $subscription->read_write_only = 0;
+            $subscription->save();
+
+            $settings = new UserRoles();
+            $settings->user_id = $data->id;
+            $settings->subscriber_id = $data->added_by;
+            $settings->name = $data->name;
+            $settings->email = $data->email;
+            $settings->module = "Settings";
+            $settings->read_only = 0;
+            $settings->write_only = 0;
+            $settings->update_only = 0;
+            $settings->delete_only = 0;
+            $settings->read_write_only = 0;
+            $settings->save();
+
+            $support = new UserRoles();
+            $support->user_id = $data->id;
+            $support->subscriber_id = $data->added_by;
+            $support->name = $data->name;
+            $support->email = $data->email;
+            $support->module = "Support";
+            $support->read_only = 1;
+            $support->write_only = 1;
+            $support->update_only = 1;
+            $support->delete_only = 1;
+            $support->read_write_only = 1;
+            $support->save();
+
+
+            $activity = new Activities();
+            $activity->subscriber_id = $user->id;
+            $activity->user_id = $user->id;
+            $activity->user_name = $user->name;
+            $activity->activity_name = "New User Added";
+            $activity->activity_detail = "New User ".$request->name." added by ".$user->name." at ".date('d M, Y H:i:s');
+            $activity->activity_icon = "user.png";
+            $activity->save();
+            return redirect()->route('manage_users')->with('user_added',"user added successfully");
+        }
+    }
+
+    public function manage_clients()
+    {
+        $clients = Clients::orderBy('created_at','desc')->get();
+        $user = Auth::user();
+        $page = "clients";
+        return view('admin.clients', compact('clients','user','page'));
+    }
+
+    public function new_client()
+    {
+        $subscribers = User::where('user_type','=','Subscriber')->get();
+        $countries = Countries::get();
+        $user = Auth::user();
+        $page = "clients";
+        return view('admin.add_clients', compact('subscribers','user','page','countries'));
+    }
+
+    public function client_update($id)
+    {
+        $client = Clients::find($id);
+        $countries = Countries::get();
+        foreach($countries as $country){
+            if($country->country_name == $client->country){
+                $states = States::where('country_id','=',$country->id)->get();
+            }
+        }
+        $user = Auth::user();
+        $page = "clients";
+        return view('admin.add_clients', compact('client','states','user','page','countries'));
+    }
+
+    public function register_new_client(request $request)
+    {
+        // print_r($request->all());
+        // exit();
+        function job_id()
+        {
+            $ch = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            $id = "";
+            for($i=0; $i<8; $i++){
+                $id = $id.$ch[rand(0, strlen($ch)-1)];
+            }
+            return $id;
+        }
+        $user = Auth::user();
+        if(isset($request->id)){
+            $country = Countries::find($request->country);
+            $nationality = Countries::find($request->nationality);
+            $data = Clients::find($request->id);
+            $data->name = $request['name'];
+            $data->phone = $request['phone'];
+            $data->nationality = $nationality->country_name;
+            $data->passport_no = $request['passport_no'];
+            $data->dob = $request['dob'];
+            $data->address = $request['address'];
+            $data->alternate_no = $request['alternate_no'];
+            $data->country = $country->country_name;
+            $data->state = $request['state'];
+            $data->city = $request['city'];
+            $data->pincode = $request['pincode'];
+            // print_r($requet->$data);
+            // die();
+            $data->save();
+            $activity = new Activities();
+            $activity->subscriber_id = $user->id;
+            $activity->user_id = $user->id;
+            $activity->user_name = $user->name;
+            $activity->activity_name = "Client Data Update";
+            $activity->activity_detail = "Client ".$request->name." data updated by ".$user->name." at ".date('d M, Y H:i:s');
+            $activity->activity_icon = "user.png";
+            $activity->save();
+            return redirect()->route('manage_clients')->with('client_updated',"client updated successfully");
+        }
+        else{
+            $data = new Clients();
+            $subscriber = User::find($request->subscriber);
+            $this->validate($request,
+            [
+                'name' => 'required|string|max:255',
+                'phone' => 'required|digits:12|unique:users',
+                'email' => 'required|string|email|max:255|unique:users',
+                'nationality' => 'required',
+                'passport_no' => 'required',
+                'dob' => 'required',
+                'address' => 'required',
+                'country' => 'required|string|max:255',
+                'state' => 'required|string|max:255',
+                'city' => 'required|string|max:255',
+                'pincode' => 'required',
+            ]);
+            $country = Countries::find($request->country);
+            $nationality = Countries::find($request->nationality);
+            $data->subscriber_id = $subscriber->id;
+            $data->user_id = $subscriber->id;
+            $data->name = $request['name'];
+            $data->phone = $request['phone'];
+            $data->email = $request['email'];
+            $data->nationality = $nationality->country_name;
+            $data->passport_no = $request['passport_no'];
+            $data->dob = $request['dob'];
+            $data->address = $request['address'];
+            $data->alternate_no = $request['alternate_no'];
+            $data->status = 'true';
+            $data->country = $country->country_name;
+            $data->state = $request['state'];
+            $data->city = $request['city'];
+            $data->pincode = $request['pincode'];
+            // print_r($requet->$data);
+            // die();
+            $data->save();
+            $activity = new Activities();
+            $activity->subscriber_id = $user->id;
+            $activity->user_id = $user->id;
+            $activity->user_name = $user->name;
+            $activity->activity_name = "New Client Added";
+            $activity->activity_detail = "New Client ".$request->name." added by ".$user->name." at ".date('d M, Y H:i:s');
+            $activity->activity_icon = "user.png";
+            $activity->save();
+            $application = new Applications();
+            $application->client_id = $data->id;
+            $application->subscriber_id = $subscriber->id;
+            $application->application_id = job_id();
+            $application->application_category = $subscriber->category;
+            $application->application_subcategory = $subscriber->sub_category;
+            $application->application_name = $request['job_role'];
+            $application->application_country = $request['visa_country'];
+            $application->application_detail = $request['job_detail'];
+            $application->application_program = $request['study_program'];
+            $application->application_status = $request['job_status'];
+            $application->start_date = $request['job_open_date'];
+            $application->end_date = $request['job_completion_date'];
+            $application->save();
+            $activity = new Activities();
+            $activity->subscriber_id = $subscriber->id;
+            $activity->user_id = $user->id;
+            $activity->user_name = $user->name;
+            $activity->activity_name = "New Application Added";
+            $activity->activity_detail = "New Application of ".$request->job_role." added by ".$user->name." at ".date('d M, Y H:i:s');
+            $activity->activity_icon = "user.png";
+            $activity->save();
+            return redirect()->route('manage_clients')->with('client_added',"client added successfully");
+        }
+    }
+
+    public function manage_applications()
+    {
+        $applications = Applications::orderBy('created_at','desc')->get();
+        $user = Auth::user();
+        $page = "applications";
+        return view('admin.manage_applications', compact('applications','user','page'));
+    }
+
+    public function new_application()
+    {
+        $clients = Clients::get();
+        $countries = Countries::get();
+        $user = Auth::user();
+        $page = "applications";
+        return view('admin.add_application', compact('clients','user','page','countries'));
+    }
+
+    public function application_update($id)
+    {
+        $application = Applications::find($id);
+        $countries = Countries::get();
+        $client = Clients::find($application->client_id);
+        $subscriber = User::find($client->subscriber_id);
+        if($subscriber->category == "Law Firm"){
+            $job_roles = Client_jobs::where('category','=',$subscriber->category)->get();
+        }
+        elseif($subscriber->category == "Travel Agency"){
+            $client_jobs = Client_jobs::where('category','=',$subscriber->category)->get();
+        }
+        else{
+            $job_roles = Client_jobs::where('category','=',$subscriber->category)->where('sub_category','=',$subscriber->sub_category)->get();
+        }
+        $user = Auth::user();
+        $page = "applications";
+        return view('admin.add_application', compact('application','job_roles','user','page','countries'));
+    }
+
+    public function register_new_application(Request $request)
+    {
+        function job_id()
+        {
+            $ch = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            $id = "";
+            for($i=0; $i<8; $i++){
+                $id = $id.$ch[rand(0, strlen($ch)-1)];
+            }
+            return $id;
+        }
+        $user = Auth::user();
+        if($user){
+            $application = Applications::find($request->id);
+            if($application){
+                $client = Clients::find($request->client);
+                $subscriber = User::find($client->subscriber_id);
+                $application->application_name = $request['job_role'];
+                $application->application_country = $request['visa_country'];
+                $application->application_detail = $request['job_detail'];
+                $application->application_program = $request['study_program'];
+                $application->application_status = $request['job_status'];
+                $application->start_date = $request['job_open_date'];
+                $application->end_date = $request['job_completion_date'];
+                $application->save();
+                $activity = new Activities();
+                $activity->subscriber_id = $subscriber->id;
+                $activity->user_id = $user->id;
+                $activity->user_name = $user->name;
+                $activity->activity_name = "Application Updated";
+                $activity->activity_detail = "Application of ".$request->job_role." updated by ".$user->name." at ".date('d M, Y H:i:s');
+                $activity->activity_icon = "user.png";
+                $activity->save();
+                return redirect()->route('manage_applications')->with('application_updated', "Application Updated successfully");
+            }
+            else{
+                $client = Clients::find($request->client);
+                if($client){
+                    $subscriber = User::find($client->subscriber_id);
+                    $application = new Applications();
+                    $application->client_id = $client->id;
+                    $application->subscriber_id = $subscriber->id;
+                    $application->application_id = job_id();
+                    $application->application_name = $request['job_role'];
+                    $application->application_category = $subscriber->category;
+                    $application->application_subcategory = $subscriber->sub_category;
+                    $application->application_country = $request['visa_country'];
+                    $application->application_detail = $request['job_detail'];
+                    $application->application_program = $request['study_program'];
+                    $application->application_status = $request['job_status'];
+                    $application->start_date = $request['job_open_date'];
+                    $application->end_date = $request['job_completion_date'];
+                    $application->save();
+                    $activity = new Activities();
+                    $activity->subscriber_id = $subscriber->id;
+                    $activity->user_id = $user->id;
+                    $activity->user_name = $user->name;
+                    $activity->activity_name = "New Application Added";
+                    $activity->activity_detail = "New Application of ".$request->job_role." added by ".$user->name." at ".date('d M, Y H:i:s');
+                    $activity->activity_icon = "user.png";
+                    $activity->save();
+                    return redirect()->route('manage_applications')->with('application_added', "Application Added successfully");
+                }
+                else{
+                    return back();
+                }
+            }
+        }
+        else{
+            return redirect()->route('admin');
+        }
+    }
+
+    public function application_view($id)
+    {
+        $application = Applications::find($id);
+        $user = Auth::user();
+        $page = "applications";
+        return view('admin.application_view', compact('application','user','page'));
+    }
+
+    public function documents()
+    {
+        $applications = Applications::get();
+        $user = Auth::user();
+        $page = "applications";
+        $client_docs = Client_Docs::orderBy('created_at','desc')->get();
+        return view('admin.documents', compact('applications','user','page','client_docs'));
+    }
+
+    public function new_document()
+    {
+        $clients = Clients::get();
+        $applications = Applications::get();
+        $countries = Countries::get();
+        $user = Auth::user();
+        $page = "applications";
+        return view('admin.add_document', compact('clients','user','page','countries','applications'));
+    }
+
+    public function document_update($id)
+    {
+        $document = Client_docs::find($id);
+        $client = Clients::find($document->client_id);
+        $applications = Applications::get();
+        $user = Auth::user();
+        $page = "applications";
+        return view('admin.add_document', compact('document','user','page','client','applications'));
+    }
+
+    public function upload_document(Request $request)
+    {
+        $user = Auth::user();
+        if($user){
+            $document = Client_Docs::find($request->id);
+            if($document){
+                $client = Clients::find($request->client_id);
+                $application = Applications::find($request->application_id);
+                $subscriber = User::find($client->subscriber_id);
+                $document->client_id = $request['client_id'];
+                $document->application_id = $application->application_id;
+                $document->user_id = $subscriber->id;
+                $document->doc_type = $request['doc_type'];
+                $document->doc_name = $request['doc_name'];
+                if($request->hasFile('doc_file')){
+                    $file = $request->file('doc_file');
+                    $extension = $file->getClientOriginalName();
+                    $filename = time().$extension;
+                    $file->move('web_assets/users/client'.$document->client_id.'/docs/', $filename);
+                    $document->doc_file = $filename;
+                }
+                $document->save();
+                $activity = new Activities();
+                $activity->subscriber_id = $subscriber->id;
+                $activity->user_id = $user->id;
+                $activity->user_name = $user->name;
+                $activity->activity_name = "Document Updated";
+                $activity->activity_detail = "Document updated by ".$user->name." at ".date('d M, Y H:i:s');
+                $activity->activity_icon = "user.png";
+                $activity->save();
+                return redirect()->route('documents')->with('document_updated', "Document Updated successfully");
+            }
+            else{
+                $client = Clients::find($request->client_id);
+                if($client){
+                    $this->validate($request,[
+                        'doc_file' => 'required|mimes:jpeg,jpg,png,pdf|max:2048',
+                    ]);
+                    $document = new Client_Docs();
+                    $client = Clients::find($request->client_id);
+                    $application = Applications::find($request->application_id);
+                    $subscriber = User::find($client->subscriber_id);
+                    $document->client_id = $request['client_id'];
+                    $document->application_id = $application->application_id;
+                    $document->user_id = $subscriber->id;
+                    $document->doc_name = $request['doc_name'];
+                    $document->doc_type = $request['doc_type'];
+                    if($request->hasFile('doc_file')){
+                        $file = $request->file('doc_file');
+                        $extension = $file->getClientOriginalName();
+                        $filename = time().$extension;
+                        $file->move('web_assets/users/client'.$document->client_id.'/docs/', $filename);
+                        $document->doc_file = $filename;
+                    }
+                    $document->save();
+                    $activity = new Activities();
+                    $activity->subscriber_id = $subscriber->id;
+                    $activity->user_id = $user->id;
+                    $activity->user_name = $user->name;
+                    $activity->activity_name = "Document Added";
+                    $activity->activity_detail = "New Document added by ".$user->name." at ".date('d M, Y H:i:s');
+                    $activity->activity_icon = "user.png";
+                    $activity->save();
+                    return redirect()->route('documents')->with('document_added', "Document added successfully");
+                }
+                else{
+                    return back();
+                }
+            }
+        }
+        else{
+            return redirect()->route('admin');
+        }
+    }
+
+    public function application_management()
+    {
+        $assignments = Application_assignments::orderBy('created_at','desc')->get();
+        $user = Auth::user();
+        $page = "applications";
+        return view('admin.application_management', compact('assignments','user','page'));
+    }
+
+    public function new_app_assignment()
+    {
+        $clients = Clients::get();
+        $applications = Applications::get();
+        $countries = Countries::get();
+        $user = Auth::user();
+        $page = "applications";
+        return view('admin.add_assignment', compact('clients','user','page','countries','applications'));
+    }
+
+    public function app_assignment_update($id)
+    {
+        $assignment = Application_assignments::find($id);
+        $client = Clients::find($assignment->client_id);
+        $applications = Applications::where('client_id','=',$client->id)->get();
+        $advisors = User::where('id','=',$client->subscriber_id)->orwhere('added_by','=',$client->subscriber_id)->get();
+        $user = Auth::user();
+        $page = "applications";
+        return view('admin.add_assignment', compact('assignment','user','advisors','page','client','applications'));
+    }
+
+    public function post_app_assignment(Request $request)
+    {
+        $user = Auth::user();
+        if($user){
+            $assignment = Application_assignments::find($request->id);
+            if($assignment){
+                $u = User::find($request->user_id);
+                $assignment->client_id = $request['client_id'];
+                $assignment->application_id = $request['application_id'];
+                $assignment->user_id = $request['user_id'];
+                $assignment->subscriber_id = $u->added_by;
+                $assignment->user_name = $u->name;
+                $assignment->save();
+                $app = Applications::where('application_id','=',$request->application_id)->first();
+                $app->assign_to = $u->id;
+                $app->save();
+                $activity = new Activities();
+                $activity->user_id = $user->id;
+                $activity->user_name = $user->name;
+                $activity->activity_name = "Application Assign Updated";
+                $activity->activity_detail = "Application Assign updated by ".$user->name." at ".date('d M, Y H:i:s');
+                $activity->activity_icon = "user.png";
+                $activity->save();
+                return redirect()->route('application_management')->with('assignment_updated', "Assignment Updated successfully");
+            }
+            else{
+                $client = Clients::find($request->client_id);
+                if($client){
+                    $assignment = new Application_assignments();
+                    $u = User::find($request->user_id);
+                    $assignment->client_id = $request['client_id'];
+                    $assignment->application_id = $request['application_id'];
+                    $assignment->user_id = $request['user_id'];
+                    $assignment->subscriber_id = $u->added_by;
+                    $assignment->user_name = $u->name;
+                    $assignment->save();
+                    $app = Applications::where('application_id','=',$request->application_id)->first();
+                    $app->assign_to = $u->id;
+                    $app->save();
+                    $activity = new Activities();
+                    $activity->client_id = $client->id;
+                    $activity->user_id = $user->id;
+                    $activity->user_name = $user->name;
+                    $activity->activity_name = "Assignment Added";
+                    $activity->activity_detail = "New Assignment added by ".$user->name." at ".date('d M, Y H:i:s');
+                    $activity->activity_icon = "user.png";
+                    $activity->save();
+                    return redirect()->route('application_management')->with('assignment_added', "Assignment added successfully");
+                }
+                else{
+                    return back();
+                }
+            }
+        }
+        else{
+            return redirect()->route('admin');
+        }
+    }
+
+    public function view_user($id=null)
+    {
+        if(!empty($id)){//edit the page.
+            $vuser  = User::find($id);
+            $user = Auth::user();
+            if($vuser->user_type == "Subscriber"){
+                $page = "subscriber";
+            }
+            else{
+                $page = "users";
+            }
+            return view('admin.view_user', compact('vuser','user','page'));
+        }else{//view the page.
+            $user = Banners::get();
+            return back();
+        }
+    }
+
+    public function payments()
+    {
+        $user = Auth::user();
+        if($user){
+            $page = "payments";
+            $payments = Invoices::orderBy('created_at','desc')->get();
+            return view('admin.payments',compact('user','payments','page'));
+        }
+        else{
+            return back();
+        }
+    }
+
+    public function manage_invoices()
+    {
+        $user = Auth::user();
+
+        if($user){
+            $page = "invoices";
+            $invoices = Internal_Invoices::orderBy('created_at','desc')->get();
+            return view('admin.manage_invoices',compact('user','invoices','page'));
+        }
+        else{
+            return back();
+        }
+    }
+
+    public function admin_new_invoice()
+    {
+        $user = Auth::user();
+        $subscribers = User::where('user_type','=','Subscriber')->get();
+        $countries = Countries::get();
+        $page = "invoices";
+        return view('admin.add_invoice', compact('subscribers','user','page','countries'));
+    }
+
+    public function admin_new_invoice_post(Request $request)
+    {
+        function invoice_id()
+        {
+            $ch = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            $id = "";
+            for($i=0; $i<8; $i++){
+                $id = $id.$ch[rand(0, strlen($ch)-1)];
+            }
+            return $id;
+        }
+        function invoice_token()
+        {
+            $ch = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            $token = "";
+            for($i=0; $i<20; $i++){
+                $token = $token.$ch[rand(0, strlen($ch)-1)];
+            }
+            if(Internal_Invoices::where('token','=',$token)->first()){
+                return invoice_token();
+            }
+            return $token;
+        }
+        $user = Auth::user();
+        $inv_setting = Invoice_settings::first();
+        if($user){
+            if($request->subscriber){
+                $subs = User::find($request->subscriber);
+                $invoice = new Internal_Invoices();
+                $invoice->invoice_no = invoice_id();
+                $invoice->subscriber_id = $subs->id;
+                // $invoice->user_id = $user->id;
+                $invoice->name = $user->organization;
+                $invoice->email = $user->email;
+                $invoice->phone = $user->phone;
+                $invoice->country = $user->country;
+                $invoice->state = $user->state;
+                $invoice->city = $user->city;
+                $invoice->pincode = $user->pincode;
+                $invoice->address = $user->address_line;
+                $invoice->logo = $user->organization_logo;
+                $invoice->to_name = $subs->name;
+                $invoice->to_email = $subs->email;
+                $invoice->to_phone = $subs->phone;
+                $invoice->to_country = $subs->country;
+                $invoice->to_state = $subs->state;
+                $invoice->to_city = $subs->city;
+                $invoice->to_pincode = $subs->pincode;
+                $invoice->to_address = $subs->address_line;
+                $invoice->detail = $request['detail'];
+                $invoice->amount = $request['amount'];
+                $invoice->discount = $inv_setting->discount;
+                $invoice->tax = $inv_setting->tax;
+                $subtotal = ($request['amount'] - ($request['amount'] * ($inv_setting->discount/100)));
+                $invoice->total = $subtotal + ($subtotal * ($inv_setting->tax / 100));
+                $invoice->status = $request['status'];
+                $invoice->due_date = $request['due_date'];
+                $invoice->token = invoice_token();
+                $invoice->save();
+                $activity = new Activities();
+                $activity->subscriber_id = $user->id;
+                $activity->user_id = $user->id;
+                $activity->user_name = $user->name;
+                $activity->activity_name = "Invoice Generated";
+                $activity->activity_detail = "Invoice generated by ".$user->name." at".date('d M, Y H:i:s');
+                $activity->activity_icon = "invoice.jpg";
+                $activity->save();
+
+                $maildata = new \stdClass();
+                $maildata->name = $subs['name'];
+                $maildata->email = $user->email;
+                $maildata->due_date = $invoice->due_date;
+                $maildata->invoice_id = $invoice->id;
+                $maildata->token = $invoice->token;
+                $maildata->message = "New invoice for you from adwisery of Rs.".$invoice->total."";
+                Mail::to($subs->email)->send(new Invoicemail($maildata));
+                if (Mail::failures()) {
+                    echo 'Sorry! Please try again latter';
+                }else{
+                    echo 'Success';
+                }
+                return redirect()->route('manage_invoices')->with('invoice_generated','Invoice created Successfully.');
+            }
+        }
+        else{
+            return redirect()->route('login');
+        }
+    }
+
+    public function invoice_detail($id)
+    {
+        $user = Auth::user();
+        if($id){
+            $invoice = Internal_Invoices::find($id);
+            $u = User::where('email','=',$invoice->email)->first();
+            if($u){
+                $page = "invoices";
+                return view('admin.invoice_detail',compact('user','invoice','page','u'));
+            }
+            else{
+                return back()->with('nouser', 'invoice user no longer exists');
+            }
+        }
+        else{
+            return back();
+        }
+    }
+
+    public function print_invoice_detail($id)
+    {
+        $user = Auth::user();
+        $page = "invoices";
+        $invoice = Internal_Invoices::find($id);
+        $u = User::where('email','=',$invoice->email)->first();
+        return view('admin.print_invoice_detail',compact('user','page','invoice','u'));
+    }
+
+    public function admin_wallet()
+    {
+        $user = Auth::user();
+        if($user){
+            $page = "wallet";
+            $referrals = Referrals::where('debit_amount','=',null)->orderBy('created_at','desc')->get();
+            return view('admin.wallet',compact('user','referrals','page'));
+        }
+        else{
+            return back();
+        }
+    }
+
+    public function admin_referral()
+    {
+        $user = Auth::user();
+        if($user){
+            $page = "wallet";
+            $referrals = Referrals::where('debit_amount','=',null)->orderBy('created_at','desc')->get();
+            return view('admin.referrals',compact('user','referrals','page'));
+        }
+        else{
+            return back();
+        }
+    }
+
+    public function reports()
+    {
+        $user = Auth::user();
+        $applications = Applications::get();
+        $visa_categories = Subscriber_Sub_Categories::where('category_name','=','Visas & Immigration Advisory')->get();
+        $law_categories = Subscriber_Sub_Categories::where('category_name','=','Law Firm')->get();
+        $travel_categories = Countries::get();
+        $total_visa_categ = array();
+        foreach($visa_categories as $vcategory){
+            $categ = $vcategory->sub_category_name;
+            $categ_app = 0;
+            foreach($applications as $app){
+                if($categ == $app->application_subcategory){
+                    $categ_app += 1;
+                }
+            }
+            $total_visa_categ[$categ] = $categ_app;
+        }
+        $total_law_categ = array();
+        foreach($law_categories as $lcategory){
+            $categ = $lcategory->sub_category_name;
+            $categ_app = 0;
+            foreach($applications as $app){
+                if($categ == $app->application_subcategory){
+                    $categ_app += 1;
+                }
+            }
+            $total_law_categ[$categ] = $categ_app;
+        }
+        $total_travel_categ = array();
+        foreach($travel_categories as $tcategory){
+            $categ = $tcategory->country_name;
+            $categ_app = 0;
+            foreach($applications as $app){
+                if($categ == $app->application_subcategory){
+                    $categ_app += 1;
+                }
+            }
+            $total_travel_categ[$categ] = $categ_app;
+        }
+        $visa = Applications::where('application_category','=','Visas & Immigration Advisory')->get();
+        $law = Applications::where('application_category','=','Law Firm')->get();
+        $travel = Applications::where('application_category','=','Travel Agency')->get();
+        $internal_invoices = Internal_Invoices::get();
+        $internal_total = 0;
+        foreach($internal_invoices as $inv){
+            $internal_total += $inv->total;
+        }
+        $unpaid = Internal_Invoices::where('status','=','UnPaid')->get();
+        $unpaid_total = 0;
+        foreach($unpaid as $inv){
+            $unpaid_total += $inv->total;
+        }
+        $invoices = Invoices::get();
+        $total = 0;
+        foreach($invoices as $inv){
+            $total += $inv->total;
+        }
+        $total_invoices = count($internal_invoices) + count($invoices);
+        $total_paid = $total_invoices - count($unpaid);
+        $total_unpaid = count($unpaid);
+        $total_amt = $internal_total + $total;
+        $paid_total = $total_amt - $unpaid_total;
+        $page = "reports";
+        return view('admin.reports',compact('user','total_visa_categ','total_law_categ','total_travel_categ','visa','law','travel','page','applications','total_invoices','total_paid','total_unpaid','total_amt','paid_total','unpaid_total'));
+    }
+
+    public function manage_support()
+    {
+        $user = Auth::user();
+        if($user){
+            $tickets = Tickets::orderBy('created_at','desc')->get();
+            $page = "support";
+            return view('admin.manage_support', compact('user','tickets','page'));
+        }
+        else{
+            return redirect()->route('admin');
+        }
+    }
+
+    public function manage_faq()
+    {
+        $user = Auth::user();
+        if($user){
+            $faqs = Faq::get();
+            $page = "support";
+            return view('admin.manage_faq', compact('user','faqs','page'));
+        }
+        else{
+            return redirect()->route('admin');
+        }
+    }
+
+    public function add_faq()
+    {
+        $user = Auth::user();
+        if($user){
+            $page = "support";
+            return view('admin.add_faq', compact('user','page'));
+        }
+        else{
+            return redirect()->route('admin');
+        }
+    }
+
+    public function update_faq($id)
+    {
+        $user = Auth::user();
+        if($user){
+            $faq = Faq::find($id);
+            $page = "support";
+            return view('admin.add_faq', compact('user','page','faq'));
+        }
+        else{
+            return redirect()->route('admin');
+        }
+    }
+
+    public function register_faq(Request $request)
+    {
+        $user = Auth::user();
+        if($user){
+            $faq = Faq::find($request->id);
+            if($faq){
+                $faq->question = $request['question'];
+                $faq->answer = $request['answer'];
+                $faq->save();
+                $activity = new Activities();
+                $activity->user_id = $user->id;
+                $activity->user_name = $user->name;
+                $activity->activity_name = "FAQ Updated";
+                $activity->activity_detail = "FAQ updated by ".$user->name." at ".date('d M, Y H:i:s');
+                $activity->activity_icon = "user.png";
+                $activity->save();
+                return redirect()->route('manage_faq')->with('faq_updated', "FAQ Updated successfully");
+            }
+            else{
+                $faq = new Faq();
+                $this->validate($request, [
+                    'question' => 'required',
+                    'answer' => 'required',
+                ]);
+                $faq->question = $request['question'];
+                $faq->answer = $request['answer'];
+                $faq->save();
+                $activity = new Activities();
+                $activity->user_id = $user->id;
+                $activity->user_name = $user->name;
+                $activity->activity_name = "New FAQ Added";
+                $activity->activity_detail = "New FAQ added by ".$user->name." at ".date('d M, Y H:i:s');
+                $activity->activity_icon = "user.png";
+                $activity->save();
+                return redirect()->route('manage_faq')->with('faq_added', "FAQ Added successfully");
+            }
+        }
+        else{
+            return redirect()->route('admin');
+        }
+    }
+
+    public function activity_log()
+    {
+        $user = Auth::user();
+        if($user){
+            $page = "activity_log";
+            $users = User::get();
+            $activities = Activities::orderBy('created_at','desc')->get();
+            return view('admin.activity_log',compact('user','activities','page','users'));
+        }
+        else{
+            return back();
+        }
+    }
+
+    public function view_client($id=null)
+    {
+        if(!empty($id)){//edit the page.
+            $client  = Clients::find($id);
+            $user = Auth::user();
+            $page = "clients";
+            return view('admin.view_client', compact('client','user','page'));
+        }else{//view the page.
+            return back();
+        }
+    }
+
+    public function manage_contactus()
+    {
+        $contact = Contactus::first();
+        $user = Auth::user();
+        $page = "contactus";
+        return view('admin.manage_contactus', compact('user','contact','page'));
+    }
+
+    public function update_contactus(request $request)
+    {
+        // print_r($request->all());
+     //    exit();
+        $user = Auth::user();
+
+        if($user){
+            $contact = Contactus::find($request->id);
+            if($contact){
+                $contact_us = Contactus::find($request->id);
+                if (isset($request->contact_details)) {
+                    $contact_us->contact_no = $request['contact_no'];
+                    $contact_us->alternate_no = $request['alternate_no'];
+                    $contact_us->location = $request['location'];
+                    $contact_us->email = $request['email'];
+                    $contact_us->website = $request['website'];
+                    $contact_us->save();
+                    $activity = new Activities();
+                    $activity->user_id = $user->id;
+                    $activity->user_name = $user->name;
+                    $activity->activity_name = "Contact Us Updated";
+                    $activity->activity_detail = "Contact Us updated by ".$user->name." at ".date('d M, Y H:i:s');
+                    $activity->activity_icon = "user.png";
+                    $activity->save();
+                    return back()->with('success','Contact Us Updated Successfully!');
+                }
+                elseif(isset($request->banner)){
+                    if($request->hasFile('banner')){
+                        $file = $request->file('banner');
+                        $extension = $file->getClientOriginalName();
+                        $filename = time().$extension;
+                        $file->move('admin_assets/contactus/', $filename);
+                        $contact_us->banner = $filename;
+                    }
+                    $contact_us->save();
+                    $activity = new Activities();
+                    $activity->user_id = $user->id;
+                    $activity->user_name = $user->name;
+                    $activity->activity_name = "Contact Us Updated";
+                    $activity->activity_detail = "Contact Us Banner updated by ".$user->name." at ".date('d M, Y H:i:s');
+                    $activity->activity_icon = "user.png";
+                    $activity->save();
+                    return back()->with('success','Banner Updated Successfully!');
+                }
+            }
+            else{
+                return back();
+            }
+        }
+        else{
+            return redirect()->route('login');
+        }
+
+    }
+
+    public function manage_membership()
+    {
+        $user = Auth::user();
+        $page = "membership";
+        $memberships = Membership::get();
+        return view('admin.manage_membership', compact('user','page','memberships'));
+    }
+
+    public function add_membership()
+    {
+        $user = Auth::user();
+        $page = "membership";
+        return view('admin.add_membership', compact('user','page'));
+    }
+
+    public function post_membership(request $request)
+    {
+        // print_r($request->all());
+     //    exit();
+        $user = Auth::user();
+        if(isset($request->id)){
+            $data = Membership::find($request->id);
+            $data->plan_name = $request['plan_name'];
+            $data->data_limit = $request['data_limit'];
+            $data->client_limit = $request['client_limit'];
+            $data->reports = $request['reports'];
+            $data->analytics = $request['analytics'];
+            $data->no_of_users = $request['no_of_users'];
+            $data->no_of_branches = $request['no_of_branches'];
+            $data->price_per_year = $request['price_per_year'];
+            $data->validity = $request['validity'];
+            $data->messaging = $request['messaging'];
+            $data->invoicing = $request['invoicing'];
+            $data->multi_device_support = $request['multi_device_support'];
+            $data->secure_environment = $request['secure_environment'];
+            $data->multi_currency_support = $request['multi_currency_support'];
+            // print_r($requet->$data);
+            // die();
+            $data->save();
+            $activity = new Activities();
+            $activity->user_id = $user->id;
+            $activity->user_name = $user->name;
+            $activity->activity_name = "Price Plan Updated";
+            $activity->activity_detail = "Price Plan updated by ".$user->name." at ".date('d M, Y H:i:s');
+            $activity->activity_icon = "user.png";
+            $activity->save();
+            return back()->with('success','Membership Plan added Successfully');
+        }
+        else{
+            $data = new Membership();
+            $this->validate($request,
+            [
+                'plan_name' => 'required|string|max:255',
+                'data_limit' => 'required|string|max:255',
+                'client_limit' => 'required|numeric',
+                'reports' => 'required|string|max:255',
+                'analytics' => 'required|string|max:255',
+                'no_of_users' => 'required|numeric',
+                'no_of_branches' => 'required|numeric',
+                'price_per_year' => 'required|numeric',
+                'validity' => 'required|numeric',
+                'messaging' => 'required|string|max:255',
+                'invoicing' => 'required|string|max:255',
+                'multi_device_support' => 'required|string|max:255',
+                'secure_environment' => 'required|string|max:255',
+                'multi_currency_support' => 'required|string|max:255',
+            ]);
+            $data->plan_name = $request['plan_name'];
+            $data->data_limit = $request['data_limit'];
+            $data->client_limit = $request['client_limit'];
+            $data->reports = $request['reports'];
+            $data->analytics = $request['analytics'];
+            $data->no_of_users = $request['no_of_users'];
+            $data->no_of_branches = $request['no_of_branches'];
+            $data->price_per_year = $request['price_per_year'];
+            $data->validity = $request['validity'];
+            $data->messaging = $request['messaging'];
+            $data->invoicing = $request['invoicing'];
+            $data->multi_device_support = $request['multi_device_support'];
+            $data->secure_environment = $request['secure_environment'];
+            $data->multi_currency_support = $request['multi_currency_support'];
+            // print_r($requet->$data);
+            // die();
+            $data->save();
+            $activity = new Activities();
+            $activity->user_id = $user->id;
+            $activity->user_name = $user->name;
+            $activity->activity_name = "Price Plan Added";
+            $activity->activity_detail = "New Price Plan added by ".$user->name." at ".date('d M, Y H:i:s');
+            $activity->activity_icon = "user.png";
+            $activity->save();
+            return back()->with('success','Membership Plan added Successfully');
+        }
+    }
+
+    public function membership_plan($id=null)
+    {
+        if(!empty($id)){//edit the page.
+            $plan  = Membership::find($id);
+            $user = Auth::user();
+            $page = "membership";
+            return view('admin.membership_plan', compact('plan','user','page'));
+        }else{//view the page.
+            return back();
+        }
+    }
+
+    public function banners(Request $request)
+    {
+        $user = Auth::user();
+        $banner = Banners::first();
+        if($request->hasFile('membership')){
+            $file = $request->file('membership');
+            $extension = $file->getClientOriginalName();
+            $filename = time().$extension;
+            $file->move("admin_assets/banners/membership/", $filename);
+            $banner->membership = $filename;
+        }
+        if($request->hasFile('about_advisori')){
+            $file = $request->file('about_advisori');
+            $extension = $file->getClientOriginalName();
+            $filename = time().$extension;
+            $file->move("admin_assets/banners/about_advisori/", $filename);
+            $banner->about_advisori = $filename;
+        }
+        if($request->hasFile('features')){
+            $file = $request->file('features');
+            $extension = $file->getClientOriginalName();
+            $filename = time().$extension;
+            $file->move("admin_assets/banners/features/", $filename);
+            $banner->features = $filename;
+        }
+        $banner->save();
+        return back();
+    }
+
+    public function manage_features()
+    {
+        $user = Auth::user();
+        $page = "features";
+        $features = Features::get();
+        return view('admin.manage_features', compact('user','page','features'));
+    }
+
+    public function add_feature()
+    {
+        $user = Auth::user();
+        $page = "features";
+        return view('admin.add_feature', compact('user','page'));
+    }
+
+    public function post_feature(request $request)
+    {
+        // print_r($request->all());
+     //    exit();
+        $user = Auth::user();
+        if(isset($request->id)){
+            $data = Features::find($request->id);
+            $this->validate($request,
+            [
+                'name' => 'required|string|max:255',
+                'content' => 'required',
+                'icon' => 'image|mimes:jpg,png,jpeg,gif,svg|max:2048',
+            ]);
+            $data->name = $request['name'];
+            $data->content = $request['content'];
+            if($request->hasFile('icon')){
+                $file = $request->file('icon');
+                $extension = $file->getClientOriginalName();
+                $filename = time().$extension;
+                $file->move("admin_assets/features/icon/", $filename);
+                $data->icon = $filename;
+            }
+            // print_r($requet->$data);
+            // die();
+            $data->save();
+            $activity = new Activities();
+            $activity->user_id = $user->id;
+            $activity->user_name = $user->name;
+            $activity->activity_name = "Features Updated";
+            $activity->activity_detail = "Features updated by ".$user->name." at ".date('d M, Y H:i:s');
+            $activity->activity_icon = "user.png";
+            $activity->save();
+            return back()->with('success','Feature Updated Successfully');
+        }
+        else{
+            $data = new Features();
+            $this->validate($request,
+            [
+                'name' => 'required|string|max:255',
+                'content' => 'required',
+                'icon' => 'required|image|mimes:jpg,png,jpeg,gif,svg|max:2048',
+            ]);
+            $data->name = $request['name'];
+            $data->content = $request['content'];
+            if($request->hasFile('icon')){
+                $file = $request->file('icon');
+                $extension = $file->getClientOriginalName();
+                $filename = time().$extension;
+                $file->move("admin_assets/features/icon/", $filename);
+                $data->icon = $filename;
+            }
+            // print_r($requet->$data);
+            // die();
+            $data->save();
+            $activity = new Activities();
+            $activity->user_id = $user->id;
+            $activity->user_name = $user->name;
+            $activity->activity_name = "Feature Added";
+            $activity->activity_detail = "New Feature added by ".$user->name." at ".date('d M, Y H:i:s');
+            $activity->activity_icon = "user.png";
+            $activity->save();
+            return back()->with('success','Feature Added Successfully');
+        }
+    }
+
+    public function view_feature($id=null)
+    {
+        if(!empty($id)){//edit the page.
+            $feature  = Features::find($id);
+            $user = Auth::user();
+            $page = "features";
+            return view('admin.view_feature', compact('feature','user','page'));
+        }else{//view the page.
+            return back();
+        }
+    }
+
+    public function manage_about_adwiseri()
+    {
+        $user = Auth::user();
+        $page = "about_adwiseri";
+        $about_adwiseri = About_Advisori::first();
+        return view('admin.manage_about_advisori', compact('user','page','about_adwiseri'));
+    }
+
+    public function update_about_adwiseri(request $request)
+    {
+        // print_r($request->all());
+     //    exit();
+        $user = Auth::user();
+
+        if($user){
+            $about = About_Advisori::find($request->id);
+            if($about){
+                $about_adwiseri = About_Advisori::find($request->id);
+                if (isset($request->advisori_details)) {
+                    $about_adwiseri->heading = $request['heading'];
+                    $about_adwiseri->content = $request['content'];
+                    if($request->hasFile('image')){
+                        $file = $request->file('image');
+                        $extension = $file->getClientOriginalName();
+                        $filename = time().$extension;
+                        $file->move('admin_assets/about_advisori/image/', $filename);
+                        $about_adwiseri->image = $filename;
+                    }
+                    $about_adwiseri->save();
+                    $activity = new Activities();
+                    $activity->user_id = $user->id;
+                    $activity->user_name = $user->name;
+                    $activity->activity_name = "About Adwisari Updated";
+                    $activity->activity_detail = "About Adwisari updated by ".$user->name." at ".date('d M, Y H:i:s');
+                    $activity->activity_icon = "user.png";
+                    $activity->save();
+                    return back()->with('success','About Adwisari Updated Successfully!');
+                }
+                elseif(isset($request->banner)){
+                    if($request->hasFile('banner')){
+                        $file = $request->file('banner');
+                        $extension = $file->getClientOriginalName();
+                        $filename = time().$extension;
+                        $file->move('admin_assets/about_advisori/banner/', $filename);
+                        $about_adwiseri->banner = $filename;
+                    }
+                    $about_adwiseri->save();
+                    $activity = new Activities();
+                    $activity->user_id = $user->id;
+                    $activity->user_name = $user->name;
+                    $activity->activity_name = "About Adwisari Updated";
+                    $activity->activity_detail = "About Adwisari updated by ".$user->name." at ".date('d M, Y H:i:s');
+                    $activity->activity_icon = "user.png";
+                    $activity->save();
+                    return back()->with('success','Banner Updated Successfully!');
+                }
+            }
+            else{
+                return back();
+            }
+        }
+        else{
+            return redirect()->route('login');
+        }
+
+    }
+
+    public function delete_user($id=null)
+    {
+        if(!empty($id)){//edit the page.
+            $user = Auth::user();
+            if($user){
+                $siteuser = User::find($id);
+                $siteuser->delete();
+                $activity = new Activities();
+                $activity->user_id = $user->id;
+                $activity->user_name = $user->name;
+                $activity->activity_name = "User Deleted";
+                $activity->activity_detail = "User ".$siteuser->name." deleted by ".$user->name." at ".date('d M, Y H:i:s');
+                $activity->activity_icon = "user.png";
+                $activity->save();
+                return back()->with('deleted','user deleted successfully');
+            }
+            else{
+                return redirect()->route('login');
+            }
+        }
+        else{//view the page.
+            return back();
+        }
+    }
+
+    public function delete_clients($id=null)
+    {
+        if(!empty($id)){//edit the page.
+            $user = Auth::user();
+            if($user){
+                $client = Clients::find($id);
+                $client->delete();
+                $activity = new Activities();
+                $activity->user_id = $user->id;
+                $activity->user_name = $user->name;
+                $activity->activity_name = "Client Deleted";
+                $activity->activity_detail = "Client ".$client->name." deleted by ".$user->name." at ".date('d M, Y H:i:s');
+                $activity->activity_icon = "user.png";
+                $activity->save();
+                return back()->with('deleted','client deleted successfully');
+            }
+            else{
+                return redirect()->route('login');
+            }
+        }
+        else{//view the page.
+            return back();
+        }
+    }
+
+    public function delete_application($id=null)
+    {
+        if(!empty($id)){//edit the page.
+            $user = Auth::user();
+            if($user){
+                $application = Applications::find($id);
+                $application->delete();
+                $activity = new Activities();
+                $activity->user_id = $user->id;
+                $activity->user_name = $user->name;
+                $activity->activity_name = "Application Deleted";
+                $activity->activity_detail = "Application ".$application->application_name." deleted by ".$user->name." at ".date('d M, Y H:i:s');
+                $activity->activity_icon = "user.png";
+                $activity->save();
+                return back()->with('deleted','Application deleted successfully');
+            }
+            else{
+                return redirect()->route('login');
+            }
+        }
+        else{//view the page.
+            return back();
+        }
+    }
+
+    public function delete_document($id=null)
+    {
+        if(!empty($id)){//edit the page.
+            $user = Auth::user();
+            if($user){
+                $document = Client_Docs::find($id);
+                $document->delete();
+                $activity = new Activities();
+                $activity->user_id = $user->id;
+                $activity->user_name = $user->name;
+                $activity->activity_name = "Document Deleted";
+                $activity->activity_detail = "Document ".$document->doc_name." deleted by ".$user->name." at ".date('d M, Y H:i:s');
+                $activity->activity_icon = "user.png";
+                $activity->save();
+                return back()->with('deleted','Document deleted successfully');
+            }
+            else{
+                return redirect()->route('login');
+            }
+        }
+        else{//view the page.
+            return back();
+        }
+    }
+
+    public function delete_app_assignment($id=null)
+    {
+        if(!empty($id)){//edit the page.
+            $user = Auth::user();
+            if($user){
+                $assignment = Application_assignments::find($id);
+                $app_id = $assignment->application_id;
+                $assignment->delete();
+                $app = Applications::where('application_id','=',$app_id)->first();
+                $app->assign_to = "";
+                $app->save();
+                $activity = new Activities();
+                $activity->user_id = $user->id;
+                $activity->user_name = $user->name;
+                $activity->activity_name = "App Assignment Deleted";
+                $activity->activity_detail = "Application Assignment deleted by ".$user->name." at ".date('d M, Y H:i:s');
+                $activity->activity_icon = "user.png";
+                $activity->save();
+                return back()->with('deleted','Assignment deleted successfully');
+            }
+            else{
+                return redirect()->route('login');
+            }
+        }
+        else{//view the page.
+            return back();
+        }
+    }
+
+    public function delete_faq($id=null)
+    {
+        if(!empty($id)){//edit the page.
+            $user = Auth::user();
+            if($user){
+                $faq = Faq::find($id);
+                $faq->delete();
+                $activity = new Activities();
+                $activity->user_id = $user->id;
+                $activity->user_name = $user->name;
+                $activity->activity_name = "FAQ Deleted";
+                $activity->activity_detail = "FAQ ".$faq->question." deleted by ".$user->name." at ".date('d M, Y H:i:s');
+                $activity->activity_icon = "user.png";
+                $activity->save();
+                return back()->with('deleted','Faq deleted successfully');
+            }
+            else{
+                return redirect()->route('login');
+            }
+        }
+        else{//view the page.
+            return back();
+        }
+    }
+
+    public function communication()
+    {
+        $user = Auth::user();
+        if($user){
+            $page = "communication";
+            $messages = Messages::select('client_id')->orderBy('created_at','desc')->get();
+            $a = array();
+            foreach($messages as $c){
+                array_push($a, $c->client_id);
+            }
+            $client_ids = array_unique($a);
+            $clients = Clients::get();
+            $messages = Internal_communications::orderBy('created_at','desc')->get();
+            $subscribers = User::where('user_type','=','Subscriber')->get();
+            $users = User::where('user_type','=','User')->get();
+            $allusers = User::where('user_type','!=','admin')->get();
+            return view("admin.communication",compact('user','page','client_ids','clients','subscribers','users','allusers','messages'));
+        }
+        else{
+            return redirect()->route('admin');
+        }
+    }
+
+    public function admin_messaging()
+    {
+        $user = Auth::user();
+        if($user){
+            $page = "communication";
+            $clients = Clients::get();
+            $subscribers = User::where('user_type','=','Subscriber')->get();
+            $users = User::where('user_type','=','User')->get();
+            $allusers = User::where('user_type','!=','admin')->get();
+            return view("admin.messaging",compact('user','page','clients','subscribers','users','allusers'));
+        }
+        else{
+            return redirect()->route('admin');
+        }
+    }
+
+    public function admin_communicate(Request $request)
+    {
+        $user = Auth::user();
+        if($user){
+            $this->validate($request,[
+                'sendto' => 'required',
+                'message' => 'required|string',
+                ]);
+            function communication_id()
+            {
+                $ch = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+                $id = "";
+                for($i=0; $i<7; $i++){
+                    $id = $id.$ch[rand(0, strlen($ch)-1)];
+                }
+                if(Internal_communications::where('communication_id','=',$id)->first()){
+                    return communication_id();
+                }
+                return $id;
+            }
+            $communication_id = communication_id();
+            $sendto = $request->sendto;
+            $receiver_id = array();
+            $receiver_name = array();
+            if($sendto){
+                if(count($sendto)){
+                    if(in_array('All Subscribers',$sendto)){
+                        $subscribers = User::where('user_type','=','Subscriber')->get();
+                        foreach($subscribers as $subs){
+                            array_push($receiver_id,$subs->id);
+                            array_push($receiver_name,$subs->name);
+                        }
+                        $admin_index = array_search('All Subscribers',$sendto);
+                        array_splice($sendto, $admin_index,1);
+                    }
+                    elseif(in_array('All Users',$sendto)){
+                        $siteusers = User::where('user_type','=','User')->get();
+                        foreach($siteusers as $suser){
+                            array_push($receiver_id,$suser->id);
+                            array_push($receiver_name,$suser->name);
+                        }
+                        $admin_index = array_search('All Users',$sendto);
+                        array_splice($sendto, $admin_index,1);
+                    }
+                    else{
+                        if(count($sendto)){
+                            foreach($sendto as $uid){
+                                $suser = User::find($uid);
+                                array_push($receiver_id,$suser->id);
+                                array_push($receiver_name,$suser->name);
+                            }
+                        }
+                    }
+                    $message = new Internal_communications();
+                    $message->subscriber_id = $user->id;
+                    $message->communication_id = $communication_id;
+                    $message->user_id = $user->id;
+                    $message->send_by = $user->id;
+                    $message->send_to = json_encode($receiver_id, true);
+                    $message->sender_name = $user->name;
+                    $message->receiver_name = json_encode($receiver_name, true);
+                    $message->message = $request['message'];
+                    $message->save();
+                    return back()->with('sent', 'Message sent successfully!');
+                }
+                else{
+                    return back()->with('noUser', 'No user selected');
+                }
+            }
+            else{
+                return back()->with('noUser', 'No user selected');
+            }
+
+
+            echo "Message Sent";
+        }
+        else{
+            return redirect()->route('login');
+        }
+    }
+
+    public function view_communication($id= null){
+        $user = Auth::user();
+        if($id){
+            $page = "communications";
+            $message = Internal_communications::find($id);
+            return view('admin.view_message',compact('message','user','page'));
+
+        }
+    }
+
+    public function meetings()
+    {
+        $user = Auth::user();
+        if($user){
+            $page = "communication";
+            $subscribers = User::where('user_type','=','Subscriber')->get();
+
+            return view("admin.meetings",compact('user','page','subscribers'));
+        }
+        else{
+            return redirect()->route('admin');
+        }
+    }
+
+    public function notes($id = null)
+    {
+        $user = Auth::user();
+        if($user){
+            $page = "communication";
+            if($id){
+                $subscriber = User::find($id);
+                $clients = Clients::where('subscriber_id','=',$subscriber->id)->get();
+                $notes = Client_discussions::where('subscriber_id','=',$subscriber->id)->get();
+                return view("admin.notes",compact('user','page','subscriber','notes','clients'));
+            }
+            else{
+                return back();
+            }
+        }
+        else{
+            return redirect()->route('admin');
+        }
+    }
+
+    public function chat($id=null)
+    {
+        if(!empty($id)){//edit the page.
+            $user = Auth::user();
+            if($user){
+                $page = "communication";
+                $client = Clients::find($id);
+                $messages = Messages::where('client_id','=', $client->id)->orderBy('created_at','desc')->get();
+                return view('admin.chat',compact('user','page','client','messages'));
+            }
+            else{
+                return redirect()->route('login');
+            }
+        }
+        else{//view the page.
+            return back();
+        }
+    }
+
+    public function send_response(Request $request)
+    {
+        $user = Auth::user();
+        if($user){
+            $message = new Messages();
+            $message->admin_id = $request['admin_id'];
+            $message->client_id = $request['client_id'];
+            $message->message = $request['message'];
+            $message->save();
+            echo "Message Sent";
+        }
+        else{
+            return back();
+        }
+    }
+
+    public function view_query($id)
+    {
+        $user = Auth::user();
+        if($user){
+            if($id){
+                $query = Tickets::find($id);
+                $page = "support";
+                return view('admin.view_query',compact('user','page','query'));
+            }
+        }
+        else{
+            return redirect()->route('admin');
+        }
+    }
+
+    public function update_query_status($id)
+    {
+        $user = Auth::user();
+        if($user){
+            if($id){
+                $query = Tickets::find($id);
+                if($query->status == "Open"){
+                    $query->status = "Closed";
+                }
+                else{
+                    $query->status = "Open";
+                }
+                $query->save();
+                return back()->with('status_changed','query status changed.');
+            }
+        }
+        else{
+            return redirect()->route('admin');
+        }
+    }
+
+    public function query_response($id)
+    {
+        $user = Auth::user();
+        if($user){
+            if($id){
+                $query = Tickets::find($id);
+                $page = "support";
+                return view('admin.query_response',compact('user','page','query'));
+            }
+        }
+        else{
+            return redirect()->route('admin');
+        }
+    }
+
+    public function send_query_response(Request $request)
+    {
+        $user = Auth::user();
+        if($user){
+            if($request){
+                $query = Tickets::find($request->id);
+                $query->response = $request['response'];
+                $query->save();
+                return redirect()->route('manage_support')->with('response','Response Sent Successfully.');
+            }
+        }
+        else{
+            return redirect()->route('admin');
+        }
+    }
+
+    public function delete_query($id)
+    {
+        $user = Auth::user();
+        if($user){
+            if($id){
+                $query = Tickets::find($id);
+                $query->delete();
+                return back()->with('query_deleted','Query Delete Successfully');
+            }
+        }
+        else{
+            return redirect()->route('admin');
+        }
+    }
+
+    public function get_job_role(Request $request)
+    {
+        // print_r($request->all());
+        $id = $request['id'];
+        if(isset($request->name)){
+            $subscriber = User::find($id);
+        }
+        else{
+            $client = Clients::find($id);
+            $subscriber = User::find($client->subscriber_id);
+        }
+        if($subscriber->category == "Law Firm"){
+            $client_jobs = Client_jobs::where('category','=',$subscriber->category)->get();
+        }
+        elseif($subscriber->category == "Travel Agency"){
+            $client_jobs = Client_jobs::where('category','=',$subscriber->category)->get();
+        }
+        else{
+            $client_jobs = Client_jobs::where('category','=',$subscriber->category)->where('sub_category','=',$subscriber->sub_category)->get();
+        }
+        if($subscriber->sub_category == "Other"){
+            ?>
+            <option value="">Select Application</option>
+            <option value="<?php echo $subscriber->other_subcategory; ?>"><?php echo $subscriber->other_subcategory; ?></option>
+            <?php
+        }
+        else{
+            ?>
+            <option value="">Select Application</option>
+            <?php
+            foreach($client_jobs as $job){
+                ?>
+                <option value="<?php echo $job->job; ?>"><?php echo $job->job; ?></option>
+                <?php
+            }
+        }
+    }
+
+    public function get_client(Request $request)
+    {
+        // print_r($request->all());
+        $id = $request['id'];
+        $application = Applications::find($id);
+        $client = Clients::find($application->client_id);
+        ?>
+        <option value="<?php echo $client->id; ?>"><?php echo $client->name."(".$client->id.")"; ?></option>
+        <?php
+    }
+
+    public function get_applications(Request $request)
+    {
+        // print_r($request->all());
+        $id = $request['id'];
+        $applications = Applications::where('client_id','=',$id)->where('assign_to','=', null)->get();
+        ?>
+        <option value="">Select Application</option>
+        <?php
+        foreach($applications as $app){
+            ?>
+            <option value="<?php echo $app->application_id; ?>"><?php echo "".$app->application_name." (".$app->application_id.")"; ?></option>
+            <?php
+        }
+    }
+
+    public function get_user(Request $request)
+    {
+        // print_r($request->all());
+        $client = Clients::find($request->id);
+        $users = User::where('added_by','=',$client->subscriber_id)->orwhere('id','=',$client->subscriber_id)->get();
+        ?>
+        <option value="">Select User/Advisor</option>
+        <?php
+        foreach($users as $u){
+            ?>
+            <option value="<?php echo $u->id; ?>"><?php echo $u->name."(".$u->id.")"; ?></option>
+            <?php
+        }
+    }
+
+    public function settings()
+    {
+        $user = Auth::user();
+        if($user){
+            $tzlist = DateTimeZone::listIdentifiers(DateTimeZone::ALL);
+            $page = "settings";
+            $countries = Countries::get();
+            $currencies = Currency::orderBy('currency_code')->get();
+            $inv_setting = Invoice_settings::find($user->id);
+            return view('admin.settings',compact('tzlist','user','page','countries','currencies','inv_setting'));
+        }
+        else{
+            return redirect()->route('admin');
+        }
+    }
+
+    public function invoice_settings(Request $request)
+    {
+        $user = Auth::user();
+        if($user){
+            $setting = Invoice_settings::find($request->id);
+            if($setting){
+                // $setting->name = $request['name'];
+                // $setting->phone = $request['phone'];
+                // $setting->email = $request['email'];
+                // $setting->country = $request['country'];
+                // $setting->state = $request['state'];
+                // $setting->city = $request['city'];
+                // $setting->pincode = $request['pincode'];
+                $setting->tax = $request['tax'];
+                $setting->discount = $request['discount'];
+                // $setting->description = $request['description'];
+                $setting->save();
+                return redirect()->back()->with('setting_saved', "Invoice Settings Saved");
+            }
+            else{
+                return redirect()->back();
+            }
+        }
+        else{
+            return redirect()->route('admin');
+        }
+    }
+
+    public function update_currency(Request $request)
+    {
+        $user = Auth::user();
+        if($user){
+            $user->currency = $request['currency'];
+            $user->save();
+            echo "currency_updated";
+        }
+        else{
+            return redirect()->route('admin');
+        }
+    }
+
+    public function update_timezone(Request $request)
+    {
+        $user = Auth::user();
+        if($user){
+            $user->timezone = $request['timezone'];
+            $user->save();
+            echo "timezone_updated";
+        }
+        else{
+            return redirect()->route('admin');
+        }
+    }
+
+}
+//jkj
+// adminurl:  https://dazzingshadow.com/kanjee/public/admin
+// userid :    admin@kanjee.com
+// password:   123456789
+
+// user url:   https://dazzingshadow.com/kanjee/public/
+// userid:     sanju@gmail.com
+// password:   123456789
