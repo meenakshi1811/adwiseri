@@ -242,7 +242,23 @@
                         <p class="m-0 p-1" style="font-size:18px;font-weight:550;">
                         Reports Settings
                         </p>
+                        <small class="text-muted px-2">A single PDF will be generated for the selected modules and sent on the selected frequency.</small>
                     </div>
+
+                    @if(!empty($reportSetting) && !empty($reportSetting->last_sent_status))
+                        <div class="alert alert-info py-2 px-3 m-2">
+                            <strong>Last Dispatch Status:</strong> {{ ucfirst($reportSetting->last_sent_status) }}
+                            @if(!empty($reportSetting->last_sent_at))
+                                | <strong>Time:</strong> {{ $reportSetting->last_sent_at }}
+                            @endif
+                            @if(!empty($reportSetting->last_sent_message))
+                                <br><strong>Message:</strong> {{ $reportSetting->last_sent_message }}
+                            @endif
+                            @if(!empty($reportSetting->last_file_name))
+                                <br><strong>File:</strong> {{ $reportSetting->last_file_name }}
+                            @endif
+                        </div>
+                    @endif
 
                     <form id="reports-settings-form">
                         @csrf
@@ -250,89 +266,70 @@
                         <!-- Select Modules -->
                         <div class="row p-1 mb-3 align-items-center">
                             <div class="col-6">
-                            <label>Select Module(s)</label>
+                                <label>Select Module(s)</label>
                             </div>
 
-                        <div class="col-6">
-                            <div class="form-check">
-                                <input type="checkbox" name="modules[]" value="clients" class="form-check-input">
-                                <label class="form-check-label">Clients</label>
+                            <div class="col-6">
+                                @php
+                                    $selectedModules = old('modules', !empty($reportSetting) ? (array) $reportSetting->modules : []);
+                                @endphp
+                                @foreach ($reportModules as $moduleKey => $moduleLabel)
+                                    <div class="form-check">
+                                        <input type="checkbox" name="modules[]" value="{{ $moduleKey }}" class="form-check-input"
+                                            {{ in_array($moduleKey, $selectedModules) ? 'checked' : '' }}>
+                                        <label class="form-check-label">{{ $moduleLabel }}</label>
+                                    </div>
+                                @endforeach
                             </div>
-
-                            <div class="form-check">
-                                <input type="checkbox" name="modules[]" value="applications" class="form-check-input">
-                                <label class="form-check-label">Applications</label>
-                            </div>
-
-                            <div class="form-check">
-                                <input type="checkbox" name="modules[]" value="invoices" class="form-check-input">
-                                <label class="form-check-label">Invoices</label>
-                            </div>
-
-                            <div class="form-check">
-                                <input type="checkbox" name="modules[]" value="payments" class="form-check-input">
-                                <label class="form-check-label">Payments</label>
-                            </div>
-
-                            <div class="form-check">
-                                <input type="checkbox" name="modules[]" value="referrals" class="form-check-input">
-                                <label class="form-check-label">Referrals</label>
-                            </div>
-
-                            <div class="form-check">
-                                <input type="checkbox" name="modules[]" value="wallets" class="form-check-input">
-                                <label class="form-check-label">Wallets</label>
-                            </div>
-
                         </div>
-                        </div>
-
 
                         <!-- Frequency -->
                         <div class="row p-1 mb-3 align-items-center">
-                        <div class="col-6">
-                        <label>Select Frequency</label>
-                        </div>
+                            <div class="col-6">
+                                <label>Select Frequency</label>
+                            </div>
 
-                        <div class="col-6">
-                        <select name="frequency" class="form-control form-select">
-                        <option value="daily">Daily</option>
-                        <option value="weekly">Weekly</option>
-                        <option value="monthly">Monthly</option>
-                        <option value="quarterly">Quarterly</option>
-                        </select>
+                            <div class="col-6">
+                                <select name="frequency" class="form-control form-select">
+                                    @php
+                                        $selectedFrequency = old('frequency', !empty($reportSetting) ? $reportSetting->frequency : 'daily');
+                                    @endphp
+                                    <option value="daily" {{ $selectedFrequency == 'daily' ? 'selected' : '' }}>Daily</option>
+                                    <option value="weekly" {{ $selectedFrequency == 'weekly' ? 'selected' : '' }}>Weekly</option>
+                                    <option value="monthly" {{ $selectedFrequency == 'monthly' ? 'selected' : '' }}>Monthly</option>
+                                    <option value="quarterly" {{ $selectedFrequency == 'quarterly' ? 'selected' : '' }}>Quarterly</option>
+                                </select>
+                            </div>
                         </div>
-                        </div>
-
 
                         <!-- Delivery Mode -->
                         <div class="row p-1 mb-3 align-items-center">
-                        <div class="col-6">
-                        <label>Delivery Mode</label>
+                            <div class="col-6">
+                                <label>Delivery Mode</label>
+                            </div>
+
+                            <div class="col-6">
+                                @php
+                                    $selectedDeliveryMode = old('delivery_mode', !empty($reportSetting) ? $reportSetting->delivery_mode : 'attachment');
+                                @endphp
+                                <select name="delivery_mode" class="form-control form-select">
+                                    <option value="attachment" {{ $selectedDeliveryMode == 'attachment' ? 'selected' : '' }}>Reports as PDF in Email Attachment</option>
+                                    <option value="link" {{ $selectedDeliveryMode == 'link' ? 'selected' : '' }}>Links to View / Download Reports</option>
+                                </select>
+                            </div>
                         </div>
-
-                        <div class="col-6">
-
-                        <select name="delivery_mode" class="form-control form-select">
-                        <option value="attachment">Reports as PDF in Email Attachment</option>
-                        <option value="link">Links to View / Download Reports</option>
-                        </select>
-
-                        </div>
-                        </div>
-
 
                         <!-- Send To Emails -->
                         <div class="row p-1 mb-3 align-items-center">
-                        <div class="col-6">
-                        <label>Send To</label>
-                        </div>
+                            <div class="col-6">
+                                <label>Send To</label>
+                            </div>
 
-                        <div class="col-6">
-                        <textarea name="emails" class="form-control"
-                        placeholder="Enter upto 5 emails separated by comma"></textarea>
-                        <small class="text-muted">Example: test1@gmail.com, test2@gmail.com</small>
-                        </div>
+                            <div class="col-6">
+                                <textarea name="emails" class="form-control"
+                                    placeholder="Enter upto 5 emails separated by comma">{{ old('emails', !empty($reportSetting) ? $reportSetting->emails : '') }}</textarea>
+                                <small class="text-muted">Example: test1@gmail.com, test2@gmail.com</small>
+                            </div>
                         </div>
 
 
@@ -491,16 +488,34 @@
                         title:'Success',
                         text: response.message
                     });
+
                     $('#reports-settings-form')[0].reset();
+                    setTimeout(function () {
+                        window.location.reload();
+                    }, 600);
 
                 },
 
-                error:function(){
+                error:function(xhr){
+                    let message = 'Failed to save report settings';
+
+                    if (xhr.responseJSON) {
+                        if (xhr.responseJSON.message) {
+                            message = xhr.responseJSON.message;
+                        }
+
+                        if (xhr.responseJSON.errors) {
+                            const firstErrorKey = Object.keys(xhr.responseJSON.errors)[0];
+                            if (firstErrorKey && xhr.responseJSON.errors[firstErrorKey][0]) {
+                                message = xhr.responseJSON.errors[firstErrorKey][0];
+                            }
+                        }
+                    }
 
                     Swal.fire({
                         icon:'error',
                         title:'Error',
-                        text:'Failed to save report settings'
+                        text: message
                     });
 
                 }

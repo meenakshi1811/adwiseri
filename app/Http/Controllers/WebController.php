@@ -66,7 +66,7 @@ use DataTables;
 /*Newly added models on 2026-03-06 by Meenakshi Nanta*/
 use App\Models\VisaEnquiry;
 use App\Models\ReportSetting;
-use Barryvdh\DomPDF\Facade as PDF;
+use App\Services\ScheduledReportService;
 class WebController extends Controller
 {
     public function add_subscriber_roles()
@@ -5115,8 +5115,23 @@ class WebController extends Controller
             $currencies = Currency::orderBy('currency_code')->get();
             $inv_setting = Invoice_settings::where('user_id',$user->id)->first();
             $clients = Clients::where('subscriber_id', '=', $user->id)->orderBy('created_at', 'desc')->get();
+            $reportSetting = ReportSetting::where('user_id', $user->id)->first();
 
-            return view('web.my_settings', compact('tzlist', 'roles', 'user', 'page', 'currencies', 'inv_setting', 'clients'));
+            $reportModules = [
+                'clients' => 'Clients',
+                'applications' => 'Applications',
+                'invoices' => 'Invoices',
+                'payments' => 'Payments',
+                'referrals' => 'Referrals',
+                'wallets' => 'Wallets',
+            ];
+
+            if (strtolower($user->user_type) === 'admin') {
+                $reportModules['subscribers'] = 'Subscribers';
+                $reportModules['affiliates'] = 'Affiliates';
+            }
+
+            return view('web.my_settings', compact('tzlist', 'roles', 'user', 'page', 'currencies', 'inv_setting', 'clients', 'reportSetting', 'reportModules'));
         } else {
             return redirect()->route('login');
         }
@@ -6206,135 +6221,63 @@ public function showFeedbackPopup()
         ]);
     }
 
-    public function saveReportSettings(Request $request)
+    public function saveReportSettings(Request $request, ScheduledReportService $scheduledReportService)
     {
         try {
+            $user = Auth::user();
+
+            $allowedModules = [
+                'clients',
+                'applications',
+                'invoices',
+                'payments',
+                'referrals',
+                'wallets',
+            ];
+
+            if ($user && strtolower($user->user_type) === 'admin') {
+                $allowedModules[] = 'subscribers';
+                $allowedModules[] = 'affiliates';
+            }
 
             $request->validate([
-                'modules' => 'required',
-                'frequency' => 'required',
-                'delivery_mode' => 'required',
-                'emails' => 'nullable|string'
+                'modules' => 'required|array|min:1',
+                'modules.*' => 'in:'.implode(',', $allowedModules),
+                'frequency' => 'required|in:daily,weekly,monthly,quarterly',
+                'delivery_mode' => 'required|in:attachment,link',
+                'emails' => ['nullable', 'string', 'max:1000', 'regex:/^\s*[^,\s]+@[^,\s]+(\s*,\s*[^,\s]+@[^,\s]+){0,4}\s*$/']
             ]);
 
             $setting = ReportSetting::updateOrCreate(
                 ['user_id' => Auth::id()],
                 [
-                    'modules' => json_encode($request->modules),
+                    'modules' => $request->modules,
                     'frequency' => $request->frequency,
                     'delivery_mode' => $request->delivery_mode,
                     'emails' => $request->emails
                 ]
             );
 
-             /*
-            |--------------------------------------
-            | Get Date Range Based On Frequency
-            |--------------------------------------
-            */
+            $dispatchResult = $scheduledReportService->dispatchForSetting($setting, 'manual');
+            $setting->refresh();
 
-            $today = Carbon::now();
-
-            switch ($setting->frequency) {
-
-                case 'daily':
-                    $startDate = $today->copy()->startOfDay();
-                    $endDate = $today->copy()->endOfDay();
-                    break;
-
-                case 'weekly':
-                    $startDate = $today->copy()->subDays(7)->startOfDay();
-                    $endDate = $today->copy()->endOfDay();
-                    break;
-
-                case 'monthly':
-                    $startDate = $today->copy()->startOfMonth();
-                    $endDate = $today->copy()->endOfDay();
-                    break;
-
-                case 'quarterly':
-                    $startDate = $today->copy()->subMonths(3)->startOfDay();
-                    $endDate = $today->copy()->endOfDay();
-                    break;
-
-                default:
-                    $startDate = $today->copy()->startOfDay();
-                    $endDate = $today->copy()->endOfDay();
-            }
-
-            /*
-            |--------------------------------------
-            | Generate Clients Report (Example)
-            |--------------------------------------
-            */
-
-            if(in_array('clients', $request->modules)){
-
-                $clients = Clients::where('subscriber_id', Auth::id())
-                    ->whereBetween('created_at', [$startDate, $endDate])
-                    ->orderBy('created_at','desc')
-                    ->get();
-                
-                $pdf = PDF::loadView('reports.clients_pdf', compact('clients'));
-                echo $pdf->output();exit();
-                $fileName = 'clients_report_'.time().'.pdf';
-
-                $filePath = storage_path('app/reports/'.$fileName);
-
-                if(!file_exists(storage_path('app/reports'))){
-                    mkdir(storage_path('app/reports'),0755,true);
-                }
-
-                $pdf->save($filePath);
-
-                /*
-                |--------------------------------------
-                | Send Email
-                |--------------------------------------
-                */
-
-                if($setting->emails){
-
-                    $emails = explode(',', $setting->emails);
-
-                    foreach($emails as $email){
-
-                        Mail::send([], [], function ($message) use ($email,$filePath,$fileName,$setting){
-
-                            $message->to(trim($email))
-                            ->subject('Clients Report');
-
-                            if($setting->delivery_mode == 'attachment'){
-
-                                $message->attach($filePath);
-
-                            }else{
-
-                                $downloadLink = url('download-report/'.$fileName);
-
-                                $message->setBody(
-                                    "Download your report here: ".$downloadLink,
-                                    'text/html'
-                                );
-
-                            }
-
-                        });
-
-                    }
-
-                }
-
+            $message = 'Report settings saved successfully! ';
+            if ($dispatchResult['status'] === 'sent') {
+                $message .= 'Report sent immediately.';
+            } elseif ($dispatchResult['status'] === 'skipped') {
+                $message .= $dispatchResult['message'];
+            } else {
+                $message .= $dispatchResult['message'];
             }
 
             return response()->json([
                 'status' => true,
-                'message' => 'Report settings saved successfully!'
+                'message' => $message,
+                'dispatch_status' => $dispatchResult['status'],
+                'data' => $setting
             ]);
 
         } catch (\Exception $e) {
-            echo'<pre>';
-            print_r($e);exit();
             return response()->json([
                 'status' => false,
                 'message' => 'Something went wrong while saving report settings.',
@@ -6342,6 +6285,19 @@ public function showFeedbackPopup()
             ], 500);
 
         }
+    }
+
+
+    public function downloadScheduledReport(Request $request, $file)
+    {
+        $safeFile = basename($file);
+        $filePath = storage_path('app/reports/' . $safeFile);
+
+        if (!file_exists($filePath)) {
+            abort(404);
+        }
+
+        return response()->download($filePath);
     }
 
 }
