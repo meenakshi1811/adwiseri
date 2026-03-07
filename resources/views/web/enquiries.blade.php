@@ -7,6 +7,25 @@
 
 <div class="col-12 d-flex justify-content-between align-items-center mb-3">
 <h3 class="text-primary text-center flex-grow-1 m-0">Enquiries</h3>
+<div class="d-flex gap-2">
+@php
+$encryptedId = encrypt($user->id);
+@endphp
+<a href="{{ route('createLead', $encryptedId) }}" class="btn btn-info btn-sm">Add Enquiry</a>
+</div>
+</div>
+
+<div class="row m-0 pb-2">
+<div class="col-4 border p-1 text-center top_modules" onclick="window.location.href = '{{ route('client') }}';">
+Clients
+</div>
+<div class="col-4 border p-1 text-center top_modules" onclick="window.location.href = '{{ route('subscriber_dependents') }}';">
+Dependants
+</div>
+<div class="col-4 border p-1 text-center bg-info text-white">
+Enquries
+</div>
+
 </div>
 
 @if(count($enquiries) != 0)
