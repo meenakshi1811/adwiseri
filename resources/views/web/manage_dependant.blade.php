@@ -80,11 +80,14 @@
 
         </div>
         <div class="row m-0 pb-2">
-            <div class="col-6 border p-1 text-center  top_modules" onclick="window.location.href = '{{ route('client') }}';">
+            <div class="col-4 border p-1 text-center top_modules" onclick="window.location.href = '{{ route('client') }}';">
                 Clients
             </div>
-            <div class="col-6 border p-1 text-center bg-info text-white">
+            <div class="col-4 border p-1 text-center bg-info text-white">
                 Dependants
+            </div>
+            <div class="col-4 border p-1 text-center top_modules" onclick="window.location.href = '{{ route('enquiries') }}';">
+                Enquries
             </div>
 
         </div>

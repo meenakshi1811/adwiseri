@@ -85,7 +85,7 @@ $support_roles = UserRoles::where('user_id','=',$user->id)->where('module','=','
                     class="btn btn-info btn-sm" 
                     data-bs-toggle="modal" 
                     data-bs-target="#qrModal">
-                    View QR
+                    Add Enquiry
                     </a>
                       <a
                         @if($client_roles->write_only == 1 or $client_roles->read_write_only == 1)
