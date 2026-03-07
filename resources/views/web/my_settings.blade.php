@@ -245,6 +245,21 @@
                         <small class="text-muted px-2">A single PDF will be generated for the selected modules and sent on the selected frequency.</small>
                     </div>
 
+                    @if(!empty($reportSetting) && !empty($reportSetting->last_sent_status))
+                        <div class="alert alert-info py-2 px-3 m-2">
+                            <strong>Last Dispatch Status:</strong> {{ ucfirst($reportSetting->last_sent_status) }}
+                            @if(!empty($reportSetting->last_sent_at))
+                                | <strong>Time:</strong> {{ $reportSetting->last_sent_at }}
+                            @endif
+                            @if(!empty($reportSetting->last_sent_message))
+                                <br><strong>Message:</strong> {{ $reportSetting->last_sent_message }}
+                            @endif
+                            @if(!empty($reportSetting->last_file_name))
+                                <br><strong>File:</strong> {{ $reportSetting->last_file_name }}
+                            @endif
+                        </div>
+                    @endif
+
                     <form id="reports-settings-form">
                         @csrf
 
@@ -473,6 +488,11 @@
                         title:'Success',
                         text: response.message
                     });
+
+                    $('#reports-settings-form')[0].reset();
+                    setTimeout(function () {
+                        window.location.reload();
+                    }, 600);
 
                 },
 

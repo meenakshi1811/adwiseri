@@ -66,6 +66,7 @@ use DataTables;
 /*Newly added models on 2026-03-06 by Meenakshi Nanta*/
 use App\Models\VisaEnquiry;
 use App\Models\ReportSetting;
+use App\Services\ScheduledReportService;
 class WebController extends Controller
 {
     public function add_subscriber_roles()
@@ -6220,7 +6221,7 @@ public function showFeedbackPopup()
         ]);
     }
 
-    public function saveReportSettings(Request $request)
+    public function saveReportSettings(Request $request, ScheduledReportService $scheduledReportService)
     {
         try {
             $user = Auth::user();
@@ -6257,9 +6258,22 @@ public function showFeedbackPopup()
                 ]
             );
 
+            $dispatchResult = $scheduledReportService->dispatchForSetting($setting, 'manual');
+            $setting->refresh();
+
+            $message = 'Report settings saved successfully! ';
+            if ($dispatchResult['status'] === 'sent') {
+                $message .= 'Report sent immediately.';
+            } elseif ($dispatchResult['status'] === 'skipped') {
+                $message .= $dispatchResult['message'];
+            } else {
+                $message .= $dispatchResult['message'];
+            }
+
             return response()->json([
                 'status' => true,
-                'message' => 'Report settings saved successfully! Scheduled report emails will be sent as per selected frequency.',
+                'message' => $message,
+                'dispatch_status' => $dispatchResult['status'],
                 'data' => $setting
             ]);
 
