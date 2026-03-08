@@ -11,6 +11,7 @@ use App\Models\Referrals;
 use App\Models\ReportDispatchLog;
 use App\Models\ReportSetting;
 use App\Models\Used_referrals;
+use App\Mail\ScheduledReportMail;
 use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
@@ -70,18 +71,18 @@ class ScheduledReportService
         $downloadLink = URL::temporarySignedRoute('scheduled_report_download', now()->addDays(7), ['file' => $fileName]);
 
         try {
-            foreach ($recipients as $recipient) {
-                Mail::send([], [], function ($message) use ($recipient, $setting, $filePath, $downloadLink, $startDate, $endDate) {
-                    $message->to($recipient)
-                        ->subject('Adwiseri Scheduled Report (' . $startDate->format('d M Y') . ' - ' . $endDate->format('d M Y') . ')');
+            $subject = 'Adwiseri Scheduled Report (' . $startDate->format('d M Y') . ' - ' . $endDate->format('d M Y') . ')';
 
-                    if ($setting->delivery_mode === 'attachment') {
-                        $message->attach($filePath);
-                        $message->setBody('Please find your scheduled report attached.', 'text/html');
-                    } else {
-                        $message->setBody('Your scheduled report is ready. Download here: <a href="' . $downloadLink . '">' . $downloadLink . '</a>', 'text/html');
-                    }
-                });
+            foreach ($recipients as $recipient) {
+                $mailData = [
+                    'subject' => $subject,
+                    'recipient_name' => $user->name ?? 'User',
+                    'start_date' => $startDate->format('d M Y'),
+                    'end_date' => $endDate->format('d M Y'),
+                    'download_link' => $downloadLink,
+                ];
+
+                Mail::to($recipient)->send(new ScheduledReportMail($mailData, $filePath, $fileName));
             }
 
             $log = ReportDispatchLog::create([
