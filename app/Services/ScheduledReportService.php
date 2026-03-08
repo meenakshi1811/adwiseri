@@ -12,7 +12,7 @@ use App\Models\ReportDispatchLog;
 use App\Models\ReportSetting;
 use App\Models\Used_referrals;
 use App\Models\User;
-use Barryvdh\DomPDF\Facade as PDF;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\URL;
@@ -61,7 +61,9 @@ class ScheduledReportService
             'endDate' => $endDate,
             'frequency' => $setting->frequency,
             'generatedFor' => $user,
-        ]);
+        ])->setPaper('a4', 'portrait')
+        ->setOption('isHtml5ParserEnabled', true)
+        ->setOption('isPhpEnabled', true);
         $pdf->save($filePath);
 
         $recipients = $this->extractRecipients($setting->emails, $user->email);

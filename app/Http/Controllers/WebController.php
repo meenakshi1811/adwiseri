@@ -6281,7 +6281,7 @@ public function showFeedbackPopup()
             return response()->json([
                 'status' => false,
                 'message' => 'Something went wrong while saving report settings.',
-                'error' => $e->getMessage()
+                'error' => $e
             ], 500);
 
         }
