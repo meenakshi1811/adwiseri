@@ -25,7 +25,7 @@
 <body style="background: #F5F5F5;margin:0px;">
     <div style="text-align: center;">
   <a class="navbar-brand text-white" href="https://adwiseri.com/">
-    <img width="170" src="https://adwiseri.com/web_assets/images/Style2_blue.png" />
+    <img width="170" src="{{ url('web_assets/images/Style2_blue.png') }}" />
   </a>
 </div>
 
