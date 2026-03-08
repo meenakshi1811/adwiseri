@@ -290,7 +290,7 @@ class PaymentController extends Controller
         $activity->activity_icon = "invoice.jpg";
         $activity->local_time = $request->local_time;
         $activity->save();
-        return redirect()->route('my_payments')->with('payments_received', 'AR(Payments Received) Record Created Successfully..');
+        return redirect()->route('my_payments')->with('payments_received', 'AR (Payments Received) record created successfully.');
     }
 // NEED TO FIX ENTRY FORM FOR PAYMENT _AP TYPE BECAUSE IT DOES NOT HAVE CLIENT 
     public function  advance_payment(Request $request){
@@ -316,7 +316,7 @@ class PaymentController extends Controller
         $activity->activity_icon = "invoice.jpg";
         $activity->local_time = $request->local_time;
         $activity->save();
-        return redirect()->route('payment_made')->with('advance_payment', 'AP(Payments Made) Record Created Successfully.');
+        return redirect()->route('payment_made')->with('advance_payment', 'AP (Payments Made) record created successfully.');
     }
     public function subscriberPayments()
     {

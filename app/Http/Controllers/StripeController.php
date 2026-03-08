@@ -193,7 +193,7 @@ class StripeController extends Controller
         $activity->save();
         Mail::to($user->email)->send(new PlanSubscriptionMail( $user->name,  $plan['membership'], $plan['validity'],'Your Subscription Plan Has Been Updated'));
         session()->forget('pay_data');
-        return redirect()->route('user_membership')->with('payment_success','Payment Done Successfully.');
+        return redirect()->route('user_membership')->with('payment_success','Payment completed successfully.');
 
         // return back();
     }

@@ -43,12 +43,12 @@
                     <p><strong>Dear {{ $name }},</strong></p>
                     <p>
                         <!-- We are excited to inform you about a new offer tailored just for you: -->
-                            We are excited to inform you that you have been rewarded with credits / discounts / extra term on your subscription account, details of which is as mentioned below:
+                            We are excited to inform you that you have been rewarded with credits, discounts, or additional term benefits on your subscription account. The details are as follows:
                     </p>
                         <p>Transaction Type: {{ $type }}</p>
                         <p>Offer / Credit / Discount Value:
                             @if ($type == 'double_term')
-                                1 year expired date is added
+                                One additional year has been added to the expiry date
                             @else
                                 {{ $value }} ({{ $type == 'cashback' ? '%' : 'USD' }})
                             @endif

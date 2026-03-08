@@ -355,7 +355,7 @@ class WebController extends Controller
             echo 'Sorry! Please try again latter';
         } else {
             echo 'Success';
-            return back()->with('submitted', 'demo request submitted');
+            return back()->with('submitted', 'Demo request submitted successfully.');
         }
     }
 
@@ -376,7 +376,7 @@ class WebController extends Controller
             echo "Success";
         }
 
-        return redirect()->route('/')->with('subscribed', 'email subscription submitted.');
+        return redirect()->route('/')->with('subscribed', 'Email subscription submitted successfully.');
     }
 
     public function emailtemplate()
@@ -394,7 +394,7 @@ class WebController extends Controller
             if ($user->status != "true") {
                 Auth::logout();
                 Session::flush();
-                return redirect()->route('login')->with('deactivated', "Account is deactivated");
+                return redirect()->route('login')->with('deactivated', "Your account is deactivated.");
             }
             $this->set_timezone();
             if ($user->organization != "") {
@@ -1047,14 +1047,14 @@ class WebController extends Controller
         if ($user->user_type == "Subscriber") {
             $roles = UserRoles::where('user_id', '=', $user->id)->first();
             if ($user->user_type != "admin" && (new DateTime($user->membership_expiry_date)) < (new DateTime("now"))) {
-                return redirect()->route('membership')->with('membership_expiry', 'membership expired');
+                return redirect()->route('membership')->with('membership_expiry', 'Membership has expired.');
             }
             $clients = Clients::where('subscriber_id', '=', $user->id)->orderBy('created_at', 'desc')->get();
         } else {
             $subscriber = User::find($user->added_by);
             $roles = UserRoles::where('user_id', '=', $user->id)->first();
             if ((new DateTime($subscriber->membership_expiry_date)) < (new DateTime("now"))) {
-                return redirect()->route('membership')->with('membership_expiry', 'membership expired');
+                return redirect()->route('membership')->with('membership_expiry', 'Membership has expired.');
             }
             $clients = Clients::where('user_id', '=', $user->id)->orderBy('created_at', 'desc')->get();
         }
@@ -1083,7 +1083,7 @@ class WebController extends Controller
         $page = "users";
 
         if ($user->user_type != 'admin' && $user->user_type != "admin" && (new DateTime($user->membership_expiry_date)) < (new DateTime("now"))) {
-            return redirect()->route('membership')->with('membership_expiry', 'membership expired');
+            return redirect()->route('membership')->with('membership_expiry', 'Membership has expired.');
         } else {
             if (request()->ajax()) {
                 $startDate = Carbon::parse(request()->startdate)->startOfDay();
@@ -1411,7 +1411,7 @@ class WebController extends Controller
         $activity->activity_icon = "user.png";
         $activity->local_time = $request->local_time;
         $activity->save();
-        return redirect()->route('users')->with('user_added', "user added successfully");
+        return redirect()->route('users')->with('user_added', "User added successfully.");
     }
 
     public function add_new_client(request $request)
@@ -1512,7 +1512,7 @@ class WebController extends Controller
         // $activity->activity_icon = "user.png";
         // $activity->local_time = $request->local_time;
         // $activity->save();
-        return redirect()->route('client')->with('client_added', "client added successfully");
+        return redirect()->route('client')->with('client_added', "Client added successfully.");
     }
 
     public function update_user(request $request)
@@ -1874,9 +1874,9 @@ class WebController extends Controller
             $activity->save();
             Auth::logout();
             Session::flush();
-            return redirect()->route('login')->with('password_changed', 'password changed');
+            return redirect()->route('login')->with('password_changed', 'Password changed successfully.');
         } else {
-            return back()->with('wrong_password', 'old password is wrong.');
+            return back()->with('wrong_password', 'The old password is incorrect.');
         }
     }
     public function change_password_affiliate(Request $request)
@@ -1903,9 +1903,9 @@ class WebController extends Controller
             $activity->save();
             Auth::logout();
             Session::flush();
-            return redirect()->route('Affiliates.create')->with('password_changed', 'password changed');
+            return redirect()->route('Affiliates.create')->with('password_changed', 'Password changed successfully.');
         } else {
-            return back()->with('wrong_password', 'old password is wrong.');
+            return back()->with('wrong_password', 'The old password is incorrect.');
         }
     }
 
@@ -6052,7 +6052,7 @@ public function showFeedbackPopup()
         $user = $this->check_login();
 
         if ($user->user_type != "admin" && (new DateTime($user->membership_expiry_date)) < (new DateTime("now"))) {
-            return redirect()->route('membership')->with('membership_expiry', 'membership expired');
+            return redirect()->route('membership')->with('membership_expiry', 'Membership has expired.');
         }
 
         $this->set_timezone();
@@ -6068,7 +6068,7 @@ public function showFeedbackPopup()
             $subscriber = User::find($user->added_by);
 
             if ((new DateTime($subscriber->membership_expiry_date)) < (new DateTime("now"))) {
-                return redirect()->route('membership')->with('membership_expiry', 'membership expired');
+                return redirect()->route('membership')->with('membership_expiry', 'Membership has expired.');
             }
 
             $enquiries = VisaEnquiry::where('subscriber_id',$subscriber->id)

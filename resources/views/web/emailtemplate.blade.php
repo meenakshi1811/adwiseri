@@ -5,7 +5,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <title>adwisery</title>
+    <title>adwiseri</title>
     <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
     <style>
@@ -54,12 +54,12 @@
                     @elseif(isset($data->how_did_hear))
                     <p><strong>Hello,</strong></p>
                     <p>
-                        Demo Request from adwiseri.com
+                        A demo request was submitted on adwiseri.com.
                     </p>
                     @else
                     <p><strong>Hello {{ $data->name }}</strong></p>
                     <p>
-                        Thanks for Joining. We're really excited to have you on board.<br>
+                        Thanks for joining. We're really excited to have you on board.<br>
                         Your Email Verification OTP is {{ $data->otp }}.
                     </p>
                     @endif
