@@ -87,6 +87,7 @@ Route::get('/visa-enquiries/view/{id}', [App\Http\Controllers\WebController::cla
 Route::get('/visa-enquiries/edit/{id}', [App\Http\Controllers\WebController::class, 'editEnquiry'])->name('visa_enquiries.edit')->middleware(['auth','check.device']);
 Route::post('/visa-enquiries/update/{id}', [App\Http\Controllers\WebController::class, 'updateEnquiry'])->name('visa_enquiries.update')->middleware(['auth','check.device']);
 Route::post('/save-appointment',[App\Http\Controllers\WebController::class,'storeAppointment'])->name('save_appointment');
+Route::get('/appointment/{appointment}/{action}', [App\Http\Controllers\WebController::class, 'respondToAppointment'])->name('appointment.respond')->middleware('signed');
 Route::post('/save-report-settings',[App\Http\Controllers\WebController::class,'saveReportSettings'])->name('save_report_settings');
 Route::get('/scheduled-report-download/{file}', [App\Http\Controllers\WebController::class, 'downloadScheduledReport'])->name('scheduled_report_download')->middleware('signed');
 

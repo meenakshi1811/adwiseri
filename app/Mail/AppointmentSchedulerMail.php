@@ -19,7 +19,7 @@ class AppointmentSchedulerMail extends Mailable
 
     public function build()
     {
-        return $this->subject('Your Appointment Scheduling Link - Adwiseri')
+        return $this->subject('Appointment Invitation - Respond Required')
             ->view('web.appointment_scheduler_mail')
             ->with([
                 'appointment' => $this->appointment,
