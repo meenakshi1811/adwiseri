@@ -71,15 +71,18 @@ class ScheduledReportService
 
         try {
             foreach ($recipients as $recipient) {
-                Mail::send([], [], function ($message) use ($recipient, $setting, $filePath, $downloadLink, $startDate, $endDate) {
+                Mail::send('web.scheduled_report_mail', [
+                    'recipientName' => $user->name ?? 'Subscriber',
+                    'startDate' => $startDate,
+                    'endDate' => $endDate,
+                    'deliveryMode' => $setting->delivery_mode,
+                    'downloadLink' => $downloadLink,
+                ], function ($message) use ($recipient, $setting, $filePath, $startDate, $endDate) {
                     $message->to($recipient)
                         ->subject('Adwiseri Scheduled Report (' . $startDate->format('d M Y') . ' - ' . $endDate->format('d M Y') . ')');
 
                     if ($setting->delivery_mode === 'attachment') {
                         $message->attach($filePath);
-                        $message->setBody('Please find your scheduled report attached.', 'text/html');
-                    } else {
-                        $message->setBody('Your scheduled report is ready. Download here: <a href="' . $downloadLink . '">' . $downloadLink . '</a>', 'text/html');
                     }
                 });
             }
