@@ -6281,6 +6281,99 @@ public function showFeedbackPopup()
         ];
     }
 
+    private function createCalendlySchedulingLinkForAppointment(Appointment $appointment, ?string $clientEmail, User $sender): array
+    {
+        $expiresAt = Carbon::parse($appointment->appointment_date.' '.$appointment->appointment_time, config('app.timezone'))
+            ->addDay();
+
+        $routeParams = ['appointment' => $appointment->id];
+        if (!empty($clientEmail)) {
+            $routeParams['email'] = $clientEmail;
+        }
+
+        $baseUrl = rtrim(config('services.calendly.base_url', 'https://api.calendly.com'), '/');
+        $startDateTime = Carbon::parse($appointment->appointment_date.' '.$appointment->appointment_time, $sender->timezone ?? config('app.timezone'));
+        $headers = [
+            'Authorization' => 'Bearer '.$token,
+            'Content-Type' => 'application/json',
+        ];
+    }
+
+        try {
+            $meResponse = Http::withHeaders($headers)->get($baseUrl.'/users/me');
+            if (!$meResponse->successful()) {
+                return [
+                    'success' => false,
+                    'message' => 'Unable to connect with Calendly. Please verify your Calendly token.',
+                ];
+            }
+
+            $ownerUri = $meResponse->json('resource.uri');
+            if (!$ownerUri) {
+                return [
+                    'success' => false,
+                    'message' => 'Calendly user details are incomplete. Please reconnect Calendly.',
+                ];
+            }
+
+            $eventPayload = [
+                'name' => substr('Confirmed Appointment with '.$sender->name, 0, 55),
+                'host' => $ownerUri,
+                'duration' => 30,
+                'timezone' => $sender->timezone ?? config('app.timezone'),
+                'date_setting' => [
+                    'type' => 'date_range',
+                    'start_date' => $startDateTime->toDateString(),
+                    'end_date' => $startDateTime->toDateString(),
+                ],
+                'location' => [
+                    'kind' => 'zoom_conference',
+                ],
+            ];
+
+            $oneOffResponse = Http::withHeaders($headers)->post($baseUrl.'/one_off_event_types', $eventPayload);
+            if (!$oneOffResponse->successful()) {
+                Log::error('Calendly one_off_event_types failed on appointment acceptance', ['response' => $oneOffResponse->json()]);
+                return [
+                    'success' => false,
+                    'message' => 'Unable to create a Calendly confirmation link right now.',
+                ];
+            }
+
+            $eventTypeUri = $oneOffResponse->json('resource.uri');
+            $linkPayload = [
+                'owner' => $eventTypeUri,
+                'owner_type' => 'EventType',
+                'max_event_count' => 1,
+            ];
+
+        if ($appointment->status === 'completed') {
+            return response('<h3>This appointment is already marked as completed.</h3>');
+        }
+
+            $schedulingLinkResponse = Http::withHeaders($headers)->post($baseUrl.'/scheduling_links', $linkPayload);
+            if (!$schedulingLinkResponse->successful()) {
+                Log::error('Calendly scheduling_links failed on appointment acceptance', ['response' => $schedulingLinkResponse->json()]);
+                return [
+                    'success' => false,
+                    'message' => 'Unable to generate a Calendly confirmation link right now.',
+                ];
+            }
+
+            return [
+                'success' => true,
+                'booking_url' => $schedulingLinkResponse->json('resource.booking_url'),
+                'event_type_uri' => $eventTypeUri,
+            ];
+        } catch (\Throwable $e) {
+            Log::error('Calendly appointment acceptance error', ['error' => $e->getMessage()]);
+            return [
+                'success' => false,
+                'message' => 'Unable to prepare Calendly confirmation at the moment.',
+            ];
+        }
+    }
+
     public function respondToAppointment(Request $request, Appointment $appointment, string $action)
     {
         if (!in_array($action, ['accept', 'decline'])) {
@@ -6288,25 +6381,54 @@ public function showFeedbackPopup()
         }
 
         if ($appointment->status === 'completed') {
-            return response('<h3>This appointment is already marked as completed.</h3>');
+            return view('web.appointment_response', [
+                'title' => 'Appointment Already Completed',
+                'subtitle' => 'This appointment is already marked as completed.',
+                'status' => 'neutral',
+                'calendlyUrl' => null,
+            ]);
         }
 
+        $client = Clients::find($appointment->client_id);
         $email = $request->query('email');
-        if (!empty($email) && strcasecmp($appointment->client?->email ?? '', $email) !== 0) {
+        if (!empty($email) && strcasecmp($client?->email ?? '', $email) !== 0) {
             abort(403);
         }
 
         if ($action === 'accept') {
             $appointment->status = 'accepted';
-            $message = 'Thank you. The appointment has been accepted.';
-        } else {
-            $appointment->status = 'canceled';
-            $message = 'The appointment has been declined.';
+            $appointment->save();
+
+            $sender = User::find($appointment->user_id);
+            $calendlyUrl = null;
+
+            if ($sender) {
+                $calendly = $this->createCalendlySchedulingLinkForAppointment($appointment, $client?->email, $sender);
+                if ($calendly['success']) {
+                    $appointment->calendly_link = $calendly['booking_url'];
+                    $appointment->calendly_event_uri = $calendly['event_type_uri'];
+                    $appointment->save();
+                    $calendlyUrl = $calendly['booking_url'];
+                }
+            }
+
+            return view('web.appointment_response', [
+                'title' => 'Thank You! Appointment Accepted',
+                'subtitle' => 'Your response has been recorded successfully.',
+                'status' => 'accepted',
+                'calendlyUrl' => $calendlyUrl,
+            ]);
         }
 
+        $appointment->status = 'canceled';
         $appointment->save();
 
-        return response('<h3>'.$message.'</h3>');
+        return view('web.appointment_response', [
+            'title' => 'Appointment Declined',
+            'subtitle' => 'You have declined this appointment. The sender has been updated.',
+            'status' => 'declined',
+            'calendlyUrl' => null,
+        ]);
     }
 
     private function sendAppointmentSms(string $phone, string $clientName, string $senderName, string $acceptLink, string $declineLink, ?string $remarks, string $appointmentDate, string $appointmentTime, string $timezone): array
