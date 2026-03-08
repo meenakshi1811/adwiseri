@@ -42,16 +42,16 @@
             </div>
             <div style="padding: 0px 30px;">
                 <div style="margin-bottom:40px;">
-                    <h2>Congratulations !<br>You have successfully purchased the subscription</h2>
+                    <h2>Congratulations!<br>You have successfully purchased the subscription</h2>
                     <p><strong>Hello {{ $data->name }},</strong></p>
                     <p>
                         Your registration at <strong>adwiseri</strong> is successful. Enjoy the benefits and services.<br>
                         @if(isset($data->subscription))
-                        You have succssfully purchased the subscription. The subscription details are as follows:<br><br>
+                        You have successfully purchased the subscription. The subscription details are as follows:<br><br>
                         Plan Name : {{$data->plan_name}}<br>
                         Duration : {{$data->duration}} Years<br>
                         Paid Amount : ${{$data->amount}}<br><br>
-                        View invoice <a href="{{route('invoice_preview', $data->invoice_id .'/'. $data->token)}}">click here</a>
+                        View invoice: <a href="{{route('invoice_preview', $data->invoice_id .'/'. $data->token)}}">Click here</a>
                         @else
                         Your <strong>Free Plan</strong> is activated successfully. The plan details are as follows:<br><br>
                         Plan Name : {{$data->plan_name}}<br>

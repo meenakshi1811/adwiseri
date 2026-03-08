@@ -41,7 +41,7 @@
                     <p><strong>Hello {{$data->name}}</strong></p>
                     <p>
                         Adwiseri monthly reports for Applications and Invoices are generated.<br>
-                        Download the reports through given links.<br>
+                        Download the reports using the links below.<br>
                         @if(isset($data->invoice))
                         <a href="{{ asset('public/Exports/User'.$data->id.'/'.$data->invoice) }}" download="Invoice_Report" >Download </a>Invoice Report.<br>
                         @endif

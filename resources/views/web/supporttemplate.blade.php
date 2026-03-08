@@ -5,7 +5,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <title>adwisery</title>
+    <title>adwiseri</title>
     <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
 
 
@@ -35,10 +35,10 @@
                 <div style="margin-bottom:40px;">
                     <p><strong>Hello</strong></p>
                     <p>
-                        New support ticket raised at adwiseri.
+                        A new support ticket has been raised on Adwiseri.
                     </p>
                     <p>
-                        Ticket details are as follows:
+                        The ticket details are as follows:
                     </p>
                     <p>Ticket ID : {{$data->ticket_id}}</p>
                     <p>Subscriber ID : {{$data->subscriber_id}}</p>

@@ -219,7 +219,7 @@ class AdminStaffController extends Controller
         $activity->activity_icon = "user.png";
         $activity->local_time = $request->local_time;
         $activity->save();
-        return redirect()->route('admin_staff')->with('admin_staff_added', "staff added successfully");
+        return redirect()->route('admin_staff')->with('admin_staff_added', "Staff added successfully.");
 
     }
     public function assign_supports(Request $request){
