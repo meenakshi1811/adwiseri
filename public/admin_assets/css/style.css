@@ -1,8 +1,31 @@
+:root {
+    --adwiseri-font-family: 'Lato', 'Source Sans Pro', Arial, sans-serif;
+}
+
 body {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: 'Source Sans Pro';
+    font-family: var(--adwiseri-font-family);
+}
+
+input,
+button,
+select,
+textarea,
+.btn {
+    font-family: var(--adwiseri-font-family) !important;
+}
+
+a.btn,
+button.btn,
+input.btn,
+input[type="submit"].btn,
+input[type="button"].btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    vertical-align: middle;
 }
 
 /*---- Navbar CSS ---*/
