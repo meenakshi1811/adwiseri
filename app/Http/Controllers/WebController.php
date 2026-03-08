@@ -6281,26 +6281,37 @@ public function showFeedbackPopup()
         ];
     }
 
-    private function createCalendlySchedulingLinkForAppointment(Appointment $appointment, ?string $clientEmail, User $sender): array
-    {
-        $expiresAt = Carbon::parse($appointment->appointment_date.' '.$appointment->appointment_time, config('app.timezone'))
-            ->addDay();
+    private function createCalendlySchedulingLinkForAppointment(
+        Appointment $appointment,
+        ?string $clientEmail,
+        User $sender
+    ): array {
+        // ✅ Guard: check status first, before any API calls
+        if ($appointment->status === 'completed') {
+            return ['success' => false, 'message' => 'Appointment already completed.'];
+        }
 
-        $routeParams = ['appointment' => $appointment->id];
-        if (!empty($clientEmail)) {
-            $routeParams['email'] = $clientEmail;
+        // ✅ Define $token before using it
+        $token = config('services.calendly.pat');
+        if (empty($token)) {
+            return ['success' => false, 'message' => 'Calendly PAT not configured.'];
         }
 
         $baseUrl = rtrim(config('services.calendly.base_url', 'https://api.calendly.com'), '/');
-        $startDateTime = Carbon::parse($appointment->appointment_date.' '.$appointment->appointment_time, $sender->timezone ?? config('app.timezone'));
-        $headers = [
-            'Authorization' => 'Bearer '.$token,
-            'Content-Type' => 'application/json',
-        ];
-    }
 
+        $startDateTime = Carbon::parse(
+            $appointment->appointment_date . ' ' . $appointment->appointment_time,
+            $sender->timezone ?? config('app.timezone')
+        );
+
+        $headers = [
+            'Authorization' => 'Bearer ' . $token,
+            'Content-Type'  => 'application/json',
+        ];
+
+        // ✅ try block is now correctly INSIDE the function
         try {
-            $meResponse = Http::withHeaders($headers)->get($baseUrl.'/users/me');
+            $meResponse = Http::withHeaders($headers)->get($baseUrl . '/users/me');
             if (!$meResponse->successful()) {
                 return [
                     'success' => false,
@@ -6317,23 +6328,25 @@ public function showFeedbackPopup()
             }
 
             $eventPayload = [
-                'name' => substr('Confirmed Appointment with '.$sender->name, 0, 55),
-                'host' => $ownerUri,
+                'name'     => substr('Confirmed Appointment with ' . $sender->name, 0, 55),
+                'host'     => $ownerUri,
                 'duration' => 30,
                 'timezone' => $sender->timezone ?? config('app.timezone'),
                 'date_setting' => [
-                    'type' => 'date_range',
+                    'type'       => 'date_range',
                     'start_date' => $startDateTime->toDateString(),
-                    'end_date' => $startDateTime->toDateString(),
+                    'end_date'   => $startDateTime->toDateString(),
                 ],
-                'location' => [
-                    'kind' => 'zoom_conference',
-                ],
+                'location' => ['kind' => 'zoom_conference'],
             ];
 
-            $oneOffResponse = Http::withHeaders($headers)->post($baseUrl.'/one_off_event_types', $eventPayload);
+            $oneOffResponse = Http::withHeaders($headers)
+                ->post($baseUrl . '/one_off_event_types', $eventPayload);
+
             if (!$oneOffResponse->successful()) {
-                Log::error('Calendly one_off_event_types failed on appointment acceptance', ['response' => $oneOffResponse->json()]);
+                Log::error('Calendly one_off_event_types failed', [
+                    'response' => $oneOffResponse->json(),
+                ]);
                 return [
                     'success' => false,
                     'message' => 'Unable to create a Calendly confirmation link right now.',
@@ -6341,19 +6354,24 @@ public function showFeedbackPopup()
             }
 
             $eventTypeUri = $oneOffResponse->json('resource.uri');
+
             $linkPayload = [
-                'owner' => $eventTypeUri,
-                'owner_type' => 'EventType',
+                'owner'           => $eventTypeUri,
+                'owner_type'      => 'EventType',
                 'max_event_count' => 1,
             ];
 
-        if ($appointment->status === 'completed') {
-            return response('<h3>This appointment is already marked as completed.</h3>');
-        }
+            if (!empty($clientEmail)) {
+                $linkPayload['invitee_email'] = $clientEmail;
+            }
 
-            $schedulingLinkResponse = Http::withHeaders($headers)->post($baseUrl.'/scheduling_links', $linkPayload);
+            $schedulingLinkResponse = Http::withHeaders($headers)
+                ->post($baseUrl . '/scheduling_links', $linkPayload);
+
             if (!$schedulingLinkResponse->successful()) {
-                Log::error('Calendly scheduling_links failed on appointment acceptance', ['response' => $schedulingLinkResponse->json()]);
+                Log::error('Calendly scheduling_links failed', [
+                    'response' => $schedulingLinkResponse->json(),
+                ]);
                 return [
                     'success' => false,
                     'message' => 'Unable to generate a Calendly confirmation link right now.',
@@ -6361,10 +6379,11 @@ public function showFeedbackPopup()
             }
 
             return [
-                'success' => true,
-                'booking_url' => $schedulingLinkResponse->json('resource.booking_url'),
+                'success'        => true,
+                'booking_url'    => $schedulingLinkResponse->json('resource.booking_url'),
                 'event_type_uri' => $eventTypeUri,
             ];
+
         } catch (\Throwable $e) {
             Log::error('Calendly appointment acceptance error', ['error' => $e->getMessage()]);
             return [
