@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Appointment Scheduling</title>
+    <style>
+        body { background:#F5F5F5; font-family: 'Lato', Arial, sans-serif; margin:0; }
+    </style>
+</head>
+<body>
+<div style="text-align:center;margin-top:20px;">
+    <a href="{{ url('/') }}">
+        <img width="170" src="{{ url('web_assets/images/Style2_blue.png') }}" alt="Adwiseri" />
+    </a>
+</div>
+
+<div style="margin:30px 0;">
+    <div style="border-radius:10px;width:55%;background:white;padding:30px;position:relative;margin:auto;">
+        <h2 style="text-align:center;margin-top:0;">Appointment Invitation</h2>
+
+        <p>Dear {{ $client->name }},</p>
+
+        <p>
+            {{ $sender->name }} has invited you to schedule an appointment through Calendly.
+            Please use the secure link below to choose a convenient slot.
+        </p>
+
+        <p style="margin:25px 0;">
+            <a href="{{ $appointment->calendly_link }}" style="background:#695EEE;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;">
+                Schedule Appointment
+            </a>
+        </p>
+
+        @if(!empty($appointment->remarks))
+            <p><strong>Meeting purpose:</strong> {{ $appointment->remarks }}</p>
+        @endif
+
+        <p>
+            Once your booking is confirmed (or if it is cancelled), Calendly will send confirmation and reminder
+            updates to both you and {{ $sender->name }}.
+        </p>
+
+        <p>
+            Best regards,<br>
+            <strong>The Adwiseri Team</strong>
+        </p>
+    </div>
+</div>
+
+<footer style="text-align:center;background:#695EEE;padding:20px 0;color:white;">
+    <p>&copy; {{ date('Y') }} adwiseri. All rights reserved.</p>
+</footer>
+</body>
+</html>

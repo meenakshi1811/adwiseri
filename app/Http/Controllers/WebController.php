@@ -7,11 +7,13 @@ use Auth;
 use Hash;
 use App;
 use Mail;
+use Log;
 use Session;
 use Cookie;
 use Validator;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 use DateTime;
 use DateTimeZone;
 
@@ -20,6 +22,7 @@ use App\Mail\Invoicemail;
 use App\Mail\SupportMail;
 use App\Mail\WelcomeMail;
 use App\Mail\SubscriptionMail;
+use App\Mail\AppointmentSchedulerMail;
 
 use App\Models\User;
 use App\Models\Clients;
@@ -58,6 +61,7 @@ use App\Models\Affiliates;
 use App\Models\Feedbacks;
 use App\Models\PaymentARs;
 use App\Models\Offers;
+use App\Models\Appointment;
 
 use App\Exports\UsersExport;
 use App\Exports\ClientsExport;
@@ -6197,6 +6201,8 @@ public function showFeedbackPopup()
     {
         $request->validate([
             'client_id' => 'required|exists:clients,id',
+            'client_email' => 'nullable|email',
+            'client_phone' => 'nullable|string|max:20',
             'appointment_date' => 'required|date',
             'appointment_time' => 'required',
             'remarks' => 'nullable|string|max:500',
@@ -6204,8 +6210,35 @@ public function showFeedbackPopup()
         ]);
 
         $user = Auth::user();
+        $client = Clients::findOrFail($request->client_id);
 
-        $appointment = new Appointments();
+        $clientEmail = $request->filled('client_email') ? $request->client_email : $client->email;
+        $clientPhone = $request->filled('client_phone') ? $request->client_phone : $client->phone;
+
+        if (in_array($request->send_via, ['email', 'both']) && empty($clientEmail)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Client email is required for email notifications.'
+            ], 422);
+        }
+
+        if (in_array($request->send_via, ['sms', 'both']) && empty($clientPhone)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Client phone number is required for SMS notifications.'
+            ], 422);
+        }
+
+        $calendly = $this->createCalendlySchedulingLink($request, $clientEmail, $user);
+
+        if (!$calendly['success']) {
+            return response()->json([
+                'success' => false,
+                'message' => $calendly['message'],
+            ], 422);
+        }
+
+        $appointment = new Appointment();
         $appointment->client_id = $request->client_id;
         $appointment->subscriber_id = empty($user->added_by) ? $user->id : $user->added_by;
         $appointment->user_id = Auth::id();
@@ -6213,12 +6246,192 @@ public function showFeedbackPopup()
         $appointment->appointment_time = $request->appointment_time;
         $appointment->remarks = $request->remarks;
         $appointment->send_via = $request->send_via;
+        $appointment->calendly_link = $calendly['scheduling_url'];
+        $appointment->calendly_event_uri = $calendly['event_type_uri'];
         $appointment->save();
+
+        if (in_array($request->send_via, ['email', 'both'])) {
+            Mail::to($clientEmail)->send(new AppointmentSchedulerMail($appointment, $client, $user));
+        }
+
+        $smsStatus = ['sent' => false, 'message' => null];
+        if (in_array($request->send_via, ['sms', 'both'])) {
+            $smsStatus = $this->sendAppointmentSms($clientPhone, $client->name, $user->name, $appointment->calendly_link, $request->remarks);
+        }
 
         return response()->json([
             'success' => true,
-            'message' => 'Appointment created successfully.'
+            'message' => $smsStatus['message'] ?: 'Appointment link created and shared successfully.',
+            'calendly_link' => $appointment->calendly_link,
         ]);
+    }
+
+    private function createCalendlySchedulingLink(Request $request, ?string $clientEmail, $user): array
+    {
+        $token = config('services.calendly.pat');
+
+        if (empty($token)) {
+            return [
+                'success' => false,
+                'message' => 'Calendly is not configured. Please set CALENDLY_PAT in your environment.',
+            ];
+        }
+
+        $baseUrl = rtrim(config('services.calendly.base_url', 'https://api.calendly.com'), '/');
+
+        $startDateTime = Carbon::parse($request->appointment_date.' '.$request->appointment_time, $user->timezone ?? config('app.timezone'));
+        $endDateTime = $startDateTime->copy()->addDays(7);
+
+        $headers = [
+            'Authorization' => 'Bearer '.$token,
+            'Content-Type' => 'application/json',
+        ];
+
+        try {
+            $meResponse = Http::withHeaders($headers)->get($baseUrl.'/users/me');
+            if (!$meResponse->successful()) {
+                return [
+                    'success' => false,
+                    'message' => 'Unable to connect with Calendly. Please verify your Calendly token.',
+                ];
+            }
+
+            $userResource = $meResponse->json('resource', []);
+            $ownerUri = $userResource['uri'] ?? null;
+
+            if (!$ownerUri) {
+                return [
+                    'success' => false,
+                    'message' => 'Calendly user details are incomplete. Please reconnect Calendly.',
+                ];
+            }
+
+            $eventName = !empty($request->remarks)
+                ? 'Client Appointment - '.$request->remarks
+                : 'Client Appointment with '.$user->name;
+
+            $eventPayload = [
+                'name' => substr($eventName, 0, 55),
+                'host' => $ownerUri,
+                'duration' => 30,
+                'timezone' => $user->timezone ?? config('app.timezone'),
+                'date_setting' => [
+                    'type' => 'date_range',
+                    'start_date' => $startDateTime->toDateString(),
+                    'end_date' => $endDateTime->toDateString(),
+                ],
+                'location' => [
+                    'kind' => 'zoom_conference',
+                ],
+            ];
+
+            $oneOffResponse = Http::withHeaders($headers)->post($baseUrl.'/one_off_event_types', $eventPayload);
+
+            if (!$oneOffResponse->successful()) {
+                Log::error('Calendly one_off_event_types failed', ['response' => $oneOffResponse->json()]);
+                return [
+                    'success' => false,
+                    'message' => 'Unable to create a Calendly event type. Please check your Calendly configuration.',
+                ];
+            }
+
+            $eventTypeUri = $oneOffResponse->json('resource.uri');
+
+            $linkPayload = [
+                'owner' => $eventTypeUri,
+                'owner_type' => 'EventType',
+                'max_event_count' => 1,
+            ];
+
+            if (!empty($clientEmail)) {
+                $linkPayload['invitee_email'] = $clientEmail;
+            }
+
+            $schedulingLinkResponse = Http::withHeaders($headers)->post($baseUrl.'/scheduling_links', $linkPayload);
+
+            if (!$schedulingLinkResponse->successful()) {
+                Log::error('Calendly scheduling_links failed', ['response' => $schedulingLinkResponse->json()]);
+                return [
+                    'success' => false,
+                    'message' => 'Unable to generate a Calendly scheduling link at the moment. Please try again.',
+                ];
+            }
+
+            return [
+                'success' => true,
+                'scheduling_url' => $schedulingLinkResponse->json('resource.booking_url'),
+                'event_type_uri' => $eventTypeUri,
+            ];
+        } catch (\Throwable $e) {
+            Log::error('Calendly appointment error', ['error' => $e->getMessage()]);
+
+            return [
+                'success' => false,
+                'message' => 'Unable to create Calendly meeting link right now. Please try again later.',
+            ];
+        }
+    }
+
+    private function sendAppointmentSms(string $phone, string $clientName, string $senderName, string $meetingLink, ?string $remarks): array
+    {
+        $message = "Dear {$clientName},\n\n".
+            "You have been invited by {$senderName} to schedule an appointment via the link below:\n".
+            "{$meetingLink}\n\n".
+            (!empty($remarks) ? "Meeting purpose: {$remarks}\n\n" : '').
+            "Once booked, Calendly will send confirmation, cancellation, and reminder notifications to all participants.\n\n".
+            "Best regards,\nAdwiseri Team";
+
+        $smsUrl = config('services.sms_gateway.url');
+        $smsToken = config('services.sms_gateway.token');
+
+        if (function_exists('send_sms')) {
+            try {
+                $existingResult = send_sms($phone, $message);
+
+                if ($existingResult === false) {
+                    return [
+                        'sent' => false,
+                        'message' => 'Appointment link created successfully, but SMS could not be delivered.',
+                    ];
+                }
+
+                return ['sent' => true, 'message' => null];
+            } catch (\Throwable $e) {
+                Log::warning('Existing SMS integration exception', ['error' => $e->getMessage()]);
+            }
+        }
+
+        if (empty($smsUrl)) {
+            return [
+                'sent' => false,
+                'message' => 'Appointment link created successfully. Email sent. SMS gateway is not configured.',
+            ];
+        }
+
+        try {
+            $response = Http::withToken($smsToken)->post($smsUrl, [
+                'phone' => $phone,
+                'message' => $message,
+            ]);
+
+            if (!$response->successful()) {
+                Log::warning('SMS gateway request failed', ['response' => $response->body()]);
+
+                return [
+                    'sent' => false,
+                    'message' => 'Appointment link created successfully, but SMS could not be delivered.',
+                ];
+            }
+
+            return ['sent' => true, 'message' => null];
+        } catch (\Throwable $e) {
+            Log::warning('SMS gateway exception', ['error' => $e->getMessage()]);
+
+            return [
+                'sent' => false,
+                'message' => 'Appointment link created successfully, but SMS could not be delivered.',
+            ];
+        }
     }
 
     public function saveReportSettings(Request $request, ScheduledReportService $scheduledReportService)

@@ -30,4 +30,14 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'calendly' => [
+        'pat' => env('CALENDLY_PAT'),
+        'base_url' => env('CALENDLY_BASE_URL', 'https://api.calendly.com'),
+    ],
+
+    'sms_gateway' => [
+        'url' => env('SMS_GATEWAY_URL'),
+        'token' => env('SMS_GATEWAY_TOKEN'),
+    ],
+
 ];

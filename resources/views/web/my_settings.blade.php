@@ -372,14 +372,32 @@
                                 <label>Select Client</label>
                             </div>
                             <div class="col-6">
-                                <select name="client_id" class="form-control form-select">
+                                <select name="client_id" id="appointment-client" class="form-control form-select">
                                     <option value="">Select Client</option>
                                     @foreach($clients as $client)
-                                        <option value="{{ $client->id }}">
+                                        <option value="{{ $client->id }}" data-email="{{ $client->email }}" data-phone="{{ $client->phone }}">
                                             {{ $client->name }}
                                         </option>
                                     @endforeach
                                 </select>
+                            </div>
+                        </div>
+
+                        <div class="row p-1 mb-3 align-items-center">
+                            <div class="col-6">
+                                <label>Client Email</label>
+                            </div>
+                            <div class="col-6">
+                                <input type="email" name="client_email" id="appointment-client-email" class="form-control" placeholder="client@example.com">
+                            </div>
+                        </div>
+
+                        <div class="row p-1 mb-3 align-items-center">
+                            <div class="col-6">
+                                <label>Client Phone (for SMS)</label>
+                            </div>
+                            <div class="col-6">
+                                <input type="text" name="client_phone" id="appointment-client-phone" class="form-control" placeholder="Phone number with country code">
                             </div>
                         </div>
 
@@ -400,7 +418,7 @@
                                 <label>Select Date</label>
                             </div>
                             <div class="col-6">
-                                <input type="date" name="date" class="form-control">
+                                <input type="date" name="appointment_date" class="form-control">
                             </div>
                         </div>
 
@@ -410,7 +428,7 @@
                                 <label>Select Time</label>
                             </div>
                             <div class="col-6">
-                                <input type="time" name="time" class="form-control">
+                                <input type="time" name="appointment_time" class="form-control">
                             </div>
                         </div>
 
@@ -542,17 +560,28 @@
                     $('#appointment-form')[0].reset();
 
                 },
-                error: function () {
+                error: function (xhr) {
+
+                    let message = 'Failed to schedule appointment!';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        message = xhr.responseJSON.message;
+                    }
 
                     Swal.fire({
                         icon: 'error',
                         title: 'Error',
-                        text: 'Failed to schedule appointment!'
+                        text: message
                     });
 
                 }
             });
 
+        });
+
+        $('#appointment-client').on('change', function () {
+            const selected = $(this).find(':selected');
+            $('#appointment-client-email').val(selected.data('email') || '');
+            $('#appointment-client-phone').val(selected.data('phone') || '');
         });
         function deleteapplication(id) {
             Swal.fire({
