@@ -6283,13 +6283,12 @@ public function showFeedbackPopup()
 
     private function createCalendlySchedulingLinkForAppointment(Appointment $appointment, ?string $clientEmail, User $sender): array
     {
-        $token = config('services.calendly.pat');
+        $expiresAt = Carbon::parse($appointment->appointment_date.' '.$appointment->appointment_time, config('app.timezone'))
+            ->addDay();
 
-        if (empty($token)) {
-            return [
-                'success' => false,
-                'message' => 'Calendly is not configured. Please set CALENDLY_PAT in your environment.',
-            ];
+        $routeParams = ['appointment' => $appointment->id];
+        if (!empty($clientEmail)) {
+            $routeParams['email'] = $clientEmail;
         }
 
         $baseUrl = rtrim(config('services.calendly.base_url', 'https://api.calendly.com'), '/');
@@ -6298,6 +6297,7 @@ public function showFeedbackPopup()
             'Authorization' => 'Bearer '.$token,
             'Content-Type' => 'application/json',
         ];
+    }
 
         try {
             $meResponse = Http::withHeaders($headers)->get($baseUrl.'/users/me');
@@ -6347,9 +6347,9 @@ public function showFeedbackPopup()
                 'max_event_count' => 1,
             ];
 
-            if (!empty($clientEmail)) {
-                $linkPayload['invitee_email'] = $clientEmail;
-            }
+        if ($appointment->status === 'completed') {
+            return response('<h3>This appointment is already marked as completed.</h3>');
+        }
 
             $schedulingLinkResponse = Http::withHeaders($headers)->post($baseUrl.'/scheduling_links', $linkPayload);
             if (!$schedulingLinkResponse->successful()) {
