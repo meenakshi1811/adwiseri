@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Appointment Scheduling</title>
+    <title>Appointment Invitation</title>
     <style>
         body { background:#F5F5F5; font-family: 'Lato', Arial, sans-serif; margin:0; }
     </style>
@@ -22,13 +22,16 @@
         <p>Dear {{ $client->name }},</p>
 
         <p>
-            {{ $sender->name }} has invited you to schedule an appointment through Calendly.
-            Please use the secure link below to choose a convenient slot.
+            {{ $sender->name }} has invited you for an appointment.
+            Please confirm the proposed meeting using one of the options below.
         </p>
 
         <p style="margin:25px 0;">
-            <a href="{{ $appointment->calendly_link }}" style="background:#695EEE;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;">
-                Schedule Appointment
+            <a href="{{ $appointment->accept_url }}" style="background:#28a745;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;margin-right:8px;display:inline-block;">
+                Accept Appointment
+            </a>
+            <a href="{{ $appointment->decline_url }}" style="background:#dc3545;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;display:inline-block;">
+                Decline Appointment
             </a>
         </p>
 
@@ -37,8 +40,7 @@
         @endif
 
         <p>
-            Once your booking is confirmed (or if it is cancelled), Calendly will send confirmation and reminder
-            updates to both you and {{ $sender->name }}.
+            Once you respond, the sender will see your decision in Adwiseri appointment records.
         </p>
 
         <p>
