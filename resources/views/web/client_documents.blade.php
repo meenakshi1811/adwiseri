@@ -135,7 +135,7 @@ $support_roles = UserRoles::where('user_id','=',$user->id)->where('module','=','
                                 <label>Document File<span class="text-danger" style="font-size: 18px;">*</span></label>
                             </div>
                             <div class="col-md-8 p-1">
-                                <input name="doc_file" type="file" class="form-control @error('doc_file') is-invalid @enderror" id="exampleInputEmail1" aria-describedby="emailHelp" required>
+                                <input name="doc_file" type="file" class="form-control @error('doc_file') is-invalid @enderror" id="exampleInputEmail1" aria-describedby="emailHelp" accept=".jpg,.jpeg,.png,.pdf" required>
                             @error('doc_file')
                                 <span class="invalid-feedback" role="alert">
                                     <strong>{{ $message }}</strong>
@@ -299,6 +299,17 @@ $support_roles = UserRoles::where('user_id','=',$user->id)->where('module','=','
         });
     });
   </script>
+
+
+  @if($errors->has('doc_file'))
+    <script>
+      Swal.fire({
+        title: 'Oops..',
+        icon: 'info',
+        html: @json($errors->first('doc_file'))
+      })
+    </script>
+  @endif
 
   @if(session()->has('deleted'))
     <script>

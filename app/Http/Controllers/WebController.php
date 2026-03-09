@@ -2110,6 +2110,14 @@ class WebController extends Controller
             $subscriber = User::find($user->added_by);
         }
         $document = Client_Docs::find($request->id);
+        $docFileRule = $document ? 'nullable|file|mimes:jpg,jpeg,png,pdf|max:4096' : 'required|file|mimes:jpg,jpeg,png,pdf|max:4096';
+        $this->validate($request, [
+            'doc_name' => 'required|string|min:3|max:100',
+            'doc_file' => $docFileRule,
+        ], [
+            'doc_file.mimes' => 'Please select a valid file format (jpg, jpeg, png, pdf).',
+            'doc_file.max' => 'Please select file up to 4MB.',
+        ]);
         if ($document) {
             $document->doc_name = $request['doc_name'];
             if ($request->hasFile('doc_file')) {
@@ -4410,7 +4418,11 @@ class WebController extends Controller
             }
             $this->validate($request, [
                 'support' => 'required',
-                'question' => 'required'
+                'question' => 'required',
+                'attachment' => 'nullable|file|mimes:jpg,jpeg,png|max:4096'
+            ], [
+                'attachment.mimes' => 'Please select a valid file format (jpg, jpeg, png).',
+                'attachment.max' => 'Please select file up to 4MB.'
             ]);
             $data = new Tickets();
             $data->ticket_no = ticket();
@@ -5056,6 +5068,13 @@ class WebController extends Controller
                 return redirect()->route('user_membership')->with("price_plan_expiry", "Please renew or upgrade price plan.");
             }
             $document = Client_Docs::find($request->id);
+            $docFileRule = $document ? 'nullable|file|mimes:jpg,jpeg,png,pdf|max:4096' : 'required|file|mimes:jpg,jpeg,png,pdf|max:4096';
+            $this->validate($request, [
+                'doc_file' => $docFileRule,
+            ], [
+                'doc_file.mimes' => 'Please select a valid file format (jpg, jpeg, png, pdf).',
+                'doc_file.max' => 'Please select file up to 4MB.',
+            ]);
             if ($document) {
                 $client = Clients::find($request->client_id);
                 $application = Applications::find($request->application_id);

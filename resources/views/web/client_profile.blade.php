@@ -396,7 +396,8 @@ $support_roles = UserRoles::where('user_id','=',$user->id)->where('module','=','
                         <input name="doc_name" minlength="3" maxlength="100" required type="text" class="form-control" id="exampleInputEmail1" aria-describedby="emailHelp" placeholder="Document Name">
                     </div>
                     <div class="mb-4">
-                        <input name="doc_file" required type="file" class="form-control" id="exampleInputEmail1" aria-describedby="emailHelp">
+                        <input name="doc_file" required type="file" class="form-control" id="doc_file_upload" aria-describedby="emailHelp" accept=".jpg,.jpeg,.png,.pdf">
+                        <label style="font-size:12px;">Select jpg, jpeg, png or pdf formats up to 4MB.</label>
                     </div>
                     <button type="submit" class="form-control btn btn-primary mb-4">Save</button>
                     <!-- <a href="dashboard.html" class="btn btn-primary mb-4">Next</a> -->
@@ -435,7 +436,7 @@ $support_roles = UserRoles::where('user_id','=',$user->id)->where('module','=','
                         onclick="document.getElementById('select_pic').click();">
                         <div style="width:100%;height:200px;box-shadow: 0px 0px 5px 0px lightgrey;border-radius: 10px;justify-content: center;align-items: center;display: flex;position:relative;"
                             title="click to upload file">
-                            <input id="select_pic" type="file" name="profile_img" style="display: none;">
+                            <input id="select_pic" type="file" name="profile_img" style="display: none;" accept=".jpg,.jpeg,.png">
                             <p style="position:absolute;">Click to Upload File</p>
                             <img id="profile_pic_preview"
                                 style="width: auto;height: auto;max-width: 100%;max-height: 100%;" src="">
@@ -540,6 +541,30 @@ $support_roles = UserRoles::where('user_id','=',$user->id)->where('module','=','
                 }
                 $("#save_photo").removeAttr('disabled');
             });
+            $(document).on('change', '#doc_file_upload', function() {
+                var filepath = $(this).val();
+                var allowedExtensions = /(\.jpg|\.jpeg|\.png|\.pdf|\.JPG|\.JPEG|\.PNG|\.PDF)$/i;
+                if (!allowedExtensions.exec(filepath)) {
+                    Swal.fire({
+                        title: "Oops..",
+                        icon: "info",
+                        html: "Please select valid file format <br>( jpg, jpeg, png or pdf )"
+                    });
+                    $(this).val("");
+                    return false;
+                }
+                const size = (this.files[0].size / 1024 / 1024).toFixed(2);
+                if (size > 4) {
+                    Swal.fire({
+                        title: "Oops..",
+                        icon: "info",
+                        html: "Please select file upto 4MB"
+                    });
+                    $(this).val("");
+                    return false;
+                }
+            });
+
             $("#country").change(function() {
                 var country = $(this).val();
                 // console.log(counrty);
@@ -579,6 +604,17 @@ $support_roles = UserRoles::where('user_id','=',$user->id)->where('module','=','
             }, 1000);
         });
     </script>
+
+
+@if ($errors->has('doc_file'))
+<script>
+    Swal.fire({
+        title: 'Oops..',
+        icon: 'info',
+        html: @json($errors->first('doc_file'))
+    })
+</script>
+@endif
 
 @if (session()->has('success'))
 <script>

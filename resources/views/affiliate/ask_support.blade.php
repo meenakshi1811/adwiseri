@@ -61,7 +61,7 @@
                     <label>Attach File</label>
                 </div>
                 <div class="col-md-8 p-1">
-                    <input type="file" class="form-control" name="attachment" id="attachment" />
+                    <input type="file" class="form-control" name="attachment" id="attachment" accept=".jpg,.jpeg,.png" />
                     <label style="font-size:12px;">Select jpg, jpeg, png formats up to 4MB.</label>
                     {{-- <textarea name="question" minlength="3" maxlength="1000" required rows="3" class="form-control @error('question') is-invalid @enderror" id="exampleInputEmail1" aria-describedby="emailHelp" value="{{ old('question') }}" placeholder="Query/Question" autocomplete="question"></textarea> --}}
                     @error('attachment')
@@ -179,6 +179,17 @@
         });
     });
 </script>
+
+@if($errors->has('attachment'))
+<script>
+    Swal.fire({
+        title: 'Oops..',
+        icon: 'info',
+        html: @json($errors->first('attachment'))
+    });
+</script>
+@endif
+
 @if(session()->has('success'))
   <script>
     Swal.fire({
