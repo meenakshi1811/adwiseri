@@ -6634,4 +6634,10 @@ public function showFeedbackPopup()
         return response()->download($filePath);
     }
 
+    public function createLead($id)
+    {
+        $subscriberId = decrypt($id);
+
+        return view('web.create_lead',compact('subscriberId'));
+    }
 }
