@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
@@ -30,6 +31,18 @@ class Invoicemail extends Mailable
     public function build()
     {
         $data = $this->data;
-        return $this->subject("New Invoice")->view('web.invoicetemplate',compact('data'));
+
+        $pdf = Pdf::loadView('web.invoice_pdf', compact('data'))
+            ->setPaper('a4', 'portrait')
+            ->setOption('isHtml5ParserEnabled', true)
+            ->setOption('isPhpEnabled', true);
+
+        $fileName = 'Invoice-' . ($data->invoice_no ?? 'document') . '.pdf';
+
+        return $this->subject('New Invoice')
+            ->view('web.invoicetemplate', compact('data'))
+            ->attachData($pdf->output(), $fileName, [
+                'mime' => 'application/pdf',
+            ]);
     }
 }

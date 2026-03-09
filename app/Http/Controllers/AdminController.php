@@ -1891,10 +1891,22 @@ class AdminController extends Controller
                 $maildata = new \stdClass();
                 $maildata->name = $subs['name'];
                 $maildata->email = $user->email;
+                $maildata->from_email = $user->email;
+                $maildata->to_email = $subs->email;
+                $maildata->company_name = $user->organization ?? $user->name;
+                $maildata->detail = $invoice->detail;
+                $maildata->amount = $invoice->amount;
+                $maildata->discount = $invoice->discount;
+                $maildata->tax = $invoice->tax;
+                $maildata->total = $invoice->total;
+                $maildata->currency = $user->currency ?? 'Rs.';
+                $maildata->status = $invoice->status;
+                $maildata->invoice_no = $invoice->invoice_no;
+                $maildata->invoice_date = $invoice->created_at;
                 $maildata->due_date = $invoice->due_date;
                 $maildata->invoice_id = $invoice->id;
                 $maildata->token = $invoice->token;
-                $maildata->message = "New invoice for you from adwisery of Rs." . $invoice->total . "";
+                $maildata->message = "New invoice has been generated from " . ($user->organization ?? 'Adwiseri') . " for " . ($user->currency ?? 'Rs.') . " " . number_format($invoice->total, 2) . ".";
                 Mail::to($subs->email)->send(new Invoicemail($maildata));
                 if (Mail::failures()) {
                     echo 'Sorry! Please try again latter';
