@@ -164,7 +164,7 @@ class PaymentController extends Controller
             // ->select('invoices.id', 'invoices.invoice', 'users.id as user_id', 'users.name as user_name')
             // ->get();
 
-            $invoices = PaymentARs::with('client')->where('subscriber_id', $subscriber->id)->where('type','ar')->orderBy('created_at', 'asc')->get();
+            $invoices = $this->buildOutstandingInvoices($subscriber->id, 'ar');
 
 
             // $payments = Invoices::where('type', 'inward')->orderBy('created_at', 'desc')->get();
@@ -176,29 +176,37 @@ class PaymentController extends Controller
     
     public function getInvoiceDetails($id)
     {   
-        // $invoice = Invoices::with(['clients', 'services'])->where('id', $id)->first();
-
         $paymentAR = PaymentARs::find($id);
-        $client = Clients::find($paymentAR->client_id);
-        $application = Applications::find($paymentAR->application_id); 
-        $service = $paymentAR->service_description;
-        $amount = $paymentAR->amount;
-        $paidAmount = $paymentAR->paid_amount;
-
-        $paidAmount = PaymentARs::where('client_id', $paymentAR->client_id)->where('subscriber_id', $paymentAR->subscriber_id)->where('type','ar')->orderBy('created_at', 'asc')->get();
-        // dd($paidAmount->sum('paid_amount'));
         if (!$paymentAR) {
             return response()->json(['error' => 'Invoice not found'], 404);
         }
 
+        $client = Clients::find($paymentAR->client_id);
+        $application = Applications::find($paymentAR->application_id); 
+        $service = $paymentAR->service_description;
+
+        $paidRows = PaymentARs::where('client_id', $paymentAR->client_id)
+            ->where('application_id', $paymentAR->application_id)
+            ->where('service_description', $paymentAR->service_description)
+            ->where('amount', $paymentAR->amount)
+            ->where('subscriber_id', $paymentAR->subscriber_id)
+            ->where('type', 'ar')
+            ->orderBy('created_at', 'asc')
+            ->get();
+
+        $paidAmount = (float) $paidRows->sum('paid_amount');
+        $amount = (float) $paymentAR->amount;
+        $outstanding = max(0, $amount - $paidAmount);
+
         return response()->json([
             'success' => 'Successfull', 
-            'client' => $client->id,
-            'applicationID' => $application->application_id, 
-            'applicationName' => $application->application_name, 
+            'client' => optional($client)->id,
+            'applicationID' => optional($application)->application_id, 
+            'applicationName' => optional($application)->application_name, 
             'service' => $service,
             'amount' => $amount, 
-            'paidAmmount' => $paidAmount->sum('paid_amount')
+            'paidAmmount' => $paidAmount,
+            'outstandingAmount' => $outstanding,
         ], 200);
     }
 
@@ -217,25 +225,29 @@ class PaymentController extends Controller
         $serviceProvider = $paymentAR->service_provider;
         $serviceTaken = $paymentAR->service_taken;
         $amount = $paymentAR->amount;
-        $paidAmount = $paymentAR->paid_amount;
-
         if (!$paymentAR) {
             return response()->json(['error' => 'Invoice not found'], 404);
         }
-        $paidAmount = PaymentARs::where('subscriber_id', $subscriber->id)->where('type','ap')->orderBy('created_at', 'asc')->get();
+        $paidRows = PaymentARs::where('subscriber_id', $subscriber->id)
+            ->where('type', 'ap')
+            ->where('service_provider', $serviceProvider)
+            ->where('service_taken', $serviceTaken)
+            ->where('amount', $amount)
+            ->where('client_id', $paymentAR->client_id)
+            ->orderBy('created_at', 'asc')
+            ->get();
 
-        // $paidAmount = PaymentARs::where('subscriber_id', $subscriber->id)->where('type','ap')->orderBy('created_at', 'asc')->get();
-        // dd($paidAmount->sum('paid_amount'), $paidAmount->count());
-        if (!$paymentAR) {
-            return response()->json(['error' => 'Invoice not found'], 404);
-        }
+        $paidAmount = (float) $paidRows->sum('paid_amount');
+        $outstanding = max(0, ((float) $amount) - $paidAmount);
 
         return response()->json([
             'success' => 'Successfull', 
+            'client' => optional($client)->id,
             'serviceProvider' => $serviceProvider,
             'serviceTaken' => $serviceTaken,
             'amount' => $amount, 
-            'paidAmmount' => $paidAmount->sum('paid_amount')
+            'paidAmmount' => $paidAmount,
+            'outstandingAmount' => $outstanding,
         ], 200);
     }
 
@@ -253,7 +265,7 @@ class PaymentController extends Controller
             $users = User::where('user_type','Subscriber')->get();
             $payments = Invoices::orderBy('created_at', 'desc')->get();
 
-            $invoices = PaymentARs::with('client')->where('subscriber_id', $subscriber->id)->where('type','ap')->orderBy('created_at', 'asc')->get();
+            $invoices = $this->buildOutstandingInvoices($subscriber->id, 'ap');
             
             // $payments = Invoices::where('type', 'inward')->orderBy('created_at', 'desc')->get();
             return view('web.add_ap_payments', compact('user', 'payments', 'page','subscriber','clients', 'invoices'));
@@ -351,7 +363,69 @@ class PaymentController extends Controller
                 ->make(true);
     }
 
+    private function buildOutstandingInvoices($subscriberId, $type)
+    {
+        $payments = PaymentARs::with(['client', 'application'])
+            ->where('subscriber_id', $subscriberId)
+            ->where('type', $type)
+            ->orderBy('created_at', 'asc')
+            ->get();
 
+        return $payments
+            ->groupBy(function ($row) use ($type) {
+                if ($type === 'ar') {
+                    return implode('|', [
+                        $row->client_id,
+                        $row->application_id,
+                        $row->service_description,
+                        $row->amount,
+                    ]);
+                }
 
+                return implode('|', [
+                    $row->client_id,
+                    $row->service_provider,
+                    $row->service_taken,
+                    $row->amount,
+                ]);
+            })
+            ->map(function ($group) use ($type) {
+                $first = $group->first();
+                $totalAmount = (float) $first->amount;
+                $totalPaid = (float) $group->sum('paid_amount');
+                $outstanding = max(0, $totalAmount - $totalPaid);
+
+                if ($outstanding <= 0) {
+                    return null;
+                }
+
+                $clientName = optional($first->client)->name ?? 'N/A';
+                $clientId = $first->client_id ?? 'N/A';
+                $serviceDescription = $type === 'ar'
+                    ? ($first->service_description ?: 'N/A')
+                    : ($first->service_taken ?: 'N/A');
+
+                return [
+                    'id' => $first->id,
+                    'client_id' => $first->client_id,
+                    'application_id' => $first->application_id,
+                    'service_description' => $first->service_description,
+                    'service_provider' => $first->service_provider,
+                    'service_taken' => $first->service_taken,
+                    'amount' => $totalAmount,
+                    'paid_amount' => $totalPaid,
+                    'outstanding_amount' => $outstanding,
+                    'display_label' => sprintf(
+                        '%s - %s (%s) - %s',
+                        $first->invoice_no,
+                        $clientName,
+                        $clientId,
+                        $serviceDescription
+                    ),
+                ];
+            })
+            ->filter()
+            ->values();
+    }
 
 }

@@ -33,7 +33,7 @@
                             </div>
 
                             <div class="col-md-4 p-1 inovice-section" class="display:none">
-                                <label>Invoices<span class="text-danger" style="font-size: 18px;">*</span></label>
+                                <label>Select Invoice<span class="text-danger" style="font-size: 18px;">*</span></label>
                             </div>
                             <div class="col-md-8 p-1 inovice-section" class="display:none">
                             
@@ -41,10 +41,10 @@
                                         class="form-control form-select @error('invoices') is-invalid @enderror"  onchange="fetchInvoiceDetails()">
                                     <option value="">Select Invoice</option>
                                     @foreach ($invoices as $invoice)
-                                    <option {{ (old('invoices_list') == $invoice->id) ? 'selected' : '' }}
-
-                                                value="{{ $invoice->id }}">
-                                                {{ $invoice->invoice_no . ' (' . $invoice->id . ')'}}
+                                    <option {{ (old('invoices_list') == $invoice['id']) ? 'selected' : '' }}
+                                            value="{{ $invoice['id'] }}"
+                                            data-client-id="{{ $invoice['client_id'] }}">
+                                            {{ $invoice['display_label'] }}
                                         </option>
                                     @endforeach
                                 </select>
@@ -58,13 +58,25 @@
 
                             <!-- Outstanding Amount (Hidden by default) -->
                             <div class="col-md-4 p-1 outstanding-section" style="display: none;">
-                                <label>Outstanding Amount</label>
+                                <label>Outstanding (Read only)</label>
                             </div>
                             <div class="col-md-8 p-1 outstanding-section" style="display: none;">
                                 <input name="outstanding_amount" type="number" class="form-control" id="outstanding_amount" placeholder="Outstanding Amount" readonly>
                             </div>
 
                             <!-- Client Name -->
+                            <div class="col-md-4 p-1">
+                                <label>Client Name<span class="text-danger" style="font-size: 18px;">*</span></label>
+                            </div>
+                            <div class="col-md-8 p-1">
+                                <select name="client_id" id="client_id" required class="form-control form-select">
+                                    <option value="">Select Client</option>
+                                    @foreach ($clients as $clint)
+                                        <option value="{{ $clint->id }}">{{ $clint->name . '(' . $clint->id . ')' }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+
                             <div class="col-md-4 p-1">
                                 <label>Product/Service Provider<span class="text-danger" style="font-size: 18px;">*</span></label>
                             </div>
@@ -95,26 +107,32 @@
                             </div>
 
                             <div class="col-md-4 p-1">
-                                <label>Amount To Pay<span class="text-danger" style="font-size: 18px;">*</span></label>
+                                <label>Total Amount (Read only)<span class="text-danger" style="font-size: 18px;">*</span></label>
                             </div>
                             <div class="col-md-8 p-1">
                                 <input name="amount" required type="number" min="1"
                                     class="form-control @error('amount') is-invalid @enderror" id="amount"
-                                    aria-describedby="emailHelp" value="{{ old('amount') }}" placeholder="Amount To Pay"
-                                    autocomplete="amount">
+                                    aria-describedby="emailHelp" value="{{ old('amount') }}" placeholder="Total Amount"
+                                    autocomplete="amount" readonly>
                                 @error('amount')
                                     <span class="invalid-feedback" role="alert">
                                         <strong>{{ $message }}</strong>
                                     </span>
                                 @enderror
                             </div>
+                            <div class="col-md-4 p-1 existing-only" style="display:none;">
+                                <label>Amount Paid (Read only)</label>
+                            </div>
+                            <div class="col-md-8 p-1 existing-only" style="display:none;">
+                                <input type="number" class="form-control" id="amount_paid_existing" readonly>
+                            </div>
                             <div class="col-md-4 p-1">
-                                <label>Paid Amount<span class="text-danger" style="font-size: 18px;">*</span></label>
+                                <label>Amount Paying<span class="text-danger" style="font-size: 18px;">*</span></label>
                             </div>
                             <div class="col-md-8 p-1">
                                 <input name="paid_amount" required type="number" min="1"
                                     class="form-control @error('amount') is-invalid @enderror" id="paid_amount"
-                                    aria-describedby="emailHelp" value="{{ old('paid_amount') }}" placeholder="Paid Amount"
+                                    aria-describedby="emailHelp" value="{{ old('paid_amount') }}" placeholder="Amount Paying"
                                     autocomplete="amount">
                                 @error('paid_amount')
                                     <span class="invalid-feedback" role="alert">
@@ -145,7 +163,7 @@
                                 @enderror
                             </div>
                             <div class="col-md-4 p-1">
-                                <label>Payment Date
+                                <label>Payment Date (Editable)
                                     {{-- <span class="text-danger" style="font-size: 18px;">*</span> --}}
                                 </label>
                             </div>
@@ -198,8 +216,10 @@
                     document.getElementById("service_provider").value = data.serviceProvider;
                     document.getElementById("service_taken").value = data.serviceTaken;
                     document.getElementById("amount").value = data.amount;
-                    document.getElementById("paid_amount").value = data.paidAmmount.toFixed(2);
-                    document.getElementById("outstanding_amount").value = (data.amount - data.paidAmmount).toFixed(2);
+                    document.getElementById("amount_paid_existing").value = data.paidAmmount.toFixed(2);
+                    document.getElementById("paid_amount").value = "";
+                    document.getElementById("outstanding_amount").value = data.outstandingAmount.toFixed(2);
+                    document.getElementById("client_id").value = data.client || "";
                 })
                 .catch(error => console.error("Error fetching invoice details:", error));
         }
@@ -207,10 +227,13 @@
         function toggleOutstanding(show) {
             let invoiceSections = document.querySelectorAll('.inovice-section');
             invoiceSections.forEach(section => {
-                section.style.display = show ? 'block' : 'none';
+                section.style.display = 'block';
             });
             let outstandingSections = document.querySelectorAll('.outstanding-section');
             outstandingSections.forEach(section => {
+                section.style.display = 'block';
+            });
+            document.querySelectorAll('.existing-only').forEach(section => {
                 section.style.display = show ? 'block' : 'none';
             });
 
@@ -227,10 +250,12 @@
 
                 document.getElementById("paid_amount").removeAttribute("readonly");
                 document.getElementById("paid_amount").value = '';
+                document.getElementById("amount_paid_existing").value = '';
+                document.getElementById("client_id").value = '';
 
              }
              else{
-                document.getElementById("service_provider").setAttribute("readonly", "readonly");
+                                document.getElementById("service_provider").setAttribute("readonly", "readonly");
                 document.getElementById("service_taken").setAttribute("readonly", "readonly");
                 document.getElementById("amount").setAttribute("readonly", "readonly");
                 // document.getElementById("paid_amount").setAttribute("readonly", "readonly");
@@ -240,110 +265,15 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
     <script>
         $(document).ready(() => {
-
-
-            // Get the modal
-
-            // Close Modal on "Close" button or when clicking outside
-            document.getElementById('payment_date').addEventListener('change', function () {
-                var inputField = this;
-                var inputDate = new Date(inputField.value); // Get the selected date
-                var today = new Date(); // Current date
-
-                // Check if the input date is in the future
-                if (inputDate > today) {
-                    inputField.value = ""; // Clear the invalid value
-                    inputField.placeholder = "Future dates are not allowed!"; // Show error in the placeholder
-                    inputField.classList.add('is-invalid'); // Add red border for invalid input
-                } else {
-                    inputField.classList.remove('is-invalid'); // Remove error state
-                    inputField.placeholder = "Payment Date"; // Reset placeholder
-                }
-            });
-            $("#subscriber").change(function() {
-                var subscriber = $(this).val();
-                $.ajax({
-                    url: 'check_client_limit',
-                    method: 'POST',
-                    data: {
-                        "_token": "{{ csrf_token() }}",
-                        subscriber: subscriber,
-                    },
-                    cache: false,
-                    success: function(data) {
-                        //   console.log(data);
-                        if (data.limit == 'full') {
-                            Swal.fire({
-                                icon: 'warning',
-                                title: 'Oops..',
-                                text: 'Client limit reached for this Subscriber!'
-                            });
-                            setTimeout(function() {
-                                window.location.reload();
-                            }, 2000);
-                        }
-                    }
+            function filterInvoicesByClient() {
+                const selectedClient = $("#client_id").val();
+                const invoiceSelect = document.getElementById("invoices_list");
+                Array.from(invoiceSelect.options).forEach((opt, idx) => {
+                    if (idx === 0) return;
+                    opt.hidden = selectedClient && opt.dataset.clientId !== selectedClient;
                 });
-            });
-            $("#country").change(function() {
-                var country = $(this).val();
-                // console.log(counrty);
-                $.ajax({
-                    url: 'get_states',
-                    method: 'POST',
-                    data: {
-                        "_token": "{{ csrf_token() }}",
-                        country: country,
-                    },
-                    cache: false,
-                    success: function(data) {
-                        console.log(data);
-                        $("#state").html(data);
-                    }
-                });
-            });
-            $("#subscriber").change(function() {
-                var id = $(this).val();
-                var name = 'subscriber';
-                // console.log(counrty);
-                $.ajax({
-                    url: 'get_job_role',
-                    method: 'POST',
-                    data: {
-                        "_token": "{{ csrf_token() }}",
-                        id: id,
-                        name: name,
-                    },
-                    cache: false,
-                    success: function(data) {
-                        console.log(data);
-                        $("#job_role").html(data);
-                    }
-                });
-            });
-            $("#client_id").change(function(){
-                var id = $(this).val();
-                // console.log(counrty);
-                $.ajax({
-                    url: 'get_application',
-                    method: 'POST',
-                    data: {
-                        "_token": "{{ csrf_token() }}",
-                        id: id,
-                        comm: "invoice",
-                    },
-                    cache:false,
-                    success: function(data){
-                    console.log(data);
-                        $("#application_id").html(data);
-                    }
-                });
-            });
-            $("#application_id").change(function(){
-                var option = $(this).find('option:selected');
-                var service = option.data('name');
-                $("#service_description").val(service);
-            });
+            }
+
             const amountInput = document.getElementById('amount');
     const paidAmountInput = document.getElementById('paid_amount');
 
