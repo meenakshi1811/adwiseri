@@ -55,7 +55,7 @@
                         @else
                         Your <strong>Free Plan</strong> is activated successfully. The plan details are as follows:<br><br>
                         Plan Name : {{$data->plan_name}}<br>
-                        Duration : {{$data->duration}} Years<br>
+                        Duration : {{$data->duration}}<br>
                         Paid Amount : $0<br>
                         @endif
                     </p>

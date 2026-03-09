@@ -153,7 +153,7 @@
                         <strong>Due Date:</strong> {{ !empty($data->due_date) ? date('d-m-Y', strtotime($data->due_date)) : '-' }}<br>
                     @endif
                     <strong>Status:</strong>
-                    <span class="status {{ $data->status ?? '' }}">{{ $data->status ?? '-' }}</span>
+                    <strong>{{ $data->status ?? '-' }}</strong>
                 </div>
             </td>
         </tr>
