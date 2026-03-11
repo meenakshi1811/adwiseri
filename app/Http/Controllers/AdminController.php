@@ -3916,20 +3916,41 @@ class AdminController extends Controller
             ],
             'discount_type' => 'required|string|in:cashback,one_off,double_term',
             'discount_value' => 'nullable|numeric|min:1|required_if:discount_type,cashback,one_off',
+            'subscriber_type' => 'required|string|in:new,existing',
+            'offer_start_date' => 'required_if:subscriber_type,new|nullable|date',
+            'offer_end_date' => 'required_if:subscriber_type,new|nullable|date|after_or_equal:offer_start_date',
         ]);
     
         $subscribe = $validated['subscribers'];
         $type = $validated['discount_type'];
-        $value = $validated['discount_value'];
+        $value = $validated['discount_value'] ?? null;
+        $subscriberType = $validated['subscriber_type'];
+        $offerStartDate = $validated['offer_start_date'] ?? null;
+        $offerEndDate = $validated['offer_end_date'] ?? null;
         $subscriberData = [];
     
         // Handle "All" (case-insensitive)
         if (collect($subscribe)->contains(function ($item) {
             return strtolower($item) === 'all';
         })) {
-            $subscribers = User::where('user_type', 'Subscriber')->get();
+            $subscriberQuery = User::where('user_type', 'Subscriber');
         } else {
-            $subscribers = User::whereIn('id', $subscribe)->get();
+            $subscriberQuery = User::whereIn('id', $subscribe)->where('user_type', 'Subscriber');
+        }
+
+        if ($subscriberType === 'new') {
+            $subscriberQuery->whereBetween('created_at', [
+                Carbon::parse($offerStartDate)->startOfDay(),
+                Carbon::parse($offerEndDate)->endOfDay(),
+            ]);
+        }
+
+        $subscribers = $subscriberQuery->get();
+
+        if ($subscribers->isEmpty()) {
+            return response()->json([
+                'message' => 'No subscribers found for the selected criteria.'
+            ], 422);
         }
     
         foreach ($subscribers as $subscriber) {
@@ -3939,6 +3960,10 @@ class AdminController extends Controller
     
             if ($type === 'cashback') {
                 $member = Membership::where('plan_name', $subscriber->membership)->first();
+                if (!$member) {
+                    continue;
+                }
+
                 $debit = $member->price_per_year * ($value / 100);
                 $subscriber->wallet += $debit;
                 $wallet_balance = $subscriber->wallet;
@@ -3956,7 +3981,10 @@ class AdminController extends Controller
             $offer = Offers::create([
                 'user_id' => $subscriber->id,
                 'discount_type' => $type,
-                'discount_value' => $value
+                'discount_value' => $value,
+                'subscriber_type' => $subscriberType,
+                'offer_start_date' => $offerStartDate,
+                'offer_end_date' => $offerEndDate,
             ]);
     
             Referrals::create([
@@ -3977,20 +4005,27 @@ class AdminController extends Controller
                 'name' => $subscriber->name,
                 'email' => $subscriber->email,
                 'type' => $type,
-                'value' => $value
+                'value' => $value,
+                'credit_amount' => round($debit, 2),
+                'description' => $type === 'one_off'
+                    ? 'One-off Credit / Offer / Dispute Resolution'
+                    : ($type === 'cashback' ? 'Discount / Cashback' : 'Double Term'),
             ];
         }
-    
-        // Send emails (as BCC)
-        Mail::send([], [], function ($message) use ($subscriberData) {
-            foreach ($subscriberData as $subscriber) {
-                $message->bcc($subscriber['email'])
-                    ->subject('Offer & Discount!')
+
+        // Send separate email to each subscriber so each one gets their own details.
+        foreach ($subscriberData as $subscriber) {
+            Mail::send([], [], function ($message) use ($subscriber) {
+                $message->to($subscriber['email'])
+                    ->subject('Wallet Credit / Offer Applied')
                     ->setBody(view('web.offer_appliedtemplate', $subscriber)->render(), 'text/html');
-            }
-        });
-    
-        return back()->with('offer_apply', 'Offer applied successfully!');
+            });
+        }
+
+        return response()->json([
+            'message' => 'Offer applied successfully!',
+            'processed_subscribers' => count($subscriberData),
+        ]);
     }
     
 

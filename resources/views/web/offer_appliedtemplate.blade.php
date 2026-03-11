@@ -45,14 +45,14 @@
                         <!-- We are excited to inform you about a new offer tailored just for you: -->
                             We are excited to inform you that you have been rewarded with credits, discounts, or additional term benefits on your subscription account. The details are as follows:
                     </p>
-                        <p>Transaction Type: {{ $type }}</p>
-                        <p>Offer / Credit / Discount Value:
-                            @if ($type == 'double_term')
-                                One additional year has been added to the expiry date
-                            @else
-                                {{ $value }} ({{ $type == 'cashback' ? '%' : 'USD' }})
-                            @endif
-                        </p>
+                        <p><strong>Transaction Type:</strong> {{ ucwords(str_replace('_', ' ', $type)) }}</p>
+                        @if ($type == 'double_term')
+                            <p><strong>Description:</strong> Double Term</p>
+                            <p><strong>Details:</strong> One additional year has been added to your subscription expiry date.</p>
+                        @else
+                            <p><strong>Credit Amount:</strong> USD {{ number_format((float) ($credit_amount ?? $value ?? 0), 2) }}</p>
+                            <p><strong>Description:</strong> {{ $description ?? 'One-off Credit / Offer / Dispute Resolution' }}</p>
+                        @endif
                 </div>
                 {{-- <div class="col text-center mb-5">
                                 <button class="btn btn-primary">Login to your Account</button>
