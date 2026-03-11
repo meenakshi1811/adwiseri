@@ -175,6 +175,31 @@
                         </div>
                         <div class="row p-1 mb-3 align-items-center">
                             <div class="col-6">
+                                <label>Select Type of subscribers</label>
+                            </div>
+                            <div class="col-6">
+                                <select id="subscriber_type" name="subscriber_type" class="form-control" required>
+                                    <option value="existing" {{ old('subscriber_type', 'existing') == 'existing' ? 'selected' : '' }}>Existing</option>
+                                    <option value="new" {{ old('subscriber_type') == 'new' ? 'selected' : '' }}>New</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div id="offer-date-range" style="display:none;">
+                            <div class="row p-1 mb-3 align-items-center">
+                                <div class="col-6">
+                                    <label>Select Dates</label>
+                                </div>
+                                <div class="col-3">
+                                    <input type="date" id="offer_start_date" name="offer_start_date" class="form-control" value="{{ old('offer_start_date') }}" />
+                                </div>
+                                <div class="col-3">
+                                    <input type="date" id="offer_end_date" name="offer_end_date" class="form-control" value="{{ old('offer_end_date') }}" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row p-1 mb-3 align-items-center">
+                            <div class="col-6">
                                 <label>Type of Discount</label>
                             </div>
                             <div class="col-6">
@@ -303,25 +328,56 @@
             const dynamicField = document.getElementById('dynamic-field');
             const discountLabel = document.getElementById('discount_label');
             const discountValue = document.getElementById('discount_value');
+            const subscriberType = document.getElementById('subscriber_type');
+            const offerDateRange = document.getElementById('offer-date-range');
 
-            discountType.addEventListener('change', function() {
-                const type = this.value;
-
+            function updateDiscountField(type) {
                 if (type === 'cashback') {
                     dynamicField.style.display = 'block';
                     discountLabel.textContent = 'Cashback (%)';
                     discountValue.placeholder = 'Enter percentage (e.g., 20)';
                     discountValue.setAttribute('max', '100');
+                    discountValue.setAttribute('required', 'required');
                 } else if (type === 'one_off') {
                     dynamicField.style.display = 'block';
                     discountLabel.textContent = 'Credit Amount';
                     discountValue.placeholder = 'Enter amount (e.g., $100)';
                     discountValue.setAttribute('max', '500');
+                    discountValue.setAttribute('required', 'required');
                 } else {
                     dynamicField.style.display = 'none';
+                    discountValue.removeAttribute('required');
                     discountValue.value = '';
                 }
+            }
+
+            function updateSubscriberTypeField(type) {
+                const startDateInput = document.getElementById('offer_start_date');
+                const endDateInput = document.getElementById('offer_end_date');
+
+                if (type === 'new') {
+                    offerDateRange.style.display = 'block';
+                    startDateInput.setAttribute('required', 'required');
+                    endDateInput.setAttribute('required', 'required');
+                } else {
+                    offerDateRange.style.display = 'none';
+                    startDateInput.removeAttribute('required');
+                    endDateInput.removeAttribute('required');
+                    startDateInput.value = '';
+                    endDateInput.value = '';
+                }
+            }
+
+            discountType.addEventListener('change', function() {
+                updateDiscountField(this.value);
             });
+
+            subscriberType.addEventListener('change', function() {
+                updateSubscriberTypeField(this.value);
+            });
+
+            updateDiscountField(discountType.value);
+            updateSubscriberTypeField(subscriberType.value);
         });
 
         $(document).ready(() => {
@@ -519,12 +575,15 @@
             });
 
             $('#offers-settings-form').on('submit', function (e) {
-                e.preventDefault(); // Prevent default form submission
+                e.preventDefault();
 
                 const discountValue = $('#discount_value').val();
                 const discountType = $('#discount_type').val();
+                const subscriberType = $('#subscriber_type').val();
+                const offerStartDate = $('#offer_start_date').val();
+                const offerEndDate = $('#offer_end_date').val();
 
-                if (discountValue === '' || parseFloat(discountValue) < 1) {
+                if ((discountType === 'cashback' || discountType === 'one_off') && (discountValue === '' || parseFloat(discountValue) < 1)) {
                     Swal.fire({
                         icon: 'error',
                         title: 'Error',
@@ -533,11 +592,23 @@
                     return;
                 }
 
-                // Collect only selected subscriber IDs
+                if (subscriberType === 'new' && (!offerStartDate || !offerEndDate)) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Please select start and end dates for new subscribers.',
+                    });
+                    return;
+                }
+
                 let selectedSubscribers = [];
-                $('.subscriber-checkbox:checked').each(function () {
-                    selectedSubscribers.push($(this).val());
-                });
+                if ($('#selectAll').is(':checked')) {
+                    selectedSubscribers.push('All');
+                } else {
+                    $('.subscriber-checkbox:checked').each(function () {
+                        selectedSubscribers.push($(this).val());
+                    });
+                }
 
                 if (selectedSubscribers.length === 0) {
                     Swal.fire({
@@ -552,31 +623,35 @@
                     discount_value: discountValue,
                     subscribers: selectedSubscribers,
                     discount_type: discountType,
+                    subscriber_type: subscriberType,
+                    offer_start_date: offerStartDate,
+                    offer_end_date: offerEndDate,
                 };
 
                 $.ajax({
                     url: "{{ url('offers_store') }}",
                     method: 'POST',
                     data: formData,
-                                    headers: {
+                    headers: {
                         'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                     },
                     success: function (response) {
                         Swal.fire({
                             icon: 'success',
                             title: 'Success',
-                            text: 'Discount applied successfully!',
+                            text: response.message || 'Discounts & offers applied successfully!',
                         });
                     },
                     error: function (xhr) {
+                        const message = xhr?.responseJSON?.message || 'Failed to apply discount!';
                         Swal.fire({
                             icon: 'error',
                             title: 'Error',
-                text: 'Failed to apply discount!',
+                            text: message,
+                        });
+                    },
+                });
             });
-        },
-    });
-});
 
 
         });

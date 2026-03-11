@@ -14,7 +14,10 @@ class Offers extends Model
     protected $fillable =[
         'user_id',
         'discount_type',
-        'discount_value'
+        'discount_value',
+        'subscriber_type',
+        'offer_start_date',
+        'offer_end_date'
     ];
     public function user(){
         return $this->belongsTo(User::class,'user_id');
