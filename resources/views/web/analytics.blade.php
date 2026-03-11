@@ -268,127 +268,6 @@
         return false; // Returns false if data is not empty
     }
 
-    const LEGEND_FALLBACK_COLORS = [
-        '#3366CC', '#DC3912', '#FF9900', '#109618', '#990099',
-        '#0099C6', '#DD4477', '#66AA00', '#B82E2E', '#316395'
-    ];
-
-    function normalizeColorList(colorValue, totalItems) {
-        if (Array.isArray(colorValue)) {
-            return colorValue;
-        }
-
-        if (typeof colorValue === 'string') {
-            return Array(totalItems).fill(colorValue);
-        }
-
-        return [];
-    }
-
-    function resolveLegendColor(colorValue, index, fallbackColor) {
-        if (Array.isArray(colorValue)) {
-            return resolveLegendColor(colorValue[index], index, fallbackColor);
-        }
-
-        return typeof colorValue === 'string' ? colorValue : fallbackColor;
-    }
-
-    function createSubCategoryLegend(chart) {
-        const labels = chart.data?.labels || [];
-        const dataset = chart.data?.datasets?.[0] || {};
-        const totalItems = labels.length;
-
-        const pointColors = normalizeColorList(dataset.pointBackgroundColor, totalItems);
-        const bgColors = normalizeColorList(dataset.backgroundColor, totalItems);
-        const borderColors = normalizeColorList(dataset.borderColor, totalItems);
-
-        return labels.map((label, index) => {
-            const fallbackColor = LEGEND_FALLBACK_COLORS[index % LEGEND_FALLBACK_COLORS.length];
-            const fillStyle = resolveLegendColor(pointColors[index], index, fallbackColor) ||
-                resolveLegendColor(bgColors[index], index, fallbackColor) ||
-                resolveLegendColor(borderColors[index], index, fallbackColor) ||
-                fallbackColor;
-
-            return {
-                text: String(label ?? ''),
-                fillStyle,
-                strokeStyle: fillStyle,
-                fontColor: '#000000',
-                lineCap: 'butt',
-                lineDash: [],
-                lineDashOffset: 0,
-                lineJoin: 'miter',
-                lineWidth: 0,
-                hidden: false,
-                index
-            };
-        });
-    }
-
-    Chart.register({
-        id: 'analyticsChartEnhancer',
-        beforeUpdate(chart) {
-            const chartType = chart.config.type;
-
-            chart.options.plugins = chart.options.plugins || {};
-            chart.options.plugins.legend = chart.options.plugins.legend || {};
-            chart.options.plugins.legend.display = true;
-            chart.options.plugins.legend.position = 'bottom';
-            chart.options.plugins.legend.labels = chart.options.plugins.legend.labels || {};
-            chart.options.plugins.legend.labels.usePointStyle = false;
-            chart.options.plugins.legend.labels.boxWidth = 12;
-
-            // Only override legend generation where sub-category colors are required per label.
-            if (chartType === 'line' || chartType === 'pie' || chartType === 'doughnut') {
-                chart.options.plugins.legend.labels.generateLabels = (legendChart) => createSubCategoryLegend(legendChart);
-            }
-
-            if (chartType === 'line') {
-                const labelCount = chart.data?.labels?.length || 0;
-
-                chart.data.datasets.forEach((dataset, datasetIndex) => {
-                    const fallbackColor = LEGEND_FALLBACK_COLORS[datasetIndex % LEGEND_FALLBACK_COLORS.length];
-
-                    if (chart.data.datasets.length === 1 && labelCount > 1) {
-                        const pointColors = normalizeColorList(dataset.pointBackgroundColor, labelCount);
-                        const bgColors = normalizeColorList(dataset.backgroundColor, labelCount);
-                        const borderColors = normalizeColorList(dataset.borderColor, labelCount);
-
-                        const resolvedPointColors = chart.data.labels.map((_, index) => (
-                            resolveLegendColor(pointColors[index], index, fallbackColor) ||
-                            resolveLegendColor(bgColors[index], index, fallbackColor) ||
-                            resolveLegendColor(borderColors[index], index, fallbackColor) ||
-                            fallbackColor
-                        ));
-
-                        dataset.pointBackgroundColor = resolvedPointColors;
-                        dataset.pointBorderColor = resolvedPointColors;
-                    } else {
-                        const singleColor = resolveLegendColor(dataset.pointBackgroundColor, 0, fallbackColor) ||
-                            resolveLegendColor(dataset.backgroundColor, 0, fallbackColor) ||
-                            resolveLegendColor(dataset.borderColor, 0, fallbackColor) ||
-                            fallbackColor;
-
-                        dataset.pointBackgroundColor = singleColor;
-                        dataset.pointBorderColor = singleColor;
-                    }
-
-                    dataset.pointRadius = dataset.pointRadius ?? 5;
-                    dataset.pointHoverRadius = dataset.pointHoverRadius ?? 7;
-                });
-            }
-
-            if (chartType === 'pie' || chartType === 'doughnut') {
-                chart.data.datasets.forEach((dataset) => {
-                    dataset.borderWidth = 0;
-                    dataset.borderColor = 'transparent';
-                    dataset.hoverBorderWidth = 0;
-                    dataset.hoverBorderColor = 'transparent';
-                });
-            }
-        }
-    });
-
     function formatBytes(bytes, decimals = 2) {
         if (bytes === 0) return '0 Bytes';
 
@@ -1366,6 +1245,116 @@
 
             return colors;
         }
+
+        // ─────────────────────────────────────────────────────────────────────
+        // GLOBAL CHART FIX – resolves 3 known bugs for ALL chart instances:
+        //
+        // BUG A – Legend color indicators: single-dataset charts (pie/doughnut/
+        //         bar/line) use labels[] for data points, not separate datasets,
+        //         so Chart.js only renders ONE legend item. We override
+        //         generateLabels to produce one coloured box per data label.
+        //
+        // BUG B – Pie/Doughnut extra C-shaped border: borderWidth on single-
+        //         dataset pie/doughnut draws an outer rectangle around the whole
+        //         dataset. Removed by setting borderWidth:0 at dataset level and
+        //         suppressing the legend fillStyle border box.
+        //
+        // BUG C – Line chart coloured dots per sub-category: single-dataset
+        //         line charts use borderColor:'black' globally. We override
+        //         pointBackgroundColor & pointBorderColor per-point so every
+        //         dot matches its legend colour.
+        // ─────────────────────────────────────────────────────────────────────
+        (function patchChartDefaults() {
+
+            // ── Intercept every new Chart() call ──────────────────────────────
+            const OriginalChart = Chart;
+
+            window.Chart = function(ctx, config) {
+
+                const type   = config.type;
+                const data   = config.data;
+                const opts   = config.options = config.options || {};
+                const plugins = opts.plugins  = opts.plugins  || {};
+
+                // ── Collect dataset colours for legend ───────────────────────
+                const isSingleDataset = data.datasets && data.datasets.length === 1;
+                const isMultiColor    = isSingleDataset &&
+                    Array.isArray(data.datasets[0].backgroundColor);
+
+                // ── BUG B fix: strip segment border on pie / doughnut ────────
+                if ((type === 'pie' || type === 'doughnut') && isSingleDataset) {
+                    data.datasets[0].borderWidth = 0;
+                    data.datasets[0].hoverBorderWidth = 1;
+                }
+
+                // ── BUG C fix: coloured dots on line charts ───────────────────
+                if (type === 'line' && isSingleDataset && isMultiColor) {
+                    const ds     = data.datasets[0];
+                    const colors = ds.backgroundColor; // array of per-point colours
+                    // Override borderColor for the line itself (neutral)
+                    ds.borderColor = ds.borderColor || 'rgba(100,100,100,0.4)';
+                    // Per-point colours
+                    ds.pointBackgroundColor = colors;
+                    ds.pointBorderColor     = colors;
+                    ds.pointRadius          = ds.pointRadius          || 6;
+                    ds.pointHoverRadius     = ds.pointHoverRadius     || 9;
+                    ds.pointBorderWidth     = ds.pointBorderWidth     || 2;
+                }
+
+                // ── BUG A fix: one legend item per label with correct colour ──
+                if (isSingleDataset && isMultiColor) {
+                    const legendPlugin = plugins.legend = plugins.legend || {};
+                    legendPlugin.display  = true;
+                    legendPlugin.position = legendPlugin.position || 'bottom';
+
+                    const existingLabels = legendPlugin.labels || {};
+                    legendPlugin.labels = Object.assign({}, existingLabels, {
+                        padding: existingLabels.padding || 20,
+                        // ── Generate one item per data-point label ────────────
+                        generateLabels: function(chart) {
+                            const dataset = chart.data.datasets[0];
+                            const labels  = chart.data.labels || [];
+                            const bgColors = Array.isArray(dataset.backgroundColor)
+                                ? dataset.backgroundColor
+                                : labels.map(() => dataset.backgroundColor);
+
+                            return labels.map(function(lbl, i) {
+                                const isPieDoughnut =
+                                    chart.config.type === 'pie' ||
+                                    chart.config.type === 'doughnut';
+
+                                return {
+                                    text            : lbl,
+                                    fillStyle       : bgColors[i] || '#ccc',
+                                    strokeStyle     : isPieDoughnut
+                                                        ? bgColors[i] || '#ccc'
+                                                        : 'transparent',
+                                    lineWidth       : isPieDoughnut ? 1 : 0,
+                                    // For line charts show a circle dot
+                                    pointStyle      : chart.config.type === 'line'
+                                                        ? 'circle'
+                                                        : 'rect',
+                                    hidden          : false,
+                                    // datasetIndex + index needed for toggle
+                                    datasetIndex    : 0,
+                                    index           : i
+                                };
+                            });
+                        }
+                    });
+                }
+
+                // ── Delegate to real Chart constructor ────────────────────────
+                return new OriginalChart(ctx, config);
+            };
+
+            // Copy all static properties (Chart.register, Chart.getChart, etc.)
+            Object.setPrototypeOf(window.Chart, OriginalChart);
+            Object.keys(OriginalChart).forEach(function(key) {
+                window.Chart[key] = OriginalChart[key];
+            });
+
+        })();
 
 
 
