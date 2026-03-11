@@ -313,6 +313,11 @@
                 text: String(label ?? ''),
                 fillStyle,
                 strokeStyle: fillStyle,
+                fontColor: '#000000',
+                lineCap: 'butt',
+                lineDash: [],
+                lineDashOffset: 0,
+                lineJoin: 'miter',
                 lineWidth: 0,
                 hidden: false,
                 index
@@ -330,7 +335,7 @@
             chart.options.plugins.legend.display = true;
             chart.options.plugins.legend.position = 'bottom';
             chart.options.plugins.legend.labels = chart.options.plugins.legend.labels || {};
-            chart.options.plugins.legend.labels.usePointStyle = true;
+            chart.options.plugins.legend.labels.usePointStyle = false;
             chart.options.plugins.legend.labels.boxWidth = 12;
 
             // Only override legend generation where sub-category colors are required per label.
