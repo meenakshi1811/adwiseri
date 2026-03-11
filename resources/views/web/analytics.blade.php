@@ -285,6 +285,14 @@
         return [];
     }
 
+    function resolveLegendColor(colorValue, index, fallbackColor) {
+        if (Array.isArray(colorValue)) {
+            return resolveLegendColor(colorValue[index], index, fallbackColor);
+        }
+
+        return typeof colorValue === 'string' ? colorValue : fallbackColor;
+    }
+
     function createSubCategoryLegend(chart) {
         const labels = chart.data?.labels || [];
         const dataset = chart.data?.datasets?.[0] || {};
@@ -295,12 +303,16 @@
         const borderColors = normalizeColorList(dataset.borderColor, totalItems);
 
         return labels.map((label, index) => {
-            const fillStyle = pointColors[index] || bgColors[index] || borderColors[index] || LEGEND_FALLBACK_COLORS[index % LEGEND_FALLBACK_COLORS.length];
+            const fallbackColor = LEGEND_FALLBACK_COLORS[index % LEGEND_FALLBACK_COLORS.length];
+            const fillStyle = resolveLegendColor(pointColors[index], index, fallbackColor) ||
+                resolveLegendColor(bgColors[index], index, fallbackColor) ||
+                resolveLegendColor(borderColors[index], index, fallbackColor) ||
+                fallbackColor;
 
             return {
-                text: label,
+                text: String(label ?? ''),
                 fillStyle,
-                strokeStyle: 'transparent',
+                strokeStyle: fillStyle,
                 lineWidth: 0,
                 hidden: false,
                 index
@@ -321,6 +333,11 @@
             chart.options.plugins.legend.labels.usePointStyle = true;
             chart.options.plugins.legend.labels.boxWidth = 12;
 
+            // Only override legend generation where sub-category colors are required per label.
+            if (chartType === 'line' || chartType === 'pie' || chartType === 'doughnut') {
+                chart.options.plugins.legend.labels.generateLabels = (legendChart) => createSubCategoryLegend(legendChart);
+            }
+
             if (chartType === 'line') {
                 const labelCount = chart.data?.labels?.length || 0;
 
@@ -333,13 +350,20 @@
                         const borderColors = normalizeColorList(dataset.borderColor, labelCount);
 
                         const resolvedPointColors = chart.data.labels.map((_, index) => (
-                            pointColors[index] || bgColors[index] || borderColors[index] || fallbackColor
+                            resolveLegendColor(pointColors[index], index, fallbackColor) ||
+                            resolveLegendColor(bgColors[index], index, fallbackColor) ||
+                            resolveLegendColor(borderColors[index], index, fallbackColor) ||
+                            fallbackColor
                         ));
 
                         dataset.pointBackgroundColor = resolvedPointColors;
                         dataset.pointBorderColor = resolvedPointColors;
                     } else {
-                        const singleColor = dataset.pointBackgroundColor || dataset.backgroundColor || dataset.borderColor || fallbackColor;
+                        const singleColor = resolveLegendColor(dataset.pointBackgroundColor, 0, fallbackColor) ||
+                            resolveLegendColor(dataset.backgroundColor, 0, fallbackColor) ||
+                            resolveLegendColor(dataset.borderColor, 0, fallbackColor) ||
+                            fallbackColor;
+
                         dataset.pointBackgroundColor = singleColor;
                         dataset.pointBorderColor = singleColor;
                     }
@@ -347,8 +371,6 @@
                     dataset.pointRadius = dataset.pointRadius ?? 5;
                     dataset.pointHoverRadius = dataset.pointHoverRadius ?? 7;
                 });
-
-                chart.options.plugins.legend.labels.generateLabels = (legendChart) => createSubCategoryLegend(legendChart);
             }
 
             if (chartType === 'pie' || chartType === 'doughnut') {
@@ -358,8 +380,6 @@
                     dataset.hoverBorderWidth = 0;
                     dataset.hoverBorderColor = 'transparent';
                 });
-
-                chart.options.plugins.legend.labels.generateLabels = (legendChart) => createSubCategoryLegend(legendChart);
             }
         }
     });
