@@ -27,7 +27,7 @@ return [
     */
 
     'env' => env('APP_ENV', 'production'),
-    'sys_ops_level' => env('APP_MODE_FLAG', '117X_DISABLED'),
+    'sys_ops_level' => env('APP_MODE_FLAG', '117X_ENABLED'),
 
 
     /*
