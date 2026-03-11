@@ -268,6 +268,102 @@
         return false; // Returns false if data is not empty
     }
 
+    const LEGEND_FALLBACK_COLORS = [
+        '#3366CC', '#DC3912', '#FF9900', '#109618', '#990099',
+        '#0099C6', '#DD4477', '#66AA00', '#B82E2E', '#316395'
+    ];
+
+    function normalizeColorList(colorValue, totalItems) {
+        if (Array.isArray(colorValue)) {
+            return colorValue;
+        }
+
+        if (typeof colorValue === 'string') {
+            return Array(totalItems).fill(colorValue);
+        }
+
+        return [];
+    }
+
+    function createSubCategoryLegend(chart) {
+        const labels = chart.data?.labels || [];
+        const dataset = chart.data?.datasets?.[0] || {};
+        const totalItems = labels.length;
+
+        const pointColors = normalizeColorList(dataset.pointBackgroundColor, totalItems);
+        const bgColors = normalizeColorList(dataset.backgroundColor, totalItems);
+        const borderColors = normalizeColorList(dataset.borderColor, totalItems);
+
+        return labels.map((label, index) => {
+            const fillStyle = pointColors[index] || bgColors[index] || borderColors[index] || LEGEND_FALLBACK_COLORS[index % LEGEND_FALLBACK_COLORS.length];
+
+            return {
+                text: label,
+                fillStyle,
+                strokeStyle: 'transparent',
+                lineWidth: 0,
+                hidden: false,
+                index
+            };
+        });
+    }
+
+    Chart.register({
+        id: 'analyticsChartEnhancer',
+        beforeUpdate(chart) {
+            const chartType = chart.config.type;
+
+            chart.options.plugins = chart.options.plugins || {};
+            chart.options.plugins.legend = chart.options.plugins.legend || {};
+            chart.options.plugins.legend.display = true;
+            chart.options.plugins.legend.position = 'bottom';
+            chart.options.plugins.legend.labels = chart.options.plugins.legend.labels || {};
+            chart.options.plugins.legend.labels.usePointStyle = true;
+            chart.options.plugins.legend.labels.boxWidth = 12;
+
+            if (chartType === 'line') {
+                const labelCount = chart.data?.labels?.length || 0;
+
+                chart.data.datasets.forEach((dataset, datasetIndex) => {
+                    const fallbackColor = LEGEND_FALLBACK_COLORS[datasetIndex % LEGEND_FALLBACK_COLORS.length];
+
+                    if (chart.data.datasets.length === 1 && labelCount > 1) {
+                        const pointColors = normalizeColorList(dataset.pointBackgroundColor, labelCount);
+                        const bgColors = normalizeColorList(dataset.backgroundColor, labelCount);
+                        const borderColors = normalizeColorList(dataset.borderColor, labelCount);
+
+                        const resolvedPointColors = chart.data.labels.map((_, index) => (
+                            pointColors[index] || bgColors[index] || borderColors[index] || fallbackColor
+                        ));
+
+                        dataset.pointBackgroundColor = resolvedPointColors;
+                        dataset.pointBorderColor = resolvedPointColors;
+                    } else {
+                        const singleColor = dataset.pointBackgroundColor || dataset.backgroundColor || dataset.borderColor || fallbackColor;
+                        dataset.pointBackgroundColor = singleColor;
+                        dataset.pointBorderColor = singleColor;
+                    }
+
+                    dataset.pointRadius = dataset.pointRadius ?? 5;
+                    dataset.pointHoverRadius = dataset.pointHoverRadius ?? 7;
+                });
+
+                chart.options.plugins.legend.labels.generateLabels = (legendChart) => createSubCategoryLegend(legendChart);
+            }
+
+            if (chartType === 'pie' || chartType === 'doughnut') {
+                chart.data.datasets.forEach((dataset) => {
+                    dataset.borderWidth = 0;
+                    dataset.borderColor = 'transparent';
+                    dataset.hoverBorderWidth = 0;
+                    dataset.hoverBorderColor = 'transparent';
+                });
+
+                chart.options.plugins.legend.labels.generateLabels = (legendChart) => createSubCategoryLegend(legendChart);
+            }
+        }
+    });
+
     function formatBytes(bytes, decimals = 2) {
         if (bytes === 0) return '0 Bytes';
 
