@@ -3738,6 +3738,10 @@ class WebController extends Controller
 
     public function create_new_invoice(Request $request)
     {
+        $request->validate([
+            'amount' => 'required|numeric|min:0',
+        ]);
+
         function invoice_id()
         {
             $ch = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -3796,12 +3800,16 @@ class WebController extends Controller
                 $invoice->to_pincode = $client->pincode;
                 $invoice->to_address = $client->address;
                 $invoice->detail = $request['detail'];
-                $invoice->amount = $request['amount'];
+                $invoiceAmount = (float) $request['amount'];
+                $discountRate = ((float) ($inv_setting->discount ?? 0)) / 100;
+                $taxRate = ((float) ($inv_setting->tax ?? 0)) / 100;
+
+                $invoice->amount = $invoiceAmount;
                 $invoice->type = 'ar';
                 $invoice->discount = $inv_setting->discount ?? 0;
                 $invoice->tax = $inv_setting->tax  ?? 0;
-                $subtotal = ($request['amount'] - ($request['amount'] * ($inv_setting->discount  ?? 0 / 100)));
-                $invoice->total = $subtotal + ($subtotal * ($inv_setting->tax  ?? 0 / 100));
+                $subtotal = $invoiceAmount - ($invoiceAmount * $discountRate);
+                $invoice->total = $subtotal + ($subtotal * $taxRate);
                 $invoice->status = $request['status'];
                 $invoice->due_date = $request['due_date'];
                 $invoice->token = invoice_token();
@@ -3886,6 +3894,10 @@ class WebController extends Controller
 
     public function create_new_invoice_ap(Request $request)
     {
+        $request->validate([
+            'amount' => 'required|numeric|min:0',
+        ]);
+
         function invoice_id()
         {
             $ch = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -3945,12 +3957,16 @@ class WebController extends Controller
                 $invoice->to_pincode = $client->pincode;
                 $invoice->to_address = $client->address;
                 $invoice->detail = $request['detail'];
-                $invoice->amount = $request['amount'];
+                $invoiceAmount = (float) $request['amount'];
+                $discountRate = ((float) ($inv_setting->discount ?? 0)) / 100;
+                $taxRate = ((float) ($inv_setting->tax ?? 0)) / 100;
+
+                $invoice->amount = $invoiceAmount;
                 $invoice->type = 'ap';
                 $invoice->discount = $inv_setting->discount ?? 0;
                 $invoice->tax = $inv_setting->tax  ?? 0;
-                $subtotal = ($request['amount'] - ($request['amount'] * ($inv_setting->discount  ?? 0 / 100)));
-                $invoice->total = $subtotal + ($subtotal * ($inv_setting->tax  ?? 0 / 100));
+                $subtotal = $invoiceAmount - ($invoiceAmount * $discountRate);
+                $invoice->total = $subtotal + ($subtotal * $taxRate);
                 $invoice->status = $request['status'];
                 $invoice->due_date = $request['due_date'];
                 $invoice->token = invoice_token();
