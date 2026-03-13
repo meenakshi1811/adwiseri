@@ -89,6 +89,8 @@ Route::post('/visa-enquiries/update/{id}', [App\Http\Controllers\WebController::
 Route::post('/save-appointment',[App\Http\Controllers\WebController::class,'storeAppointment'])->name('save_appointment');
 Route::get('/appointment/{appointment}/{action}', [App\Http\Controllers\WebController::class, 'respondToAppointment'])->name('appointment.respond')->middleware('signed');
 Route::post('/save-report-settings',[App\Http\Controllers\WebController::class,'saveReportSettings'])->name('save_report_settings');
+Route::get('/email-templates', [App\Http\Controllers\WebController::class, 'getEmailTemplates'])->name('email_templates')->middleware('auth');
+Route::post('/save-email-template', [App\Http\Controllers\WebController::class, 'saveEmailTemplate'])->name('save_email_template')->middleware('auth');
 Route::get('/scheduled-report-download/{file}', [App\Http\Controllers\WebController::class, 'downloadScheduledReport'])->name('scheduled_report_download')->middleware('signed');
 
 Route::get('/aboutadwiseri', [App\Http\Controllers\WebController::class, 'aboutadvisori'])->name('aboutadvisori');
