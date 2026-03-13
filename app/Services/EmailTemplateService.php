@@ -29,6 +29,7 @@ class EmailTemplateService
 
     public function getTemplateForUser(?User $owner, string $audience, string $templateKey): ?EmailTemplate
     {
+        $templateKey = $this->normalizeTemplateKey($templateKey);
         $ownerId = $owner?->id;
 
         if ($ownerId) {
@@ -106,18 +107,26 @@ class EmailTemplateService
 
     public function saveTemplate(User $owner, array $payload): EmailTemplate
     {
+        $audience = strtolower(trim((string) $payload['audience']));
+        $templateKey = $this->normalizeTemplateKey((string) $payload['template_key']);
+
         return EmailTemplate::updateOrCreate(
             [
                 'owner_user_id' => $owner->id,
-                'audience' => $payload['audience'],
-                'template_key' => $payload['template_key'],
+                'audience' => $audience,
+                'template_key' => $templateKey,
             ],
             [
-                'template_name' => $payload['template_name'],
-                'custom_name' => $payload['custom_name'] ?? null,
-                'subject' => $payload['subject'] ?? null,
+                'template_name' => trim((string) $payload['template_name']),
+                'custom_name' => isset($payload['custom_name']) ? trim((string) $payload['custom_name']) : null,
+                'subject' => isset($payload['subject']) ? trim((string) $payload['subject']) : null,
                 'body' => $payload['body'] ?? null,
             ]
         );
+    }
+
+    private function normalizeTemplateKey(string $templateKey): string
+    {
+        return strtolower(trim($templateKey));
     }
 }
