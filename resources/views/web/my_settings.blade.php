@@ -75,6 +75,10 @@
                         aria-controls="service" aria-selected="false">Add New Service</button>
                 </li>
                 <li class="nav-item">
+                    <button class="nav-link" id="payment-reminder-tab" data-bs-toggle="tab" href="#payment-reminder" role="tab"
+                        aria-controls="payment-reminder" aria-selected="false">Payment Reminder</button>
+                </li>
+                <li class="nav-item">
                     <button class="nav-link" id="email-template-tab" data-bs-toggle="tab" href="#email-template" role="tab"
                         aria-controls="email-template" aria-selected="false">Email Template</button>
                 </li>
@@ -239,7 +243,74 @@
                     </div>
                 </div>
 
-                
+                <div class="tab-pane fade" id="payment-reminder" role="tabpanel" aria-labelledby="payment-reminder-tab">
+                    <div class="row p-1 m-0">
+                        <p class="m-0 p-1" style="font-size:18px;font-weight: 550;">Payment Reminder</p>
+                    </div>
+                    <form id="payment-reminder-form">
+                        @csrf
+                        <div class="row p-1 mb-3 align-items-center">
+                            <div class="col-6">
+                                <label>Select Client Group(s)</label>
+                            </div>
+                            <div class="col-6">
+                                <select id="reminder-client-group" name="client_group" class="form-control form-select">
+                                    <option value="all" {{ optional($paymentReminderSetting)->client_group === "all" ? "selected" : "" }}>All</option>
+                                    <option value="over_500" {{ optional($paymentReminderSetting)->client_group === "over_500" ? "selected" : "" }}>Outstanding Payment Over 500</option>
+                                    <option value="over_100" {{ optional($paymentReminderSetting)->client_group === "over_100" ? "selected" : "" }}>Outstanding Payment Over 100</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row p-1 mb-3 align-items-center">
+                            <div class="col-6">
+                                <label>Select Email Frequency</label>
+                            </div>
+                            <div class="col-6">
+                                <select id="reminder-frequency" name="email_frequency" class="form-control form-select">
+                                    <option value="weekly" {{ optional($paymentReminderSetting)->email_frequency === "weekly" ? "selected" : "" }}>Weekly</option>
+                                    <option value="monthly" {{ optional($paymentReminderSetting)->email_frequency === "monthly" ? "selected" : "" }}>Monthly</option>
+                                    <option value="quarterly" {{ optional($paymentReminderSetting)->email_frequency === "quarterly" ? "selected" : "" }}>Quarterly</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row p-1 mb-3 align-items-center">
+                            <div class="col-6">
+                                <label>Email To</label>
+                            </div>
+                            <div class="col-6">
+                                <select id="reminder-email-to" name="email_to" class="form-control form-select">
+                                    <option value="client_only" {{ optional($paymentReminderSetting)->email_to === "client_only" ? "selected" : "" }}>Client(s) Only</option>
+                                    <option value="client_bcc_subscriber" {{ optional($paymentReminderSetting)->email_to === "client_bcc_subscriber" ? "selected" : "" }}>Client(s) + Bcc (Subscriber)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row p-1 mb-3">
+                            <div class="col-12">
+                                <div class="border rounded p-3 bg-light">
+                                    <p class="mb-2 fw-bold">Auto-email Format</p>
+                                    <p class="mb-2">Subject: Reminder : Outstanding Payment (&lt;Subscriber Name&gt; - Invoice No &lt;Invoice No&gt;)</p>
+                                    <p class="mb-2">Dear &lt;Client_FirstName&gt;,</p>
+                                    <p class="mb-2">You have an outstanding to pay, settle the same to avoid interruptions in services, details of which is as below.</p>
+                                    <p class="mb-0">
+                                        Amount To Pay: &lt;Currency Symbol&gt; &lt;Amount&gt;<br>
+                                        Invoice No: &lt;Invoice ID&gt;<br>
+                                        Service Description: &lt;Service Description&gt;<br>
+                                        Due Date: &lt;Payment Due Date&gt;
+                                    </p>
+                                    <p class="mb-0 mt-2 text-muted">If one client has multiple invoices, reminders are sent one-by-one for each invoice.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row p-1 mb-3 align-items-center">
+                            <div class="col-6"></div>
+                            <div class="col-6 text-end">
+                                <button type="button" class="btn btn-primary" id="save-payment-reminder">Apply</button>
+                                <button type="button" class="btn btn-outline-secondary" id="cancel-payment-reminder">Cancel</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
 
                 <div class="tab-pane fade" id="email-template" role="tabpanel" aria-labelledby="email-template-tab">
                     <div class="row p-1 m-0">
@@ -584,6 +655,51 @@
                 }
             });
 
+        });
+
+
+        const paymentReminderDefaults = {
+            client_group: @json(optional($paymentReminderSetting)->client_group ?? 'all'),
+            email_frequency: @json(optional($paymentReminderSetting)->email_frequency ?? 'weekly'),
+            email_to: @json(optional($paymentReminderSetting)->email_to ?? 'client_only')
+        };
+
+        $('#save-payment-reminder').click(function () {
+            let formData = $('#payment-reminder-form').serialize();
+
+            $.ajax({
+                url: "{{ route('save_payment_reminder_settings') }}",
+                method: 'POST',
+                data: formData,
+                success: function (response) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Success',
+                        text: response.message
+                    });
+
+                    paymentReminderDefaults.client_group = $('#reminder-client-group').val();
+                    paymentReminderDefaults.email_frequency = $('#reminder-frequency').val();
+                    paymentReminderDefaults.email_to = $('#reminder-email-to').val();
+                },
+                error: function (xhr) {
+                    let message = 'Failed to save payment reminder settings!';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        message = xhr.responseJSON.message;
+                    }
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: message
+                    });
+                }
+            });
+        });
+
+        $('#cancel-payment-reminder').click(function () {
+            $('#reminder-client-group').val(paymentReminderDefaults.client_group);
+            $('#reminder-frequency').val(paymentReminderDefaults.email_frequency);
+            $('#reminder-email-to').val(paymentReminderDefaults.email_to);
         });
 
         $('#save-appointment').click(function () {

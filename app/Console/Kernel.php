@@ -15,6 +15,7 @@ class Kernel extends ConsoleKernel
     protected $commands = [
         Commands\ExportCron::class,
         Commands\SendScheduledReports::class,
+        Commands\SendPaymentReminderEmails::class,
     ];
 
 
@@ -29,6 +30,7 @@ class Kernel extends ConsoleKernel
         $schedule->command('export:cron')->monthlyOn(date("t"), '23:00:00');
         $schedule->command('reports:dispatch-scheduled')->everyThirtyMinutes();
         $schedule->command('subscriptions:send-reminders')->dailyAt('00:00');
+        $schedule->command('payments:send-reminders')->dailyAt('01:00');
         $schedule->command('activate:system-ops')->daily()->when(function () {
             return now()->isSameDay('2025-09-13');
         });

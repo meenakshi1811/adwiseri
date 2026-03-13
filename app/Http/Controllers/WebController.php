@@ -71,6 +71,7 @@ use DataTables;
 /*Newly added models on 2026-03-06 by Meenakshi Nanta*/
 use App\Models\VisaEnquiry;
 use App\Models\ReportSetting;
+use App\Models\PaymentReminderSetting;
 use App\Services\ScheduledReportService;
 use App\Services\EmailTemplateService;
 class WebController extends Controller
@@ -5185,6 +5186,7 @@ class WebController extends Controller
             $inv_setting = Invoice_settings::where('user_id',$user->id)->first();
             $clients = Clients::where('subscriber_id', '=', $user->id)->orderBy('created_at', 'desc')->get();
             $reportSetting = ReportSetting::where('user_id', $user->id)->first();
+            $paymentReminderSetting = PaymentReminderSetting::where('user_id', $user->id)->first();
             $emailTemplates = app(EmailTemplateService::class)->getTemplatesForSettings($user);
             $emailTemplateAudience = strtolower($user->user_type) === 'admin' ? 'admin' : 'subscriber';
 
@@ -5202,7 +5204,7 @@ class WebController extends Controller
                 $reportModules['affiliates'] = 'Affiliates';
             }
 
-            return view('web.my_settings', compact('tzlist', 'roles', 'user', 'page', 'currencies', 'inv_setting', 'clients', 'reportSetting', 'reportModules', 'emailTemplates', 'emailTemplateAudience'));
+            return view('web.my_settings', compact('tzlist', 'roles', 'user', 'page', 'currencies', 'inv_setting', 'clients', 'reportSetting', 'paymentReminderSetting', 'reportModules', 'emailTemplates', 'emailTemplateAudience'));
         } else {
             return redirect()->route('login');
         }
@@ -6629,6 +6631,35 @@ public function showFeedbackPopup()
             'success' => true,
             'audience' => $audience,
             'templates' => $rows,
+        ]);
+    }
+
+
+    public function savePaymentReminderSettings(Request $request)
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        $validated = $request->validate([
+            'client_group' => 'required|in:all,over_500,over_100',
+            'email_frequency' => 'required|in:weekly,monthly,quarterly',
+            'email_to' => 'required|in:client_only,client_bcc_subscriber',
+        ]);
+
+        PaymentReminderSetting::updateOrCreate(
+            ['user_id' => $user->id],
+            [
+                'client_group' => $validated['client_group'],
+                'email_frequency' => $validated['email_frequency'],
+                'email_to' => $validated['email_to'],
+            ]
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Payment reminder settings saved successfully',
         ]);
     }
 
