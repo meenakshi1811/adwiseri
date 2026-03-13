@@ -39,7 +39,9 @@ class EmailVerification extends Mailable
 
         $owner = $templateService->resolveTemplateOwner($data);
 
+       
         $template = $templateService->getTemplateForUser($owner, 'admin', $templateKey);
+    //    echo'<pre>';print_r($template);echo'</pre>';exit;
         if (!$template) {
             return $this->subject($defaultSubject)->view('web.emailtemplate', compact('data'));
         }
