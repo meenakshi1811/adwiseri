@@ -2,8 +2,8 @@
 
 namespace App\Mail;
 
+use App\Services\EmailTemplateService;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 
@@ -11,38 +11,61 @@ class EmailVerification extends Mailable
 {
     use Queueable, SerializesModels;
 
-    /**
-     * Create a new message instance.
-     *
-     * @return void
-     */
+    protected $data;
+
     public function __construct($maildata)
     {
         $this->data = $maildata;
-        //
     }
 
-    /**
-     * Build the message.
-     *
-     * @return $this
-     */
     public function build()
     {
         $data = $this->data;
-        // $user = $this->user;
-        if(isset($data->password)){
-            return $this->subject(" adwiseri Password Recovery OTP")->view('web.emailtemplate',compact('data'));
+        $templateService = app(EmailTemplateService::class);
+
+        $templateKey = 'otp_email';
+        $defaultSubject = 'adwiseri Email Verification';
+
+        if (isset($data->password)) {
+            $templateKey = 'forgot_password_email';
+            $defaultSubject = 'adwiseri Password Recovery OTP';
+        } elseif (isset($data->message)) {
+            $templateKey = 'contact_us_notification_email';
+            $defaultSubject = 'New Message from adwiseri.com (Contact Us)';
+        } elseif (isset($data->how_did_hear)) {
+            $templateKey = 'demo_request_notification_email';
+            $defaultSubject = 'Demo Request from adwiseri.com';
         }
-        elseif(isset($data->message)){
-            return $this->subject("New Message from adwiseri.com (Contact Us)")->view('web.emailtemplate',compact('data'));
+
+        $owner = $templateService->resolveTemplateOwner($data);
+
+        $template = $templateService->getTemplateForUser($owner, 'admin', $templateKey);
+        if (!$template) {
+            return $this->subject($defaultSubject)->view('web.emailtemplate', compact('data'));
         }
-        elseif(isset($data->how_did_hear)){
-            return $this->subject("Demo Request from adwiseri.comc")->view('web.emailtemplate',compact('data'));
+
+        $content = $this->replacePlaceholders($template->body, $data);
+        $subject = $this->replacePlaceholders($template->subject ?: $defaultSubject, $data);
+
+        return $this->subject($subject)->view('web.dynamic_email_template', compact('content'));
+    }
+
+    private function replacePlaceholders(?string $text, $data): string
+    {
+        $content = (string) $text;
+        $map = [];
+        if (is_array($data)) {
+            $map = $data;
+        } elseif (is_object($data)) {
+            $map = (array) $data;
         }
-        else{
-            return $this->subject(" adwiseri Email Verification")->view('web.emailtemplate',compact('data'));
+
+        foreach ($map as $key => $value) {
+            if (is_scalar($value) || is_null($value)) {
+                $content = str_replace('{{' . $key . '}}', (string) $value, $content);
+            }
         }
-        // return $this->view('web.emailtemplate',compact('data'));
+
+        return $content;
     }
 }
