@@ -329,12 +329,13 @@
 
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.ckeditor.com/4.22.1/standard/ckeditor.js"></script>
+    <script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/classic/ckeditor.js"></script>
 
 
     <script>
         const emailTemplateAudience = @json($emailTemplateAudience);
-        const emailTemplatesData = @json(($emailTemplates[$emailTemplateAudience] ?? collect())->values());
+        const emailTemplatesData = @json(($emailTemplates[$emailTemplateAudience] ?? collect()->values()));
+        let emailTemplateEditor = null;
         function getTemplatesMap() {
             const rows = (emailTemplatesData || []);
             return rows.reduce((acc, row) => {
@@ -358,8 +359,8 @@
             $('#otherTemplateName').val(template.custom_name || '');
             $('#emailTemplateSubject').val(template.subject || '');
             const body = template.body || '';
-            if (CKEDITOR.instances.emailTemplateBody) {
-                CKEDITOR.instances.emailTemplateBody.setData(body);
+            if (emailTemplateEditor) {
+                emailTemplateEditor.setData(body);
             } else {
                 $('#emailTemplateBody').val(body);
             }
@@ -651,14 +652,22 @@
                 $('.subscriber-checkbox').prop('checked', isChecked);
             });
 
-            if (window.CKEDITOR) {
-                CKEDITOR.replace('emailTemplateBody');
+            if (window.ClassicEditor) {
+                ClassicEditor.create(document.querySelector('#emailTemplateBody'))
+                    .then(editor => {
+                        emailTemplateEditor = editor;
+                        renderEmailTemplateOptions();
+                    })
+                    .catch(() => {
+                        renderEmailTemplateOptions();
+                    });
+            } else {
+                renderEmailTemplateOptions();
             }
-            renderEmailTemplateOptions();
-                        $('#emailTemplateKey').on('change', renderEmailTemplateDetails);
+            $('#emailTemplateKey').on('change', renderEmailTemplateDetails);
             $('#save-email-template').on('click', function () {
                 const templateKey = $('#emailTemplateKey').val();
-                const body = CKEDITOR.instances.emailTemplateBody ? CKEDITOR.instances.emailTemplateBody.getData() : $('#emailTemplateBody').val();
+                const body = emailTemplateEditor ? emailTemplateEditor.getData() : $('#emailTemplateBody').val();
                 $.ajax({
                     url: "{{ route('save_email_template') }}",
                     method: 'POST',
