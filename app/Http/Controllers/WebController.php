@@ -72,6 +72,7 @@ use DataTables;
 use App\Models\VisaEnquiry;
 use App\Models\ReportSetting;
 use App\Services\ScheduledReportService;
+use App\Services\EmailTemplateService;
 class WebController extends Controller
 {
     public function add_subscriber_roles()
@@ -5184,6 +5185,8 @@ class WebController extends Controller
             $inv_setting = Invoice_settings::where('user_id',$user->id)->first();
             $clients = Clients::where('subscriber_id', '=', $user->id)->orderBy('created_at', 'desc')->get();
             $reportSetting = ReportSetting::where('user_id', $user->id)->first();
+            $emailTemplates = app(EmailTemplateService::class)->getTemplatesForSettings($user);
+            $emailTemplateAudience = strtolower($user->user_type) === 'admin' ? 'admin' : 'subscriber';
 
             $reportModules = [
                 'clients' => 'Clients',
@@ -5199,7 +5202,7 @@ class WebController extends Controller
                 $reportModules['affiliates'] = 'Affiliates';
             }
 
-            return view('web.my_settings', compact('tzlist', 'roles', 'user', 'page', 'currencies', 'inv_setting', 'clients', 'reportSetting', 'reportModules'));
+            return view('web.my_settings', compact('tzlist', 'roles', 'user', 'page', 'currencies', 'inv_setting', 'clients', 'reportSetting', 'reportModules', 'emailTemplates', 'emailTemplateAudience'));
         } else {
             return redirect()->route('login');
         }
@@ -6574,6 +6577,59 @@ public function showFeedbackPopup()
                 'message' => 'Appointment link created successfully, but SMS could not be delivered.',
             ];
         }
+    }
+
+
+    public function saveEmailTemplate(Request $request, EmailTemplateService $emailTemplateService)
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        $validated = $request->validate([
+            'template_key' => 'required|string|max:100',
+            'template_name' => 'required|string|max:191',
+            'custom_name' => 'nullable|string|max:191',
+            'subject' => 'nullable|string|max:191',
+            'body' => 'nullable|string',
+        ]);
+
+        $validated['audience'] = strtolower($user->user_type) === 'admin' ? 'admin' : 'subscriber';
+
+        $emailTemplateService->saveTemplate($user, $validated);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Email template saved successfully',
+        ]);
+    }
+
+    public function getEmailTemplates(EmailTemplateService $emailTemplateService)
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        $audience = strtolower($user->user_type) === 'admin' ? 'admin' : 'subscriber';
+        $templates = $emailTemplateService->getTemplatesForSettings($user);
+        $rows = $templates[$audience]->map(function ($template) {
+            return [
+                'audience' => $template->audience,
+                'template_key' => $template->template_key,
+                'template_name' => $template->template_name,
+                'custom_name' => $template->custom_name,
+                'subject' => $template->subject,
+                'body' => $template->body,
+            ];
+        })->values();
+
+        return response()->json([
+            'success' => true,
+            'audience' => $audience,
+            'templates' => $rows,
+        ]);
     }
 
     public function saveReportSettings(Request $request, ScheduledReportService $scheduledReportService)

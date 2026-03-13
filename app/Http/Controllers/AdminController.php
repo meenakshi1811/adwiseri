@@ -55,7 +55,7 @@ use App\Models\PaymentARs;
 use Carbon\CarbonInterface;
 
 use DataTables;
-
+use App\Services\EmailTemplateService;
 
 class AdminController extends Controller
 {
@@ -3375,7 +3375,9 @@ class AdminController extends Controller
             $currencies = Currency::orderBy('currency_code')->get();
             $inv_setting = Invoice_settings::find($user->id);
             $subscribers = User::where('user_type', 'Subscriber')->where('membership', '!=', 'Free')->where('membership_type', 'Subscription')->orderBy('name')->get();
-            return view('admin.settings', compact('tzlist', 'user', 'page', 'countries', 'currencies', 'inv_setting', 'subscribers'));
+            $emailTemplates = app(EmailTemplateService::class)->getTemplatesForSettings($user);
+            $emailTemplateAudience = strtolower($user->user_type) === 'admin' ? 'admin' : 'subscriber';
+            return view('admin.settings', compact('tzlist', 'user', 'page', 'countries', 'currencies', 'inv_setting', 'subscribers', 'emailTemplates', 'emailTemplateAudience'));
         } else {
             return redirect()->route('admin');
         }
