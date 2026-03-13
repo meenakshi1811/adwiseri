@@ -71,6 +71,39 @@ class EmailTemplateService
         ];
     }
 
+
+    public function resolveTemplateOwner($data): ?User
+    {
+        $payload = is_array($data) ? $data : (array) $data;
+
+        if (!empty($payload['subscriber_id'])) {
+            $subscriber = User::find($payload['subscriber_id']);
+            if ($subscriber) {
+                return $subscriber;
+            }
+        }
+
+        if (!empty($payload['email'])) {
+            $recipient = User::where('email', $payload['email'])->first();
+            if ($recipient) {
+                if (strtolower((string) $recipient->user_type) === 'admin') {
+                    return $recipient;
+                }
+
+                if (!empty($recipient->added_by)) {
+                    $subscriber = User::find($recipient->added_by);
+                    if ($subscriber) {
+                        return $subscriber;
+                    }
+                }
+
+                return $recipient;
+            }
+        }
+
+        return null;
+    }
+
     public function saveTemplate(User $owner, array $payload): EmailTemplate
     {
         return EmailTemplate::updateOrCreate(

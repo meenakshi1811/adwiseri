@@ -333,7 +333,6 @@
 
 
     <script>
-        
         const emailTemplateAudience = @json($emailTemplateAudience);
         const emailTemplatesData = @json(($emailTemplates[$emailTemplateAudience] ?? collect()->values()));
         let emailTemplateEditor = null;

@@ -2,7 +2,6 @@
 
 namespace App\Mail;
 
-use App\Models\User;
 use App\Services\EmailTemplateService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
@@ -22,8 +21,9 @@ class SupportMail extends Mailable
     public function build()
     {
         $data = $this->data;
-        $owner = !empty($data->subscriber_id) ? User::find($data->subscriber_id) : null;
-        $template = app(EmailTemplateService::class)->getTemplateForUser($owner, 'admin', 'support_ticket_notification_email');
+        $templateService = app(EmailTemplateService::class);
+        $owner = $templateService->resolveTemplateOwner($data);
+        $template = $templateService->getTemplateForUser($owner, 'admin', 'support_ticket_notification_email');
 
         if (!$template) {
             if ($data->attachment) {

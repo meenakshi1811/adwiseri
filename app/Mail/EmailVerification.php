@@ -2,7 +2,6 @@
 
 namespace App\Mail;
 
-use App\Models\User;
 use App\Services\EmailTemplateService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
@@ -38,10 +37,7 @@ class EmailVerification extends Mailable
             $defaultSubject = 'Demo Request from adwiseri.com';
         }
 
-        $owner = null;
-        if (!empty($data->subscriber_id)) {
-            $owner = User::find($data->subscriber_id);
-        }
+        $owner = $templateService->resolveTemplateOwner($data);
 
         $template = $templateService->getTemplateForUser($owner, 'admin', $templateKey);
         if (!$template) {
