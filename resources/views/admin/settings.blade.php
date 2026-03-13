@@ -34,6 +34,10 @@
                     <button class="nav-link" id="reports-tab" data-bs-toggle="tab" href="#reports" role="tab"
                         aria-controls="reports" aria-selected="false">Reports</button>
                 </li>
+                <li class="nav-item">
+                    <button class="nav-link" id="email-template-tab" data-bs-toggle="tab" href="#email-template" role="tab"
+                        aria-controls="email-template" aria-selected="false">Email Template</button>
+                </li>
             </ul>
 
             <!-- Tabs Content -->
@@ -276,6 +280,43 @@
                                 </div>
                     </div>
                 </div>
+                <div class="tab-pane fade" id="email-template" role="tabpanel" aria-labelledby="email-template-tab">
+                    <div class="row p-1 m-0">
+                        <p class="m-0 p-1" style="font-size:18px;font-weight: 550;">Email Template</p>
+                    </div>
+                    <form id="email-template-form">
+                        @csrf
+                        <input type="hidden" id="emailAudience" name="audience" value="{{ $emailTemplateAudience }}">
+                        <div class="row p-1 mb-3 align-items-center">
+                            <div class="col-6"><label>Audience</label></div>
+                            <div class="col-6">
+                                <input type="text" class="form-control" value="{{ $emailTemplateAudience === 'admin' ? 'Admin Mail Templates' : 'Subscriber Mail Templates' }}" readonly>
+                            </div>
+                        </div>
+                        <div class="row p-1 mb-3 align-items-center">
+                            <div class="col-6"><label>Select Email Template</label></div>
+                            <div class="col-6"><select id="emailTemplateKey" class="form-control form-select" name="template_key"></select></div>
+                        </div>
+                        <div class="row p-1 mb-3 align-items-center" id="otherTemplateRow" style="display:none;">
+                            <div class="col-6"><label>Other (text input)</label></div>
+                            <div class="col-6"><input type="text" id="otherTemplateName" class="form-control" name="custom_name" placeholder="Template name"></div>
+                        </div>
+                        <div class="row p-1 mb-3 align-items-center">
+                            <div class="col-6"><label>Subject</label></div>
+                            <div class="col-6"><input type="text" id="emailTemplateSubject" class="form-control" name="subject" placeholder="Email subject"></div>
+                        </div>
+                        <div class="row p-1 mb-3 align-items-start">
+                            <div class="col-6"><label>Email Body</label></div>
+                            <div class="col-6"><textarea id="emailTemplateBody" name="body" class="form-control" rows="8"></textarea></div>
+                        </div>
+                        <div class="row p-1 m-0">
+                            <div class="col-12 text-end">
+                                <button type="button" class="btn btn-primary" id="save-email-template">Save</button>
+                                <button type="button" class="btn btn-outline-secondary" id="reset-email-template">Reset</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
@@ -288,6 +329,42 @@
 
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.ckeditor.com/4.22.1/standard/ckeditor.js"></script>
+
+
+    <script>
+        const emailTemplateAudience = @json($emailTemplateAudience);
+        const emailTemplatesData = @json(($emailTemplates[$emailTemplateAudience] ?? collect())->values());
+        function getTemplatesMap() {
+            const rows = (emailTemplatesData || []);
+            return rows.reduce((acc, row) => {
+                acc[row.template_key] = row;
+                return acc;
+            }, {});
+        }
+        function renderEmailTemplateOptions() {
+            const map = getTemplatesMap();
+            const select = $('#emailTemplateKey');
+            select.html('');
+            Object.keys(map).forEach((key) => {
+                select.append(`<option value="${key}">${map[key].template_name}</option>`);
+            });
+            renderEmailTemplateDetails();
+        }
+        function renderEmailTemplateDetails() {
+            const key = $('#emailTemplateKey').val();
+            const template = getTemplatesMap()[key] || {};
+            $('#otherTemplateRow').toggle(key === 'other');
+            $('#otherTemplateName').val(template.custom_name || '');
+            $('#emailTemplateSubject').val(template.subject || '');
+            const body = template.body || '';
+            if (CKEDITOR.instances.emailTemplateBody) {
+                CKEDITOR.instances.emailTemplateBody.setData(body);
+            } else {
+                $('#emailTemplateBody').val(body);
+            }
+        }
+    </script>
 
     <script>
         function deleteapplication(id) {
@@ -572,6 +649,37 @@
             $('#selectAll').on('change', function () {
                 const isChecked = $(this).is(':checked');
                 $('.subscriber-checkbox').prop('checked', isChecked);
+            });
+
+            if (window.CKEDITOR) {
+                CKEDITOR.replace('emailTemplateBody');
+            }
+            renderEmailTemplateOptions();
+                        $('#emailTemplateKey').on('change', renderEmailTemplateDetails);
+            $('#save-email-template').on('click', function () {
+                const templateKey = $('#emailTemplateKey').val();
+                const body = CKEDITOR.instances.emailTemplateBody ? CKEDITOR.instances.emailTemplateBody.getData() : $('#emailTemplateBody').val();
+                $.ajax({
+                    url: "{{ route('save_email_template') }}",
+                    method: 'POST',
+                    data: {
+                        _token: "{{ csrf_token() }}",
+                                                template_key: templateKey,
+                        template_name: $('#emailTemplateKey option:selected').text(),
+                        custom_name: templateKey === 'other' ? $('#otherTemplateName').val() : '',
+                        subject: $('#emailTemplateSubject').val(),
+                        body: body,
+                    },
+                    success: function (response) {
+                        Swal.fire({ icon: 'success', title: 'Success', text: response.message });
+                    },
+                    error: function () {
+                        Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to save email template!' });
+                    }
+                });
+            });
+            $('#reset-email-template').on('click', function () {
+                renderEmailTemplateDetails();
             });
 
             $('#offers-settings-form').on('submit', function (e) {
