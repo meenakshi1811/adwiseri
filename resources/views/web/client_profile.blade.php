@@ -220,7 +220,10 @@ $support_roles = UserRoles::where('user_id','=',$user->id)->where('module','=','
         </div>
         <div class="row mt-3">
             <div class="col-lg-8 c-detail">
-                <p>Documents</p>
+                <div class="d-flex justify-content-between align-items-center">
+                <p class="m-0">Documents</p>
+                <button type="button" class="btn btn-primary" onclick="document.getElementById('generate_ccl_box').style.display='flex';">Generate Client Care Letter</button>
+            </div>
                 {{-- <div class="col text-end mb-2"><a onclick="document.getElementById('add_docs').style.display='flex';" class="btn btn-primary">+Add Document</a></div> --}}
                 <div class="docs-client" style="height: auto;">
                     @if(isset($documents))
@@ -276,6 +279,73 @@ $support_roles = UserRoles::where('user_id','=',$user->id)->where('module','=','
 
     </div>
 
+    </div>
+
+    <div id="generate_ccl_box" style="width:100%;display:none;flex-direction:column;position:fixed;top:0;left:0;height:100vh;overflow:scroll;background:rgba(0,0,0,0.3);z-index:99;">
+        <div class="row">
+            <div class="col-lg-4"></div>
+            <div class="col-lg-4 loginouter-box">
+                <div class="col text-end"><button class="btn btn-danger" style="width:fit-content;" onclick="document.getElementById('generate_ccl_box').style.display='none';">Close</button></div>
+                <form class="details-box login-box" method="POST" action="{{ route('generate_client_care_letter') }}">
+                    @csrf
+                    <input type="hidden" name="local_time" class="localtime" />
+                    <input type="hidden" name="client_id" value="{{ $client->id }}" />
+                    <h3 class="mb-4 pt-3 text-center">Generate Client Care Letter</h3>
+
+                    <div class="mb-3">
+                        <label>Document Type</label>
+                        <select name="letter_type" class="form-select" required>
+                            <option value="">Select</option>
+                            <option value="oisc_iaa">Client Care Letter (UK IAA/OISC)</option>
+                            <option value="service_agreement">Service Agreement (Non-IAA)</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label>Initial Consultation Date</label>
+                        <input type="date" name="consultation_date" class="form-control" max="{{ date('Y-m-d') }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label>Application Type</label>
+                        <input type="text" name="application_type" class="form-control" minlength="3" maxlength="150" required>
+                    </div>
+                    <div class="mb-3">
+                        <label>Estimated Timeline</label>
+                        <input type="text" name="estimated_timeline" class="form-control" minlength="2" maxlength="150" required>
+                    </div>
+                    <div class="mb-3">
+                        <label>Merits of the case (%)</label>
+                        <input type="number" name="merits_of_case" class="form-control" min="0" max="100" required>
+                    </div>
+                    <div class="mb-3">
+                        <label>Professional Fee Details</label>
+                        <textarea name="fee_details" class="form-control" rows="2" maxlength="1200"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label>Client Instructions</label>
+                        <textarea name="client_instructions" class="form-control" rows="3" maxlength="4000"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label>Advice Given</label>
+                        <textarea name="advice_given" class="form-control" rows="3" maxlength="4000"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label>Work Agreed to be Done</label>
+                        <textarea name="work_agreed" class="form-control" rows="3" maxlength="4000"></textarea>
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input class="form-check-input" type="checkbox" value="1" id="allowResend" name="allow_resend">
+                        <label class="form-check-label" for="allowResend">Re-send due to correction/mistake</label>
+                    </div>
+                    <div class="mb-3">
+                        <label>Correction Note (required if re-sending)</label>
+                        <textarea name="correction_note" class="form-control" rows="2" maxlength="500"></textarea>
+                    </div>
+
+                    <button type="submit" class="form-control btn btn-primary mb-4">Generate & Send</button>
+                </form>
+            </div>
+            <div class="col-lg-4"></div>
+        </div>
     </div>
 
     <div id="update_box"
@@ -643,4 +713,52 @@ $support_roles = UserRoles::where('user_id','=',$user->id)->where('module','=','
         })
     </script>
 @endif
+
+@if (session()->has('ccl_sent'))
+<script>
+    Swal.fire({
+        icon: 'success',
+        title: 'Done',
+        text: @json(session('ccl_sent'))
+    })
+</script>
+@endif
+@if (session()->has('ccl_exists'))
+<script>
+    Swal.fire({
+        icon: 'info',
+        title: 'Notice',
+        text: @json(session('ccl_exists'))
+    })
+</script>
+@endif
+@if ($errors->has('correction_note'))
+<script>
+    Swal.fire({
+        icon: 'info',
+        title: 'Oops..',
+        text: @json($errors->first('correction_note'))
+    })
+</script>
+@endif
+
+@if (session()->has('ccl_error'))
+<script>
+    Swal.fire({
+        icon: 'error',
+        title: 'Email Failed',
+        text: @json(session('ccl_error'))
+    })
+</script>
+@endif
+@if ($errors->any() && !$errors->has('correction_note'))
+<script>
+    Swal.fire({
+        icon: 'info',
+        title: 'Validation',
+        text: @json($errors->first())
+    })
+</script>
+@endif
+
 @endsection()

@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\URL;
 use DateTime;
 use DateTimeZone;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 use App\Mail\EmailVerification;
 use App\Mail\Invoicemail;
@@ -24,6 +25,7 @@ use App\Mail\SupportMail;
 use App\Mail\WelcomeMail;
 use App\Mail\SubscriptionMail;
 use App\Mail\AppointmentSchedulerMail;
+use App\Mail\ClientCareLetterMail;
 
 use App\Models\User;
 use App\Models\Clients;
@@ -2099,6 +2101,150 @@ class WebController extends Controller
             return view('web.client_profile', compact('client', 'user', 'countries', 'states', 'page', 'documents', 'activities', 'messages', 'applications', 'roles'));
         } else { //view the page.
             return back();
+        }
+    }
+
+    public function generate_client_care_letter(Request $request)
+    {
+        $user = Auth::user();
+        $this->set_timezone();
+        $subscriber = $user->user_type == "Subscriber" ? $user : User::find($user->added_by);
+
+        $validated = $request->validate([
+            'client_id' => 'required|exists:clients,id',
+            'letter_type' => 'required|in:oisc_iaa,service_agreement',
+            'application_type' => 'required|string|min:3|max:150',
+            'application_name' => 'nullable|string|max:150',
+            'consultation_date' => 'required|date',
+            'immigration_status' => 'nullable|string|max:255',
+            'client_instructions' => 'nullable|string|max:4000',
+            'advice_given' => 'nullable|string|max:4000',
+            'work_agreed' => 'nullable|string|max:4000',
+            'estimated_timeline' => 'required|string|min:2|max:150',
+            'key_dates' => 'nullable|string|max:1000',
+            'fee_details' => 'nullable|string|max:1200',
+            'fixed_fee' => 'nullable|string|max:100',
+            'home_office_fee' => 'nullable|string|max:100',
+            'ihs_fee' => 'nullable|string|max:100',
+            'additional_costs' => 'nullable|string|max:1200',
+            'vat_note' => 'nullable|string|max:255',
+            'merits_of_case' => 'required|integer|min:0|max:100',
+            'case_notes' => 'nullable|string|max:1500',
+            'line_manager_name' => 'nullable|string|max:150',
+            'line_manager_phone' => 'nullable|string|max:50',
+            'line_manager_email' => 'nullable|email|max:150',
+            'office_hours' => 'nullable|string|max:150',
+            'complaint_handling_details' => 'nullable|string|max:1500',
+            'oisc_registration_number' => 'nullable|string|max:100',
+            'authorisation_level' => 'nullable|string|max:150',
+            'allow_resend' => 'nullable|in:0,1',
+            'correction_note' => 'nullable|string|max:500',
+            'local_time' => 'nullable|string|max:50',
+        ]);
+
+        $client = Clients::findOrFail($validated['client_id']);
+        $baseDocName = $validated['letter_type'] === 'oisc_iaa' ? 'Client Care Letter' : 'Service Agreement';
+
+        $existingLetter = Client_Docs::where('client_id', $client->id)
+            ->where('doc_name', 'like', $baseDocName . '%')
+            ->orderByDesc('id')
+            ->first();
+
+        $allowResend = (int) ($validated['allow_resend'] ?? 0) === 1;
+
+        if ($existingLetter && !$allowResend) {
+            return back()->with('ccl_exists', $baseDocName . ' has already been sent for this client. Use resend only if details were incorrect.');
+        }
+
+        if ($existingLetter && $allowResend && empty($validated['correction_note'])) {
+            return back()->withErrors(['correction_note' => 'Please add a correction note before re-sending the document.'])->withInput();
+        }
+
+        $letterData = [
+            'client' => $client,
+            'subscriber' => $subscriber,
+            'prepared_by' => $user,
+            'letter_type' => $validated['letter_type'],
+            'document_title' => $baseDocName,
+            'reference_no' => 'IMM/' . now()->format('ymd') . '/' . strtoupper(substr(preg_replace('/[^A-Za-z]/', '', $user->name), 0, 3)),
+            'issue_date' => now()->format('d-m-Y'),
+            'consultation_date' => date('d F Y', strtotime($validated['consultation_date'])),
+            'application_type' => $validated['application_type'],
+            'application_name' => $validated['application_name'] ?? '-',
+            'immigration_status' => $validated['immigration_status'] ?? 'As stated during consultation and based on documents shared.',
+            'client_instructions' => $validated['client_instructions'] ?? 'As discussed with the adviser during initial consultation.',
+            'advice_given' => $validated['advice_given'] ?? 'Advice provided based on information and documents shared by the client.',
+            'work_agreed' => $validated['work_agreed'] ?? 'Preparation, review and submission support for the identified application.',
+            'estimated_timeline' => $validated['estimated_timeline'],
+            'key_dates' => $validated['key_dates'] ?? 'Key dates will be tracked and communicated in writing as the matter progresses.',
+            'fee_details' => $validated['fee_details'] ?? 'Fees discussed during consultation and confirmed in writing.',
+            'fixed_fee' => $validated['fixed_fee'] ?? '0',
+            'home_office_fee' => $validated['home_office_fee'] ?? '0',
+            'ihs_fee' => $validated['ihs_fee'] ?? '0',
+            'additional_costs' => $validated['additional_costs'] ?? 'Additional costs may include translation, interpreter, courier and photocopying expenses.',
+            'vat_note' => $validated['vat_note'] ?? 'No VAT will be charged unless otherwise stated in writing.',
+            'merits_of_case' => $validated['merits_of_case'],
+            'case_notes' => $validated['case_notes'] ?? '',
+            'adviser_name' => $user->name,
+            'adviser_phone' => $user->phone ?? '-',
+            'adviser_email' => $user->email,
+            'line_manager_name' => $validated['line_manager_name'] ?? 'N/A',
+            'line_manager_phone' => $validated['line_manager_phone'] ?? '-',
+            'line_manager_email' => $validated['line_manager_email'] ?? '-',
+            'organisation_name' => $subscriber->organization ?: $subscriber->name,
+            'organisation_address' => $subscriber->address ?: 'Address available on request.',
+            'organisation_phone' => $subscriber->phone ?: '-',
+            'organisation_email' => $subscriber->email,
+            'office_hours' => $validated['office_hours'] ?? '9am to 5pm during weekdays',
+            'complaint_handling_details' => $validated['complaint_handling_details'] ?? 'Please raise concerns first with your case adviser or their line manager in writing.',
+            'oisc_registration_number' => $validated['oisc_registration_number'] ?? 'To be provided by organisation',
+            'authorisation_level' => $validated['authorisation_level'] ?? 'Level 1',
+            'correction_note' => $validated['correction_note'] ?? null,
+        ];
+
+        $pdf = Pdf::loadView('web.client_care_letter_pdf', $letterData)
+            ->setPaper('a4', 'portrait')
+            ->setOption('isHtml5ParserEnabled', true)
+            ->setOption('isPhpEnabled', true);
+
+        $folder = public_path('web_assets/users/client' . $client->id . '/docs/');
+        if (!is_dir($folder)) {
+            mkdir($folder, 0777, true);
+        }
+
+        $fileName = strtolower(str_replace(' ', '-', $baseDocName)) . '-' . $client->id . '-' . time() . '.pdf';
+        file_put_contents($folder . $fileName, $pdf->output());
+
+        $document = new Client_Docs();
+        $document->client_id = $client->id;
+        $document->user_id = $user->id;
+        $document->doc_name = $existingLetter && $allowResend ? $baseDocName . ' (Corrected)' : $baseDocName;
+        $document->doc_file = $fileName;
+        $document->save();
+
+        $activity = new Activities();
+        $activity->subscriber_id = $subscriber->id;
+        $activity->user_id = $user->id;
+        $activity->user_name = $user->name;
+        $activity->client_id = $client->id;
+        $activity->activity_name = $existingLetter && $allowResend ? $baseDocName . ' Re-Sent' : $baseDocName . ' Sent';
+        $activity->activity_detail = $user->name . ' generated and emailed ' . $baseDocName . ' for ' . $client->name . ' at ' . ($validated['local_time'] ?? now()->format('d M, Y H:i:s'));
+        $activity->activity_icon = 'doc.png';
+        $activity->local_time = $validated['local_time'] ?? null;
+        $activity->save();
+
+        try {
+            Mail::to($client->email)->send(new ClientCareLetterMail($letterData, $folder . $fileName));
+            return back()->with('ccl_sent', $baseDocName . ' generated, saved to documents, and emailed to the client for signature.');
+        } catch (\Exception $exception) {
+            Log::error('Client care letter email sending failed.', [
+                'client_id' => $client->id,
+                'client_email' => $client->email,
+                'document' => $fileName,
+                'error' => $exception->getMessage(),
+            ]);
+
+            return back()->with('ccl_error', $baseDocName . ' PDF was generated and saved, but email delivery failed. Please check email settings and try resend.');
         }
     }
 
