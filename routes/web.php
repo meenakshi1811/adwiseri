@@ -175,6 +175,7 @@ Route::post('/add_new_job_role', [App\Http\Controllers\WebController::class, 'ad
 Route::get('/delete_job_role/{id?}/{localtime?}', [App\Http\Controllers\WebController::class, 'delete_job_role'])->name('delete_job_role')->middleware(['auth','check.device']);
 Route::get('/job_id', [App\Http\Controllers\WebController::class, 'job_id'])->name('job_id');
 Route::post('/send_message', [App\Http\Controllers\WebController::class, 'send_message'])->name('send_message');
+Route::post('/generate-client-care-letter', [App\Http\Controllers\WebController::class, 'generate_client_care_letter'])->name('generate_client_care_letter')->middleware(['auth','check.device']);
 Route::get('/wallet', [App\Http\Controllers\WebController::class, 'wallet'])->name('wallet')->middleware(['auth','check.device']);
 Route::get('/referrals', [App\Http\Controllers\WebController::class, 'referrals'])->name('referrals')->middleware(['auth','check.device']);
 Route::post('/add_amount', [App\Http\Controllers\WebController::class, 'add_amount'])->name('add_amount')->middleware(['auth','check.device']);
