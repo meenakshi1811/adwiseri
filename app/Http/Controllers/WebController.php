@@ -2139,10 +2139,10 @@ class WebController extends Controller
             'authorisation_level' => 'nullable|string|max:150',
             'allow_resend' => 'nullable|in:0,1',
             'correction_note' => 'nullable|string|max:500',
-            'local_time' => 'nullable|string|max:50',
         ]);
 
         $client = Clients::findOrFail($validated['client_id']);
+
         $baseDocName = $validated['letter_type'] === 'oisc_iaa' ? 'Client Care Letter' : 'Service Agreement';
 
         $existingLetter = Client_Docs::where('client_id', $client->id)
@@ -2214,7 +2214,7 @@ class WebController extends Controller
 
         $fileName = strtolower(str_replace(' ', '-', $baseDocName)) . '-' . $client->id . '-' . time() . '.pdf';
         file_put_contents($folder . $fileName, $pdf->output());
-
+        // echo $fileName;exit();
         $document = new Client_Docs();
         $document->client_id = $client->id;
         $document->user_id = $user->id;
@@ -2237,6 +2237,7 @@ class WebController extends Controller
             Mail::to($client->email)->send(new ClientCareLetterMail($letterData, $folder . $fileName));
             return back()->with('ccl_sent', $baseDocName . ' generated, saved to documents, and emailed to the client for signature.');
         } catch (\Exception $exception) {
+            echo'<pre>';print_r($exception);exit();
             Log::error('Client care letter email sending failed.', [
                 'client_id' => $client->id,
                 'client_email' => $client->email,

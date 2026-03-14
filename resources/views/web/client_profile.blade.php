@@ -261,7 +261,7 @@ $support_roles = UserRoles::where('user_id','=',$user->id)->where('module','=','
                     </div>
                     <form id="message_form" class="form-control" method="POST" action="{{ route('send_message') }}" style="border:none;">
                         @csrf
-                        <input type="hidden" name="local_time" class="localtime" />
+                        <!-- <input type="hidden" name="local_time" class="localtime" /> -->
                         <input type="hidden" name="client_id" value="{{ $client->id }}" />
                         <div class="row px-2">
                             <div class="col-12 m-0 p-0">
