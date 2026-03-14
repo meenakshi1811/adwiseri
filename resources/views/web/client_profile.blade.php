@@ -222,7 +222,7 @@ $support_roles = UserRoles::where('user_id','=',$user->id)->where('module','=','
             <div class="col-lg-8 c-detail">
                 <div class="d-flex justify-content-between align-items-center">
                 <p class="m-0">Documents</p>
-                <button type="button" class="btn btn-sm btn-primary" onclick="document.getElementById('generate_ccl_box').style.display='flex';">Generate Client Care Letter</button>
+                <button type="button" class="btn btn-primary" onclick="document.getElementById('generate_ccl_box').style.display='flex';">Generate Client Care Letter</button>
             </div>
                 {{-- <div class="col text-end mb-2"><a onclick="document.getElementById('add_docs').style.display='flex';" class="btn btn-primary">+Add Document</a></div> --}}
                 <div class="docs-client" style="height: auto;">
@@ -309,98 +309,28 @@ $support_roles = UserRoles::where('user_id','=',$user->id)->where('module','=','
                         <input type="text" name="application_type" class="form-control" minlength="3" maxlength="150" required>
                     </div>
                     <div class="mb-3">
-                        <label>Application Name</label>
-                        <input type="text" name="application_name" class="form-control" maxlength="150">
-                    </div>
-                    <div class="mb-3">
-                        <label>Client Immigration Status (if known)</label>
-                        <input type="text" name="immigration_status" class="form-control" maxlength="255">
-                    </div>
-                    <div class="mb-3">
-                        <label>Client Instructions</label>
-                        <textarea name="client_instructions" class="form-control" rows="3" maxlength="4000" required></textarea>
-                    </div>
-                    <div class="mb-3">
-                        <label>Advice Given</label>
-                        <textarea name="advice_given" class="form-control" rows="3" maxlength="4000" required></textarea>
-                    </div>
-                    <div class="mb-3">
-                        <label>Work Agreed to be Done</label>
-                        <textarea name="work_agreed" class="form-control" rows="3" maxlength="4000" required></textarea>
-                    </div>
-                    <div class="mb-3">
                         <label>Estimated Timeline</label>
                         <input type="text" name="estimated_timeline" class="form-control" minlength="2" maxlength="150" required>
-                    </div>
-                    <div class="mb-3">
-                        <label>Key Dates</label>
-                        <textarea name="key_dates" class="form-control" rows="2" maxlength="1000" required></textarea>
                     </div>
                     <div class="mb-3">
                         <label>Merits of the case (%)</label>
                         <input type="number" name="merits_of_case" class="form-control" min="0" max="100" required>
                     </div>
                     <div class="mb-3">
-                        <label>Case Notes</label>
-                        <textarea name="case_notes" class="form-control" rows="2" maxlength="1500"></textarea>
-                    </div>
-                    <div class="mb-3">
                         <label>Professional Fee Details</label>
                         <textarea name="fee_details" class="form-control" rows="2" maxlength="1200"></textarea>
                     </div>
-                    <div class="row">
-                        <div class="col-4 mb-3">
-                            <label>Fixed Fee (£)</label>
-                            <input type="text" name="fixed_fee" class="form-control" maxlength="100">
-                        </div>
-                        <div class="col-4 mb-3">
-                            <label>HO Fees (£)</label>
-                            <input type="text" name="home_office_fee" class="form-control" maxlength="100">
-                        </div>
-                        <div class="col-4 mb-3">
-                            <label>IHS (£)</label>
-                            <input type="text" name="ihs_fee" class="form-control" maxlength="100">
-                        </div>
+                    <div class="mb-3">
+                        <label>Client Instructions</label>
+                        <textarea name="client_instructions" class="form-control" rows="3" maxlength="4000"></textarea>
                     </div>
                     <div class="mb-3">
-                        <label>Additional Costs</label>
-                        <textarea name="additional_costs" class="form-control" rows="2" maxlength="1200"></textarea>
+                        <label>Advice Given</label>
+                        <textarea name="advice_given" class="form-control" rows="3" maxlength="4000"></textarea>
                     </div>
                     <div class="mb-3">
-                        <label>VAT Note</label>
-                        <input type="text" name="vat_note" class="form-control" maxlength="255" placeholder="e.g. No VAT charged / Includes VAT">
-                    </div>
-                    <div class="row">
-                        <div class="col-6 mb-3">
-                            <label>Line Manager Name</label>
-                            <input type="text" name="line_manager_name" class="form-control" maxlength="150">
-                        </div>
-                        <div class="col-6 mb-3">
-                            <label>Line Manager Phone</label>
-                            <input type="text" name="line_manager_phone" class="form-control" maxlength="50">
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label>Line Manager Email</label>
-                        <input type="email" name="line_manager_email" class="form-control" maxlength="150">
-                    </div>
-                    <div class="mb-3">
-                        <label>Office Hours</label>
-                        <input type="text" name="office_hours" class="form-control" maxlength="150" value="9am to 5pm during weekdays">
-                    </div>
-                    <div class="mb-3">
-                        <label>Complaint Handling Details</label>
-                        <textarea name="complaint_handling_details" class="form-control" rows="2" maxlength="1500"></textarea>
-                    </div>
-                    <div class="row">
-                        <div class="col-6 mb-3">
-                            <label>IAA/OISC Registration No.</label>
-                            <input type="text" name="oisc_registration_number" class="form-control" maxlength="100">
-                        </div>
-                        <div class="col-6 mb-3">
-                            <label>Authorisation Level</label>
-                            <input type="text" name="authorisation_level" class="form-control" maxlength="150" value="Level 1">
-                        </div>
+                        <label>Work Agreed to be Done</label>
+                        <textarea name="work_agreed" class="form-control" rows="3" maxlength="4000"></textarea>
                     </div>
                     <div class="mb-3 form-check">
                         <input class="form-check-input" type="checkbox" value="1" id="allowResend" name="allow_resend">
@@ -808,6 +738,25 @@ $support_roles = UserRoles::where('user_id','=',$user->id)->where('module','=','
         icon: 'info',
         title: 'Oops..',
         text: @json($errors->first('correction_note'))
+    })
+</script>
+@endif
+
+@if (session()->has('ccl_error'))
+<script>
+    Swal.fire({
+        icon: 'error',
+        title: 'Email Failed',
+        text: @json(session('ccl_error'))
+    })
+</script>
+@endif
+@if ($errors->any() && !$errors->has('correction_note'))
+<script>
+    Swal.fire({
+        icon: 'info',
+        title: 'Validation',
+        text: @json($errors->first())
     })
 </script>
 @endif

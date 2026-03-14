@@ -2117,11 +2117,11 @@ class WebController extends Controller
             'application_name' => 'nullable|string|max:150',
             'consultation_date' => 'required|date',
             'immigration_status' => 'nullable|string|max:255',
-            'client_instructions' => 'required|string|max:4000',
-            'advice_given' => 'required|string|max:4000',
-            'work_agreed' => 'required|string|max:4000',
+            'client_instructions' => 'nullable|string|max:4000',
+            'advice_given' => 'nullable|string|max:4000',
+            'work_agreed' => 'nullable|string|max:4000',
             'estimated_timeline' => 'required|string|min:2|max:150',
-            'key_dates' => 'required|string|max:1000',
+            'key_dates' => 'nullable|string|max:1000',
             'fee_details' => 'nullable|string|max:1200',
             'fixed_fee' => 'nullable|string|max:100',
             'home_office_fee' => 'nullable|string|max:100',
@@ -2172,11 +2172,11 @@ class WebController extends Controller
             'application_type' => $validated['application_type'],
             'application_name' => $validated['application_name'] ?? '-',
             'immigration_status' => $validated['immigration_status'] ?? 'As stated during consultation and based on documents shared.',
-            'client_instructions' => $validated['client_instructions'],
-            'advice_given' => $validated['advice_given'],
-            'work_agreed' => $validated['work_agreed'],
+            'client_instructions' => $validated['client_instructions'] ?? 'As discussed with the adviser during initial consultation.',
+            'advice_given' => $validated['advice_given'] ?? 'Advice provided based on information and documents shared by the client.',
+            'work_agreed' => $validated['work_agreed'] ?? 'Preparation, review and submission support for the identified application.',
             'estimated_timeline' => $validated['estimated_timeline'],
-            'key_dates' => $validated['key_dates'],
+            'key_dates' => $validated['key_dates'] ?? 'Key dates will be tracked and communicated in writing as the matter progresses.',
             'fee_details' => $validated['fee_details'] ?? 'Fees discussed during consultation and confirmed in writing.',
             'fixed_fee' => $validated['fixed_fee'] ?? '0',
             'home_office_fee' => $validated['home_office_fee'] ?? '0',
@@ -2233,9 +2233,19 @@ class WebController extends Controller
         $activity->local_time = $validated['local_time'] ?? null;
         $activity->save();
 
-        Mail::to($client->email)->send(new ClientCareLetterMail($letterData, $folder . $fileName));
+        try {
+            Mail::to($client->email)->send(new ClientCareLetterMail($letterData, $folder . $fileName));
+            return back()->with('ccl_sent', $baseDocName . ' generated, saved to documents, and emailed to the client for signature.');
+        } catch (\Exception $exception) {
+            Log::error('Client care letter email sending failed.', [
+                'client_id' => $client->id,
+                'client_email' => $client->email,
+                'document' => $fileName,
+                'error' => $exception->getMessage(),
+            ]);
 
-        return back()->with('ccl_sent', $baseDocName . ' generated, saved to documents, and emailed to the client for signature.');
+            return back()->with('ccl_error', $baseDocName . ' PDF was generated and saved, but email delivery failed. Please check email settings and try resend.');
+        }
     }
 
     public function upload_client_doc(Request $request)
