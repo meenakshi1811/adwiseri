@@ -15,6 +15,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Str;
 use DateTime;
 use DateTimeZone;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -78,6 +79,30 @@ use App\Services\ScheduledReportService;
 use App\Services\EmailTemplateService;
 class WebController extends Controller
 {
+    private function writeExportCsv($filePath, $rows)
+    {
+        $handle = fopen($filePath, 'w');
+        if (!$handle) {
+            return;
+        }
+
+        if (count($rows) > 0) {
+            $headers = array_keys((array) $rows[0]);
+            fputcsv($handle, $headers);
+
+            foreach ($rows as $row) {
+                fputcsv($handle, array_values((array) $row));
+            }
+        }
+
+        fclose($handle);
+    }
+
+    private function safeArchiveName($name)
+    {
+        return trim(preg_replace('/[^A-Za-z0-9\-_. ]/', '', (string) $name)) ?: 'Unknown';
+    }
+
     public function add_subscriber_roles()
     {
         $subscribers = User::where('user_type', '=', "Subscriber")->get();
@@ -2968,6 +2993,115 @@ class WebController extends Controller
         } else {
             return back();
         }
+    }
+
+    public function download_all_data()
+    {
+        $user = Auth::user();
+
+        if (!$user) {
+            return redirect()->route('login');
+        }
+
+        if ($user->user_type == 'Subscriber' || $user->user_type == 'admin') {
+            $subscriber = $user;
+        } else {
+            $subscriber = User::find($user->added_by);
+        }
+
+        if (!$subscriber) {
+            return back()->with('download_error', 'Unable to identify subscriber for export.');
+        }
+
+        $timestamp = now()->format('Ymd_His');
+        $baseDir = storage_path('app/temp_exports/' . $subscriber->id . '_' . $timestamp);
+        $tablesDir = $baseDir . '/Tables';
+        $documentsDir = $baseDir . '/Documents';
+
+        if (!is_dir($tablesDir) && !mkdir($tablesDir, 0777, true) && !is_dir($tablesDir)) {
+            return back()->with('download_error', 'Unable to prepare export directory.');
+        }
+        if (!is_dir($documentsDir) && !mkdir($documentsDir, 0777, true) && !is_dir($documentsDir)) {
+            return back()->with('download_error', 'Unable to prepare documents directory.');
+        }
+
+        $clients = Clients::where('subscriber_id', $subscriber->id)->get();
+        $applications = Applications::where('subscriber_id', $subscriber->id)->get();
+        $users = User::where('added_by', $subscriber->id)->get();
+        $invoices = Invoices::where('user_id', $subscriber->id)->get();
+        $payments = PaymentARs::where('subscriber_id', $subscriber->id)->get();
+        $communications = Internal_communications::where('subscriber_id', $subscriber->id)->get();
+
+        $this->writeExportCsv($tablesDir . '/Clients.csv', $clients->toArray());
+        $this->writeExportCsv($tablesDir . '/Applications.csv', $applications->toArray());
+        $this->writeExportCsv($tablesDir . '/Users_Staff.csv', $users->toArray());
+        $this->writeExportCsv($tablesDir . '/Invoices.csv', $invoices->toArray());
+        $this->writeExportCsv($tablesDir . '/Payments.csv', $payments->toArray());
+        $this->writeExportCsv($tablesDir . '/Communications.csv', $communications->toArray());
+
+        $clientDocuments = Client_Docs::where('user_id', $subscriber->id)->whereNotNull('doc_file')->get();
+
+        foreach ($clientDocuments as $document) {
+            $client = Clients::find($document->client_id);
+            $application = Applications::where('application_id', $document->application_id)->first();
+
+            $clientName = $client ? $this->safeArchiveName($client->name) : 'Unknown Client';
+            $applicationName = $application ? $this->safeArchiveName($application->application_name ?: $application->application_id) : 'Unknown Application';
+            $targetFolder = $documentsDir . '/' . $clientName . ' - ' . $applicationName;
+
+            if (!is_dir($targetFolder)) {
+                mkdir($targetFolder, 0777, true);
+            }
+
+            $sourcePath = public_path('web_assets/users/client' . $document->client_id . '/docs/' . $document->doc_file);
+            if (file_exists($sourcePath)) {
+                $destinationName = $document->doc_name ? $this->safeArchiveName($document->doc_name) : pathinfo($document->doc_file, PATHINFO_FILENAME);
+                $extension = pathinfo($document->doc_file, PATHINFO_EXTENSION);
+                $destinationPath = $targetFolder . '/' . $destinationName . ($extension ? '.' . $extension : '');
+
+                if (file_exists($destinationPath)) {
+                    $destinationPath = $targetFolder . '/' . $destinationName . '_' . $document->id . ($extension ? '.' . $extension : '');
+                }
+
+                copy($sourcePath, $destinationPath);
+            }
+        }
+
+        $zipFileName = 'subscriber_data_' . Str::slug($subscriber->name ?: 'subscriber') . '_' . $timestamp . '.zip';
+        $zipPath = storage_path('app/temp_exports/' . $zipFileName);
+
+        $zip = new \ZipArchive();
+        if ($zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
+            return back()->with('download_error', 'Unable to create export file.');
+        }
+
+        $iterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($baseDir, \RecursiveDirectoryIterator::SKIP_DOTS),
+            \RecursiveIteratorIterator::LEAVES_ONLY
+        );
+
+        foreach ($iterator as $file) {
+            if (!$file->isDir()) {
+                $filePath = $file->getRealPath();
+                $relativePath = substr($filePath, strlen($baseDir) + 1);
+                $zip->addFile($filePath, $relativePath);
+            }
+        }
+
+        $zip->close();
+
+        if (is_dir($baseDir)) {
+            $directoryIterator = new \RecursiveIteratorIterator(
+                new \RecursiveDirectoryIterator($baseDir, \RecursiveDirectoryIterator::SKIP_DOTS),
+                \RecursiveIteratorIterator::CHILD_FIRST
+            );
+            foreach ($directoryIterator as $item) {
+                $item->isDir() ? rmdir($item->getRealPath()) : unlink($item->getRealPath());
+            }
+            rmdir($baseDir);
+        }
+
+        return response()->download($zipPath)->deleteFileAfterSend(true);
     }
 
     public function wallet()

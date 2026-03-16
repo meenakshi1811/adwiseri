@@ -47,8 +47,20 @@ $support_roles = UserRoles::where('user_id','=',$user->id)->where('module','=','
                             @endif
                         @endif
 
+                        @if($user->user_type == "Subscriber")
+                            <a href="{{ route('download_all_data') }}" class="btn btn-outline-primary" style="height: fit-content">
+                                Download All Data
+                            </a>
+                        @endif
+
                     </div>
                 </div>
+                <div class="alert alert-info mb-3" role="alert">
+                    After subscription expiry or termination, subscriber data remains available for up to <strong>60 days</strong>.
+                    During this retention period, you can use <strong>Download All Data</strong> to download a compressed archive containing Clients, Applications, Users (Staff), Invoices, Payments, Communications, and all uploaded Documents.
+                    Documents are organized as <strong>ClientName - Application</strong> folders. After 60 days without renewal, related subscriber data and documents are permanently deleted.
+                </div>
+
                 <div class="profile-detail">
                     <div class="col-12 profile-data" style="border: 1px solid lightgrey;">
                         {{-- <div class="row">
@@ -259,3 +271,13 @@ $support_roles = UserRoles::where('user_id','=',$user->id)->where('module','=','
 
 @endif
 @endsection()
+
+@if(session()->has('download_error'))
+  <script>
+    Swal.fire({
+      icon: 'error',
+      title: 'Download Failed',
+      text: '{{ session('download_error') }}'
+    })
+  </script>
+@endif
