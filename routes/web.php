@@ -127,6 +127,7 @@ Route::post('/upgrade_plan', [App\Http\Controllers\WebController::class, 'upgrad
 Route::post('/downgrade_plan', [App\Http\Controllers\WebController::class, 'downgrade_plan'])->name('downgrade_plan');
 Route::get('/upgrade_membership/{plan?}', [App\Http\Controllers\WebController::class, 'upgrade_membership'])->name('upgrade_membership')->middleware(['auth','check.device']);
 Route::get('/user_membership', [App\Http\Controllers\WebController::class, 'user_membership'])->name('user_membership')->middleware(['auth','check.device']);
+Route::get('/download_all_data', [App\Http\Controllers\WebController::class, 'download_all_data'])->name('download_all_data')->middleware(['auth','check.device']);
 
 Route::get('/view_payment/{id?}', [App\Http\Controllers\WebController::class, 'view_payment'])->name('view_payment')->middleware(['auth','check.device']);
 Route::get('/print_payment/{id?}', [App\Http\Controllers\WebController::class, 'print_payment'])->name('print_payment')->middleware(['auth','check.device']);
