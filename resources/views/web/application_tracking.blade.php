@@ -18,47 +18,95 @@ $support_roles = UserRoles::where('user_id','=',$user->id)->where('module','=','
 
 
 <style>
-.flow-wrapper {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    justify-content: flex-start;
-    gap: 10px;
+.tracking-card {
+    border: 1px solid #dbe4ff;
+    border-radius: 10px;
+    padding: 16px;
+    background: #fbfdff;
 }
 
-.circle {
+.tracking-label {
+    font-weight: 600;
+    color: #2f4f8f;
+}
+
+.tracking-hint {
+    font-size: 12px;
+    color: #6c757d;
+    margin-top: 6px;
+}
+
+.tracking-action-row {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.flow-wrapper {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+    align-items: stretch;
+}
+
+.status-circle {
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
+    border: 2px solid rgba(0, 87, 217, 0.35);
+    margin: 0 auto;
+    padding: 18px;
     display: flex;
     flex-direction: column;
     justify-content: center;
-    align-items: center;
-
-    padding: 10px;
-    min-width: 120px;
-    max-width: 200px; /* optional */
-    
-    border: 2px solid #007BFF;
-    border-radius: 50%;
-    background-color: #f0f8ff;
-
-    aspect-ratio: 1 / 1; /* maintains circular shape */
-    
     text-align: center;
     box-sizing: border-box;
-    word-break: break-word;
-    
+    box-shadow: 0 8px 16px rgba(11, 84, 172, 0.08);
+}
+
+.circle-date {
     font-size: 14px;
-    line-height: 1.4;
+    font-weight: 700;
+    color: #003f95;
+    margin-bottom: 2px;
 }
 
-
-.arrow, .down-arrow {
-    font-size: 24px;
-    margin: 0 10px;
-    align-self: center;
+.circle-range {
+    font-size: 13px;
+    color: #1d3e72;
+    font-weight: 600;
 }
-.down-arrow {
-    writing-mode: vertical-rl;
-    transform: rotate(180deg);
+
+.status-circle hr {
+    width: 100%;
+    margin: 9px 0;
+    border-color: rgba(0, 83, 196, 0.35);
+}
+
+.circle-status {
+    font-size: 18px;
+    line-height: 1.25;
+    font-weight: 700;
+    color: #163c76;
+}
+
+.circle-user {
+    font-size: 14px;
+    color: #0f2950;
+    font-weight: 600;
+}
+
+@media (max-width: 575px) {
+    .status-circle {
+        width: 195px;
+        height: 195px;
+        padding: 14px;
+    }
+
+    .circle-status {
+        font-size: 16px;
+    }
 }
 </style>
 
@@ -90,19 +138,20 @@ $support_roles = UserRoles::where('user_id','=',$user->id)->where('module','=','
                 </div>
 
 
-                <div class="col">
+                <div class="col tracking-card">
                     <form id="registration_form" class="register-box login-box" method="POST" action="{{ route('admin_new_invoice_post') }}" onsubmit="document.getElementById('invoice_submit').setAttribute('disabled','true');">
                         @csrf
                         <div class="row">
                             <h3 style="font-weight: 400!important;padding-bottom:15px;" class="text-primary text-center flex-grow-1 text-center m-0">Application Tracking</h3>
                             <div class="col-md-3 p-1">
-                                <label>Client<span class="text-danger" style="font-size: 18px;">*</span></label>
+                                <label class="tracking-label">Select Client<span class="text-danger" style="font-size: 18px;">*</span></label>
                             </div>
                             <div class="col-md-7 p-1">
                                 <select name="client_id" id="client" required class="form-control form-select @error('client') is-invalid @enderror" id="exampleInputEmail1" aria-describedby="emailHelp">
                                     <option value="">Select Client</option>
                                     {{-- Options will be loaded via AJAX --}}
                                 </select>
+                                <div class="tracking-hint">Only clients with applications are shown in this list.</div>
                                 @error('client')
                                     <span class="invalid-feedback" role="alert">
                                         <strong>{{ $message }}</strong>
@@ -111,24 +160,26 @@ $support_roles = UserRoles::where('user_id','=',$user->id)->where('module','=','
                             </div>
                             <!-- APPLICATION DROPDOWN -->
                             <div class="col-md-3 p-1">
-                                <label>Application<span class="text-danger" style="font-size: 18px;">*</span></label>
+                                <label class="tracking-label">Select Application<span class="text-danger" style="font-size: 18px;">*</span></label>
                             </div>
                             <div class="col-md-7 p-1">
                                 <select name="application" id="application" required class="form-control form-select @error('client') is-invalid @enderror" id="exampleInputEmail1" aria-describedby="emailHelp">
                                     <option value="">Select Application</option>
                                 </select>
+                                <div class="tracking-hint">All applications related to the selected client are listed here.</div>
                                 @error('client')
                                     <span class="invalid-feedback" role="alert">
                                         <strong>{{ $message }}</strong>
                                     </span>
                                 @enderror
                             </div>
-                           
+                            
                             <div class="col-md-3 p-1">
                             </div>
-                            <div class="col-md-12 p-3 text-center">
-                                <button type="button" id="view_report" class="form-control btn btn-primary" style="width: fit-content;" onclick="viewReport(); verifyDropDowns();">View Report</button>
-                                <button type="button" id="view_chart" class="form-control btn btn-primary" style="width: fit-content;" onclick="viewChart(); verifyDropDowns();">View Chart</button>
+                            <div class="col-md-12 p-3 text-center tracking-action-row">
+                                <button type="button" id="view_status" class="btn btn-primary" onclick="viewChart(); verifyDropDowns();">View Status</button>
+                                <button type="button" id="download_status" class="btn btn-outline-primary" onclick="downloadStatus(); verifyDropDowns();">Download Status</button>
+                                <button type="button" id="view_report" class="btn btn-light border" onclick="viewReport(); verifyDropDowns();">View Table</button>
                             </div>
                             
                         </div>
@@ -173,10 +224,10 @@ $support_roles = UserRoles::where('user_id','=',$user->id)->where('module','=','
   </script>
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script>
-     function viewReport() {
+    function viewReport() {
         // Toggle buttons
         $('#view_report').prop('disabled', true);
-        $('#view_chart').prop('disabled', false);
+        $('#view_status').prop('disabled', false);
 
         // Toggle divs
         $('#report_section').show();
@@ -185,7 +236,7 @@ $support_roles = UserRoles::where('user_id','=',$user->id)->where('module','=','
 
     function viewChart() {
         // Toggle buttons
-        $('#view_chart').prop('disabled', true);
+        $('#view_status').prop('disabled', true);
         $('#view_report').prop('disabled', false);
 
         // Toggle divs
@@ -193,25 +244,60 @@ $support_roles = UserRoles::where('user_id','=',$user->id)->where('module','=','
         $('#report_section').hide();
     }
 
+    function downloadStatus() {
+        const chartContent = document.getElementById('application_flow_chart').innerHTML;
+        if (!chartContent.trim()) {
+            return;
+        }
+
+        const printableWindow = window.open('', '_blank');
+        printableWindow.document.write(`
+            <html>
+                <head>
+                    <title>Application Tracking Status</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; padding: 20px; }
+                        .flow-wrapper { display: grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap: 20px; }
+                        .status-circle { width: 220px; height: 220px; border-radius: 50%; border: 2px solid rgba(0, 87, 217, 0.35); margin: 0 auto; padding: 18px; display: flex; flex-direction: column; justify-content: center; text-align: center; box-sizing: border-box; }
+                        .status-circle hr { width: 100%; margin: 9px 0; border-color: rgba(0,83,196,0.35); }
+                        .circle-date { font-size: 14px; font-weight: 700; color: #003f95; }
+                        .circle-range { font-size: 13px; color: #1d3e72; font-weight: 600; }
+                        .circle-status { font-size: 18px; font-weight: 700; color: #163c76; }
+                        .circle-user { font-size: 14px; color: #0f2950; font-weight: 600; }
+                    </style>
+                </head>
+                <body>
+                    <h2>Application Tracking Status</h2>
+                    <div>${chartContent}</div>
+                </body>
+            </html>
+        `);
+        printableWindow.document.close();
+        printableWindow.focus();
+        printableWindow.print();
+    }
+
     function renderFlowChart(statuses) {
+      const circleColors = [
+        '#e8f0ff', '#e6fbf3', '#fff5e8', '#f8edff', '#ffeaf1', '#eaf8ff', '#f5ffe8'
+      ];
       let html = '<div class="flow-wrapper">';
       
       statuses.forEach((item, index) => {
+          const circleBgColor = circleColors[index % circleColors.length];
+          const dateText = item.start_date || item.end_date ? `Date ${index + 1}` : `Date ${index + 1}`;
+          const dateRange = (item.start_date || '--') + ' - ' + (item.end_date || '--');
+
           html += `
-              <div class="circle">
-                  <strong>${item.user}</strong><br/>
-                  ${item.start_date} - ${item.end_date}<br/>
-                  <em>${item.status}</em>
+              <div class="status-circle" style="background:${circleBgColor};">
+                  <div class="circle-date">${dateText}</div>
+                  <div class="circle-range">${dateRange}</div>
+                  <hr>
+                  <div class="circle-status">${item.status || '--'}</div>
+                  <hr>
+                  <div class="circle-user">${item.user || '--'}</div>
               </div>
           `;
-          if (index < statuses.length - 1) {
-              // Add arrow unless it's the last one
-              if (!(item.status === 'Appeal' && statuses[index + 1].status === 'Closed')) {
-                  html += `<div class="arrow">→</div>`;
-              } else {
-                  html += `<div class="down-arrow">↓</div>`;
-              }
-          }
       });
 
       html += '</div>';
@@ -281,8 +367,9 @@ $support_roles = UserRoles::where('user_id','=',$user->id)->where('module','=','
                 $('#tracking_id').text("No data found. Please select both Client and Application."); 
                 $('#tracking_id').css("color", "red"); 
                 $('#report_section').hide();
+                $('#chart_section').hide();
                 $('#view_report').prop('disabled', false);
-                $('#view_chart').prop('disabled', false);
+                $('#view_status').prop('disabled', false);
             } else {
                 
                 $('#tracking_id').css("color", "#0D6EFD"); 
