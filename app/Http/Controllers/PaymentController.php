@@ -403,6 +403,8 @@ class PaymentController extends Controller
 
     private function buildOutstandingInvoices($subscriberId, $type)
     {
+        $this->syncPendingInvoicesToPayments($subscriberId, $type);
+
         $payments = PaymentARs::with(['client', 'application'])
             ->where('subscriber_id', $subscriberId)
             ->where('type', $type)
@@ -464,6 +466,53 @@ class PaymentController extends Controller
             })
             ->filter()
             ->values();
+    }
+
+    private function syncPendingInvoicesToPayments(int $subscriberId, string $type): void
+    {
+        $pendingInvoices = Internal_Invoices::where('subscriber_id', $subscriberId)
+            ->where('type', $type)
+            ->whereNotIn('status', ['Paid', 'Cancelled'])
+            ->orderBy('created_at', 'asc')
+            ->get();
+
+        foreach ($pendingInvoices as $invoice) {
+            $existingPayment = PaymentARs::where('subscriber_id', $subscriberId)
+                ->where('type', $type)
+                ->where('invoice_no', $invoice->invoice_no)
+                ->first();
+
+            if ($existingPayment) {
+                continue;
+            }
+
+            $client = Clients::where('subscriber_id', $subscriberId)
+                ->where(function ($query) use ($invoice) {
+                    $query->where('email', $invoice->to_email)
+                        ->orWhere('name', $invoice->to_name);
+                })
+                ->first();
+
+            $paymentSeed = new PaymentARs();
+            $paymentSeed->subscriber_id = $subscriberId;
+            $paymentSeed->client_id = optional($client)->id;
+            $paymentSeed->application_id = null;
+            $paymentSeed->amount = (float) $invoice->amount;
+            $paymentSeed->paid_amount = 0;
+            $paymentSeed->payment_mode = 'Cash';
+            $paymentSeed->invoice_no = $invoice->invoice_no;
+            $paymentSeed->type = $type;
+            $paymentSeed->payment_date = now();
+
+            if ($type === 'ar') {
+                $paymentSeed->service_description = $invoice->detail ?: 'N/A';
+            } else {
+                $paymentSeed->service_provider = $invoice->to_name ?: 'N/A';
+                $paymentSeed->service_taken = $invoice->detail ?: 'N/A';
+            }
+
+            $paymentSeed->save();
+        }
     }
 
     private function calculateOutstandingAmount(PaymentARs $payment, string $type): float
