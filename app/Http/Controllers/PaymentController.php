@@ -497,7 +497,7 @@ class PaymentController extends Controller
             $paymentSeed->subscriber_id = $subscriberId;
             $paymentSeed->client_id = optional($client)->id;
             $paymentSeed->application_id = null;
-            $paymentSeed->amount = (float) $invoice->amount;
+            $paymentSeed->amount = (float) $invoice->total;
             $paymentSeed->paid_amount = 0;
             $paymentSeed->payment_mode = 'Cash';
             $paymentSeed->invoice_no = $invoice->invoice_no;

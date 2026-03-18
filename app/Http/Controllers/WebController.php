@@ -4084,15 +4084,17 @@ class WebController extends Controller
                 $invoice->to_address = $client->address;
                 $invoice->detail = $request['detail'];
                 $invoiceAmount = (float) $request['amount'];
-                $discountRate = ((float) ($inv_setting->discount ?? 0)) / 100;
-                $taxRate = ((float) ($inv_setting->tax ?? 0)) / 100;
+                $discountPercent = max(0, min(100, (float) ($inv_setting->discount ?? 0)));
+                $taxPercent = max(0, min(100, (float) ($inv_setting->tax ?? 0)));
+                $discountRate = $discountPercent / 100;
+                $taxRate = $taxPercent / 100;
 
                 $invoice->amount = $invoiceAmount;
                 $invoice->type = 'ar';
-                $invoice->discount = $inv_setting->discount ?? 0;
-                $invoice->tax = $inv_setting->tax  ?? 0;
+                $invoice->discount = $discountPercent;
+                $invoice->tax = $taxPercent;
                 $subtotal = $invoiceAmount - ($invoiceAmount * $discountRate);
-                $invoice->total = $subtotal + ($subtotal * $taxRate);
+                $invoice->total = max(0, $subtotal + ($subtotal * $taxRate));
                 $invoice->status = $request['status'];
                 $invoice->due_date = $request['due_date'];
                 $invoice->token = invoice_token();
@@ -4113,7 +4115,7 @@ class WebController extends Controller
                     $paymentSeed->client_id = $client->id;
                     $paymentSeed->application_id = $application ? $application->id : null;
                     $paymentSeed->service_description = $request['detail'];
-                    $paymentSeed->amount = $invoice->amount;
+                    $paymentSeed->amount = $invoice->total;
                     $paymentSeed->paid_amount = 0;
                     $paymentSeed->payment_mode = 'Cash';
                     $paymentSeed->invoice_no = $invoice->invoice_no;
@@ -4270,15 +4272,17 @@ class WebController extends Controller
                 $invoice->to_address = $client->address;
                 $invoice->detail = $request['detail'];
                 $invoiceAmount = (float) $request['amount'];
-                $discountRate = ((float) ($inv_setting->discount ?? 0)) / 100;
-                $taxRate = ((float) ($inv_setting->tax ?? 0)) / 100;
+                $discountPercent = max(0, min(100, (float) ($inv_setting->discount ?? 0)));
+                $taxPercent = max(0, min(100, (float) ($inv_setting->tax ?? 0)));
+                $discountRate = $discountPercent / 100;
+                $taxRate = $taxPercent / 100;
 
                 $invoice->amount = $invoiceAmount;
                 $invoice->type = 'ap';
-                $invoice->discount = $inv_setting->discount ?? 0;
-                $invoice->tax = $inv_setting->tax  ?? 0;
+                $invoice->discount = $discountPercent;
+                $invoice->tax = $taxPercent;
                 $subtotal = $invoiceAmount - ($invoiceAmount * $discountRate);
-                $invoice->total = $subtotal + ($subtotal * $taxRate);
+                $invoice->total = max(0, $subtotal + ($subtotal * $taxRate));
                 $invoice->status = $request['status'];
                 $invoice->due_date = $request['due_date'];
                 $invoice->token = invoice_token();
@@ -4300,7 +4304,7 @@ class WebController extends Controller
                     $paymentSeed->application_id = $application ? $application->id : null;
                     $paymentSeed->service_provider = $client->name;
                     $paymentSeed->service_taken = $request['detail'];
-                    $paymentSeed->amount = $invoice->amount;
+                    $paymentSeed->amount = $invoice->total;
                     $paymentSeed->paid_amount = 0;
                     $paymentSeed->payment_mode = 'Cash';
                     $paymentSeed->invoice_no = $invoice->invoice_no;
