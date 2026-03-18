@@ -442,7 +442,15 @@
                 paidAmountInput.setCustomValidity(message);
                 paidAmountInput.classList.add('is-invalid'); // Add invalid class for styling
                 if (showAlert) {
-                    alert(message);
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Validation Error',
+                            text: message
+                        });
+                    } else {
+                        alert(message);
+                    }
                 }
                 return false;
             } else {
