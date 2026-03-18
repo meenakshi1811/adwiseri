@@ -4373,8 +4373,14 @@ class WebController extends Controller
                 $maildata->token = $invoice->token;
                 $maildata->payment_link =  $subscriber->payment_link;
                 $maildata->message = "New invoice has been generated from " . ($subscriber->organization ?? 'Adwiseri') . " for " . ($subscriber->currency ?? 'Rs.') . " " . number_format($invoice->total, 2) . ".";
-                Mail::to($client->email)->send(new Invoicemail($maildata));
-                if (Mail::failures()) {
+                // Mail::to($client->email)->send(new Invoicemail($maildata));
+                 try {
+                    Mail::to($client->email)->send(new Invoicemail($maildata));
+                } catch (\Exception $e) {
+                    // skip the error (optional log)
+                    \Log::warning('Invoice email not sent to: '.$client->email);
+                }
+                 if (Mail::failures()) {
                     echo 'Sorry! Please try again latter';
                 } else {
                     echo 'Success';
