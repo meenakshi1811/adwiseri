@@ -275,28 +275,50 @@
             }
 
             const amountInput = document.getElementById('amount');
-    const paidAmountInput = document.getElementById('paid_amount');
+            const outstandingInput = document.getElementById('outstanding_amount');
+            const paidAmountInput = document.getElementById('paid_amount');
+            const registrationForm = document.getElementById('registration_form');
 
     // Ensure both fields exist before adding event listeners
-    if (amountInput && paidAmountInput) {
+    if (amountInput && paidAmountInput && registrationForm) {
         // Function to validate the paid amount
-        function validatePaidAmount() {
-            const amount = parseFloat(amountInput.value) || 0;
+        function getAllowedAmount() {
+            const outstanding = parseFloat(outstandingInput?.value);
+            if (!isNaN(outstanding) && outstanding > 0) {
+                return outstanding;
+            }
+            return parseFloat(amountInput.value) || 0;
+        }
+
+        function validatePaidAmount(showAlert = false) {
             const paidAmount = parseFloat(paidAmountInput.value) || 0;
+            const allowedAmount = getAllowedAmount();
 
             // Check if Paid Amount is greater than Amount to Pay
-            if (paidAmount > amount) {
-                paidAmountInput.setCustomValidity('Paid Amount cannot be greater than Amount to Pay.');
+            if (paidAmount > allowedAmount) {
+                const message = `Total Paid amount should not exceed ${allowedAmount.toFixed(2)} (Outstanding) !.`;
+                paidAmountInput.setCustomValidity(message);
                 paidAmountInput.classList.add('is-invalid'); // Add invalid class for styling
+                if (showAlert) {
+                    alert(message);
+                }
+                return false;
             } else {
                 paidAmountInput.setCustomValidity(''); // Clear custom validity
                 paidAmountInput.classList.remove('is-invalid'); // Remove invalid class if valid
+                return true;
             }
         }
 
         // Attach validation on input events
         amountInput.addEventListener('input', validatePaidAmount);
         paidAmountInput.addEventListener('input', validatePaidAmount);
+        outstandingInput?.addEventListener('input', validatePaidAmount);
+        registrationForm.addEventListener('submit', function (event) {
+            if (!validatePaidAmount(true)) {
+                event.preventDefault();
+            }
+        });
 
         // Initialize validation in case there is pre-filled data
         validatePaidAmount();
