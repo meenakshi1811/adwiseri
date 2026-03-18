@@ -303,7 +303,7 @@
                     if (typeof Swal !== 'undefined') {
                         Swal.fire({
                             icon: 'warning',
-                            title: 'Validation Error',
+                            title: 'Oops!',
                             text: message
                         });
                     } else {

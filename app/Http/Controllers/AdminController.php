@@ -1844,7 +1844,7 @@ class AdminController extends Controller
             return $token;
         }
         $user = Auth::user();
-        $inv_setting = Invoice_settings::first();
+        $inv_setting = Invoice_settings::where('user_id', $user->id)->first();
         if ($user) {
             if ($request->subscriber) {
                 $subs = User::find($request->subscriber);
@@ -1871,10 +1871,14 @@ class AdminController extends Controller
                 $invoice->to_address = $subs->address_line;
                 $invoice->detail = $request['detail'];
                 $invoice->amount = $request['amount'];
-                $invoice->discount = $inv_setting->discount;
-                $invoice->tax = $inv_setting->tax;
-                $subtotal = ($request['amount'] - ($request['amount'] * ($inv_setting->discount / 100)));
-                $invoice->total = $subtotal + ($subtotal * ($inv_setting->tax / 100));
+                $discountPercent = max(0, min(100, (float) ($inv_setting->discount ?? 0)));
+                $taxPercent = max(0, min(100, (float) ($inv_setting->tax ?? 0)));
+                $amount = (float) $request['amount'];
+                $subtotal = $amount - ($amount * ($discountPercent / 100));
+
+                $invoice->discount = $discountPercent;
+                $invoice->tax = $taxPercent;
+                $invoice->total = max(0, $subtotal + ($subtotal * ($taxPercent / 100)));
                 $invoice->status = $request['status'];
                 $invoice->due_date = $request['due_date'];
                 $invoice->token = invoice_token();
@@ -3387,6 +3391,12 @@ class AdminController extends Controller
     {
         $user = Auth::user();
         if ($user) {
+            $validated = $request->validate([
+                'tax' => 'nullable|numeric|min:0|max:100',
+                'discount' => 'nullable|numeric|min:0|max:100',
+                'payment_link' => 'nullable|url|max:2048',
+            ]);
+
             $setting = Invoice_settings::where('user_id',$user->id)->first();
             if ($setting) {
                 $message = 'Invoice Settings Updated successfully';
@@ -3397,16 +3407,18 @@ class AdminController extends Controller
                 // $setting->state = $request['state'];
                 // $setting->city = $request['city'];
                 // $setting->pincode = $request['pincode'];
-                $setting->payment_link = $request['payment_link'];
-                $setting->tax = $request['tax'];
-                $setting->discount = $request['discount'];
+                $setting->payment_link = $validated['payment_link'] ?? null;
+                $setting->tax = $validated['tax'] ?? 0;
+                $setting->discount = $validated['discount'] ?? 0;
                 // $setting->description = $request['description'];
                 $setting->save();
                 // return redirect()->back()->with('setting_saved', "Invoice Settings Saved");
 
             } else {
-                $data = $request->except('_token');
+                $data = $validated;
                 $data['user_id'] = $user->id;
+                $data['tax'] = $data['tax'] ?? 0;
+                $data['discount'] = $data['discount'] ?? 0;
                 Invoice_settings::create($data);
                 $message = 'Invoice Settings Saved successfully';
 

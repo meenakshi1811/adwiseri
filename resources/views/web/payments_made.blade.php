@@ -70,6 +70,7 @@ $support_roles = UserRoles::where('user_id','=',$user->id)->where('module','=','
                     <tbody>
                       @foreach($paymentAP as $key => $payment)
                         <tr 
+                          data-invoice-no="{{ $payment->invoice_no }}"
                           data-client-id="{{ $payment->client_id }}" 
                           data-application-id="{{ $payment->application_id }}"
                           data-created-at="{{ $payment->created_at->toDateTimeString() }}">
@@ -108,9 +109,8 @@ $support_roles = UserRoles::where('user_id','=',$user->id)->where('module','=','
                       let grouped = {};
 
                       rows.forEach((row, domIndex) => {
-                          let clientId = row.dataset.clientId || '';
-                          let appId = row.dataset.applicationId || '';
-                          let key = clientId + '|' + appId;
+                          let invoiceNo = row.dataset.invoiceNo || '';
+                          let key = invoiceNo;
 
                           // numeric parsing (strip commas/currency)
                           let amountText = (row.querySelector('.amount')?.textContent || '').replace(/[^0-9.\-]/g, '');
