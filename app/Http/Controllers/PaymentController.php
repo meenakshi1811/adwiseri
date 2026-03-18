@@ -275,11 +275,30 @@ class PaymentController extends Controller
     }
 
     public function payment_received(Request $request){
-
+        $request->validate([
+            'paid_amount' => 'required|numeric|min:0.01',
+        ]);
         $application  =  Applications::where('application_id',$request->application_id)->first();
         $data = $request->except(['_token','application_id','local_time']);
         $subscriber = auth()->user()->added_by ? auth()->user()->added_by : auth()->user()->id;
-        $data['invoice_no'] =$this->invoice_id();
+        $selectedInvoice = null;
+        $outstandingAmount = (float) ($request->amount ?? 0);
+        if (!empty($request->invoices_list)) {
+            $selectedInvoice = PaymentARs::where('id', $request->invoices_list)
+                ->where('subscriber_id', $subscriber)
+                ->where('type', 'ar')
+                ->first();
+            if ($selectedInvoice) {
+                $outstandingAmount = $this->calculateOutstandingAmount($selectedInvoice, 'ar');
+            }
+        }
+        if ((float) $request->paid_amount > $outstandingAmount) {
+            return back()->withInput()->withErrors([
+                'paid_amount' => 'Total Paid amount should not exceed ' . number_format($outstandingAmount, 2, '.', '') . ' (Outstanding) !.',
+            ]);
+        }
+
+        $data['invoice_no'] = $selectedInvoice ? $selectedInvoice->invoice_no : $this->invoice_id();
         $data['subscriber_id'] = $subscriber;
         if($application){
             $data['application_id'] = $application->id;
@@ -306,10 +325,29 @@ class PaymentController extends Controller
     }
 // NEED TO FIX ENTRY FORM FOR PAYMENT _AP TYPE BECAUSE IT DOES NOT HAVE CLIENT 
     public function  advance_payment(Request $request){
-
+        $request->validate([
+            'paid_amount' => 'required|numeric|min:0.01',
+        ]);
         $data = $request->except(['_token','local_time']);
         $subscriber = auth()->user()->added_by ? auth()->user()->added_by : auth()->user()->id;
-        $data['invoice_no'] =$this->invoice_id();
+        $selectedInvoice = null;
+        $outstandingAmount = (float) ($request->amount ?? 0);
+        if (!empty($request->invoices_list)) {
+            $selectedInvoice = PaymentARs::where('id', $request->invoices_list)
+                ->where('subscriber_id', $subscriber)
+                ->where('type', 'ap')
+                ->first();
+            if ($selectedInvoice) {
+                $outstandingAmount = $this->calculateOutstandingAmount($selectedInvoice, 'ap');
+            }
+        }
+        if ((float) $request->paid_amount > $outstandingAmount) {
+            return back()->withInput()->withErrors([
+                'paid_amount' => 'Total Paid amount should not exceed ' . number_format($outstandingAmount, 2, '.', '') . ' (Outstanding) !.',
+            ]);
+        }
+
+        $data['invoice_no'] = $selectedInvoice ? $selectedInvoice->invoice_no : $this->invoice_id();
         $data['subscriber_id'] = $subscriber;
         $data['type'] ='ap';
         $data['payment_date'] =now();
@@ -365,6 +403,8 @@ class PaymentController extends Controller
 
     private function buildOutstandingInvoices($subscriberId, $type)
     {
+        $this->syncPendingInvoicesToPayments($subscriberId, $type);
+
         $payments = PaymentARs::with(['client', 'application'])
             ->where('subscriber_id', $subscriberId)
             ->where('type', $type)
@@ -426,6 +466,72 @@ class PaymentController extends Controller
             })
             ->filter()
             ->values();
+    }
+
+    private function syncPendingInvoicesToPayments(int $subscriberId, string $type): void
+    {
+        $pendingInvoices = Internal_Invoices::where('subscriber_id', $subscriberId)
+            ->where('type', $type)
+            ->whereNotIn('status', ['Paid', 'Cancelled'])
+            ->orderBy('created_at', 'asc')
+            ->get();
+
+        foreach ($pendingInvoices as $invoice) {
+            $existingPayment = PaymentARs::where('subscriber_id', $subscriberId)
+                ->where('type', $type)
+                ->where('invoice_no', $invoice->invoice_no)
+                ->first();
+
+            if ($existingPayment) {
+                continue;
+            }
+
+            $client = Clients::where('subscriber_id', $subscriberId)
+                ->where(function ($query) use ($invoice) {
+                    $query->where('email', $invoice->to_email)
+                        ->orWhere('name', $invoice->to_name);
+                })
+                ->first();
+
+            $paymentSeed = new PaymentARs();
+            $paymentSeed->subscriber_id = $subscriberId;
+            $paymentSeed->client_id = optional($client)->id;
+            $paymentSeed->application_id = null;
+            $paymentSeed->amount = (float) $invoice->amount;
+            $paymentSeed->paid_amount = 0;
+            $paymentSeed->payment_mode = 'Cash';
+            $paymentSeed->invoice_no = $invoice->invoice_no;
+            $paymentSeed->type = $type;
+            $paymentSeed->payment_date = now();
+
+            if ($type === 'ar') {
+                $paymentSeed->service_description = $invoice->detail ?: 'N/A';
+            } else {
+                $paymentSeed->service_provider = $invoice->to_name ?: 'N/A';
+                $paymentSeed->service_taken = $invoice->detail ?: 'N/A';
+            }
+
+            $paymentSeed->save();
+        }
+    }
+
+    private function calculateOutstandingAmount(PaymentARs $payment, string $type): float
+    {
+        $query = PaymentARs::where('subscriber_id', $payment->subscriber_id)
+            ->where('type', $type)
+            ->where('amount', $payment->amount)
+            ->where('client_id', $payment->client_id);
+
+        if ($type === 'ar') {
+            $query->where('application_id', $payment->application_id)
+                ->where('service_description', $payment->service_description);
+        } else {
+            $query->where('service_provider', $payment->service_provider)
+                ->where('service_taken', $payment->service_taken);
+        }
+
+        $paidAmount = (float) $query->sum('paid_amount');
+        return max(0, ((float) $payment->amount) - $paidAmount);
     }
 
 }
