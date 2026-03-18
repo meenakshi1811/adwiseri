@@ -275,11 +275,30 @@ class PaymentController extends Controller
     }
 
     public function payment_received(Request $request){
-
+        $request->validate([
+            'paid_amount' => 'required|numeric|min:0.01',
+        ]);
         $application  =  Applications::where('application_id',$request->application_id)->first();
         $data = $request->except(['_token','application_id','local_time']);
         $subscriber = auth()->user()->added_by ? auth()->user()->added_by : auth()->user()->id;
-        $data['invoice_no'] =$this->invoice_id();
+        $selectedInvoice = null;
+        $outstandingAmount = (float) ($request->amount ?? 0);
+        if (!empty($request->invoices_list)) {
+            $selectedInvoice = PaymentARs::where('id', $request->invoices_list)
+                ->where('subscriber_id', $subscriber)
+                ->where('type', 'ar')
+                ->first();
+            if ($selectedInvoice) {
+                $outstandingAmount = $this->calculateOutstandingAmount($selectedInvoice, 'ar');
+            }
+        }
+        if ((float) $request->paid_amount > $outstandingAmount) {
+            return back()->withInput()->withErrors([
+                'paid_amount' => 'Total Paid amount should not exceed ' . number_format($outstandingAmount, 2, '.', '') . ' (Outstanding) !.',
+            ]);
+        }
+
+        $data['invoice_no'] = $selectedInvoice ? $selectedInvoice->invoice_no : $this->invoice_id();
         $data['subscriber_id'] = $subscriber;
         if($application){
             $data['application_id'] = $application->id;
@@ -306,10 +325,29 @@ class PaymentController extends Controller
     }
 // NEED TO FIX ENTRY FORM FOR PAYMENT _AP TYPE BECAUSE IT DOES NOT HAVE CLIENT 
     public function  advance_payment(Request $request){
-
+        $request->validate([
+            'paid_amount' => 'required|numeric|min:0.01',
+        ]);
         $data = $request->except(['_token','local_time']);
         $subscriber = auth()->user()->added_by ? auth()->user()->added_by : auth()->user()->id;
-        $data['invoice_no'] =$this->invoice_id();
+        $selectedInvoice = null;
+        $outstandingAmount = (float) ($request->amount ?? 0);
+        if (!empty($request->invoices_list)) {
+            $selectedInvoice = PaymentARs::where('id', $request->invoices_list)
+                ->where('subscriber_id', $subscriber)
+                ->where('type', 'ap')
+                ->first();
+            if ($selectedInvoice) {
+                $outstandingAmount = $this->calculateOutstandingAmount($selectedInvoice, 'ap');
+            }
+        }
+        if ((float) $request->paid_amount > $outstandingAmount) {
+            return back()->withInput()->withErrors([
+                'paid_amount' => 'Total Paid amount should not exceed ' . number_format($outstandingAmount, 2, '.', '') . ' (Outstanding) !.',
+            ]);
+        }
+
+        $data['invoice_no'] = $selectedInvoice ? $selectedInvoice->invoice_no : $this->invoice_id();
         $data['subscriber_id'] = $subscriber;
         $data['type'] ='ap';
         $data['payment_date'] =now();
@@ -426,6 +464,25 @@ class PaymentController extends Controller
             })
             ->filter()
             ->values();
+    }
+
+    private function calculateOutstandingAmount(PaymentARs $payment, string $type): float
+    {
+        $query = PaymentARs::where('subscriber_id', $payment->subscriber_id)
+            ->where('type', $type)
+            ->where('amount', $payment->amount)
+            ->where('client_id', $payment->client_id);
+
+        if ($type === 'ar') {
+            $query->where('application_id', $payment->application_id)
+                ->where('service_description', $payment->service_description);
+        } else {
+            $query->where('service_provider', $payment->service_provider)
+                ->where('service_taken', $payment->service_taken);
+        }
+
+        $paidAmount = (float) $query->sum('paid_amount');
+        return max(0, ((float) $payment->amount) - $paidAmount);
     }
 
 }
