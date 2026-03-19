@@ -108,7 +108,7 @@
     <div class="wrapper">
         <div class="card">
             <div class="header">
-                <img src="{{ url('web_assets/images/Style2_blue.png') }}" alt="Adwiseri">
+                <img src="{{ url('web_assets/images/Style2.png') }}" alt="Adwiseri">
                 <h2>Invoice {{ $data->invoice_no ?? '' }}</h2>
             </div>
             <div class="body">
