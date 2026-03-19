@@ -29,15 +29,26 @@
         }
 
         .header {
-            background: #1f4bb8;
-            color: #ffffff;
-            padding: 18px 24px;
+            background: #ffffff;
+            color: #1f2937;
+            padding: 14px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            border-bottom: 1px solid #e5e7eb;
         }
 
         .header h2 {
             margin: 0;
-            font-size: 22px;
+            font-size: 20px;
             font-weight: 600;
+            color: #1f4bb8;
+        }
+
+        .brand-logo {
+            width: 170px;
+            max-width: 100%;
         }
 
         .body {
@@ -92,6 +103,9 @@
     <div class="wrapper">
         <div class="card">
             <div class="header">
+                <a class="navbar-brand text-white" href="https://adwiseri.com/">
+                    <img class="brand-logo" src="{{ url('web_assets/images/Style2_blue.png') }}" alt="Adwiseri">
+                </a>
                 <h2>Invoice {{ $data->invoice_no ?? '' }}</h2>
             </div>
             <div class="body">

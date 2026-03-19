@@ -23,6 +23,16 @@
             font-weight: bold;
             color: #1f4bb8;
         }
+        .company-wrap {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .company-logo {
+            max-height: 50px;
+            max-width: 120px;
+            width: auto;
+        }
 
         .title {
             text-align: right;
@@ -126,7 +136,14 @@
     <table class="header">
         <tr>
             <td>
-                <div class="company">{{ $data->company_name ?? 'Adwiseri' }}</div>
+                <div class="company-wrap">
+                    @if(!empty($data->logo_path) && file_exists($data->logo_path))
+                        <img src="{{ $data->logo_path }}" alt="Logo" class="company-logo">
+                    @elseif(!empty($data->logo_url))
+                        <img src="{{ $data->logo_url }}" alt="Logo" class="company-logo">
+                    @endif
+                    <div class="company">{{ $data->company_name ?? 'Adwiseri' }}</div>
+                </div>
                 <div>{{ $data->from_email ?? '' }}</div>
             </td>
             <td class="title">

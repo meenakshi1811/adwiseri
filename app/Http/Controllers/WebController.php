@@ -4167,8 +4167,14 @@ class WebController extends Controller
                 $maildata->due_date = $invoice->due_date;
                 $maildata->invoice_id = $invoice->id;
                 $maildata->token = $invoice->token;
-                $maildata->payment_link =  $subscriber->payment_link;
-                $maildata->message = "New invoice has been generated from " . ($subscriber->organization ?? 'Adwiseri') . " for " . ($subscriber->currency ?? 'Rs.') . " " . number_format($invoice->total, 2) . ".";
+                $maildata->logo_url = !empty($invoice->logo) ? asset('web_assets/users/user' . $subscriber->id . '/' . $invoice->logo) : null;
+                $maildata->logo_path = !empty($invoice->logo) ? public_path('web_assets/users/user' . $subscriber->id . '/' . $invoice->logo) : null;
+                $maildata->payment_link = $inv_setting->payment_link ?? null;
+                $maildata->message = "You have new invoice from " . ($subscriber->organization ?? 'Adwiseri') . " for " . ($subscriber->currency ?? 'Rs.') . " " . number_format($invoice->total, 2) . ".";
+                $maildata->from_name = "Sent on behalf of " . ($subscriber->name ?? 'Subscriber');
+                $maildata->from_email = "alerts@adwiseri.com";
+                $maildata->reply_to_email = $subscriber->email;
+                $maildata->reply_to_name = $subscriber->name ?? 'Subscriber';
                 try {
                     Mail::to($client->email)->send(new Invoicemail($maildata));
                 } catch (\Exception $e) {
@@ -4311,8 +4317,14 @@ class WebController extends Controller
                 $maildata->due_date = $invoice->due_date;
                 $maildata->invoice_id = $invoice->id;
                 $maildata->token = $invoice->token;
-                $maildata->payment_link =  $subscriber->payment_link;
-                $maildata->message = "New invoice has been generated from " . ($subscriber->organization ?? 'Adwiseri') . " for " . ($subscriber->currency ?? 'Rs.') . " " . number_format($invoice->total, 2) . ".";
+                $maildata->logo_url = !empty($invoice->logo) ? asset('web_assets/users/user' . $subscriber->id . '/' . $invoice->logo) : null;
+                $maildata->logo_path = !empty($invoice->logo) ? public_path('web_assets/users/user' . $subscriber->id . '/' . $invoice->logo) : null;
+                $maildata->payment_link = $inv_setting->payment_link ?? null;
+                $maildata->message = "You have new invoice from " . ($subscriber->organization ?? 'Adwiseri') . " for " . ($subscriber->currency ?? 'Rs.') . " " . number_format($invoice->total, 2) . ".";
+                $maildata->from_name = "Sent on behalf of " . ($subscriber->name ?? 'Subscriber');
+                $maildata->from_email = "alerts@adwiseri.com";
+                $maildata->reply_to_email = $subscriber->email;
+                $maildata->reply_to_name = $subscriber->name ?? 'Subscriber';
                 // Mail::to($client->email)->send(new Invoicemail($maildata));
                 try {
                     if (!empty(optional($client)->email)) {

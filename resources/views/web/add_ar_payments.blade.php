@@ -64,7 +64,7 @@
                                 <label>Client Name<span class="text-danger" style="font-size: 18px;">*</span></label>
                             </div>
                             <div class="col-md-8 p-1">
-                                <select name="client_id" id="client_id" required
+                                <select id="client_id" required disabled
                                     class="form-control form-select @error('client') is-invalid @enderror" id="exampleInputEmail1"
                                     aria-describedby="emailHelp">
                                     <option value="">Select Client</option>
@@ -79,6 +79,7 @@
                                     </span>
                                 @enderror
                             </div>
+                            <input type="hidden" name="client_id" id="client_id_hidden" value="{{ old('client_id') }}">
                             <input type="hidden" name="application_id" id="application_id">
                            
                             <!-- <div class="col-md-4 p-1">
@@ -133,24 +134,23 @@
                                     </span>
                                 @enderror
                             </div>
-                            <div class="col-md-4 p-1 outstanding-section">
-                                <label>Outstanding</label>
-                            </div>
-                            <div class="col-md-8 p-1 outstanding-section">
-                                <input name="outstanding_amount" min="0" type="number" class="form-control" value="{{ old('outstanding_amount') }}" id="outstanding_amount" placeholder="Outstanding Amount" readonly>
-                            </div>
-
                             <div class="col-md-4 p-1 existing-only" style="display:none;">
                                 <label>Amount Paid</label>
                             </div>
                             <div class="col-md-8 p-1 existing-only" style="display:none;">
                                 <input type="number" class="form-control" id="amount_paid_existing" readonly>
                             </div>
+                            <div class="col-md-4 p-1 existing-only outstanding-section" style="display:none;">
+                                <label>Outstanding</label>
+                            </div>
+                            <div class="col-md-8 p-1 existing-only outstanding-section" style="display:none;">
+                                <input name="outstanding_amount" min="0" step="0.01" type="number" class="form-control" value="{{ old('outstanding_amount') }}" id="outstanding_amount" placeholder="Outstanding Amount" readonly>
+                            </div>
                             <div class="col-md-4 p-1">
                                 <label>Amount Paying<span class="text-danger" style="font-size: 18px;">*</span></label>
                             </div>
                             <div class="col-md-8 p-1">
-                                <input name="paid_amount" required type="number" min="1"
+                                <input name="paid_amount" required type="number" min="0.01" step="0.01"
                                     class="form-control @error('amount') is-invalid @enderror" id="paid_amount"
                                     aria-describedby="emailHelp" value="{{ old('paid_amount') }}" placeholder="Amount Paying"
                                     autocomplete="amount">
@@ -207,7 +207,8 @@
                             </div>
                           
 
-                            <div class="col text-start p-1">
+                            <div class="col-md-4 p-1"></div>
+                            <div class="col-md-8 p-1 text-start">
                                 <button type="submit" class="form-control btn btn-primary"
                                     style="width: fit-content;">Submit</button>
                             </div>
@@ -237,6 +238,7 @@
                     const clientDropdown = document.getElementById("client_id");
                     // clientDropdown.removeAttribute("readonly");
                     clientDropdown.value = data.client;
+                    document.getElementById("client_id_hidden").value = data.client || "";
 
                     // Set selected application in dropdown
                     const appDropdown = document.getElementById("application_id");
@@ -256,10 +258,6 @@
             invoiceSections.forEach(section => {
                 section.style.display = 'block';
             });
-            let outstandingSections = document.querySelectorAll('.outstanding-section');
-            outstandingSections.forEach(section => {
-                section.style.display = 'block';
-            });
             document.querySelectorAll('.existing-only').forEach(section => {
                 section.style.display = show ? 'block' : 'none';
             });
@@ -273,8 +271,8 @@
             invoiceSelect.value = '';
 
             if(show ==false) {
-                document.getElementById("client_id").removeAttribute("readonly");
                 document.getElementById("client_id").value = '';
+                document.getElementById("client_id_hidden").value = '';
 
                 document.getElementById("application_id").removeAttribute("readonly");
                 document.getElementById("application_id").value = '';
@@ -386,6 +384,7 @@
                 });
             }
             $("#client_id").change(function(){
+                document.getElementById("client_id_hidden").value = this.value || "";
                 filterInvoicesByClient();
             });
     const amountInput = document.getElementById('amount');

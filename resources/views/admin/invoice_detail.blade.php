@@ -113,6 +113,16 @@
         </div>
 
         <h3 class="text-primary text-center">Invoice</h3>
+        <div class="d-flex justify-content-center align-items-center mb-3">
+            <span class="me-2" style="display:inline-flex; width:28px; height:28px;">
+                @if($invoice->subscriber_id)
+                    <img src="{{ asset('web_assets/users/user'.$invoice->subscriber_id.'/' . $invoice->logo) }}" alt="Logo" style="width:100%; height:100%; object-fit:contain;">
+                @else
+                    <img src="{{ asset('web_assets/users/user'.$invoice->user_id.'/' . $invoice->logo) }}" alt="Logo" style="width:100%; height:100%; object-fit:contain;">
+                @endif
+            </span>
+            <strong>{{ $invoice->name }}</strong>
+        </div>
 
         <!-- <div class="invoice-header mb-4">
            
@@ -173,18 +183,21 @@
                 </tr>
             </tbody>
         </table>
-        @if(!empty($invoiceSetting->payment_link))
-        <div class="note-box">
-            <p><strong>Payment Link:</strong> 
-                <a style="color: inherit !important;
+        @php
+            $paymentLink = isset($invoiceSetting->payment_link) ? trim((string) $invoiceSetting->payment_link) : '';
+        @endphp
+        @if(!empty($paymentLink) && filter_var($paymentLink, FILTER_VALIDATE_URL))
+            <div class="note-box">
+                <p><strong>Payment Link:</strong> 
+                    <a style="color: inherit !important;
     text-decoration: none !important;
-    background: none !important; border: none;" target="_blank" href="{{ $invoiceSetting->payment_link }}">{{ $invoiceSetting->payment_link }}</a>
-            </p>
-        </div>
+    background: none !important; border: none;" target="_blank" href="{{ $paymentLink }}">{{ $paymentLink }}</a>
+                </p>
+            </div>
         @endif
         <div style="margin-top: 60px; text-align: center; font-size: 0.9rem; line-height: 1.6;">
             <div>
-                Thank you for business !
+                Thanks for your business !
             </div>
             <!-- <div>
                 {{ $invoice->address }}, {{ $invoice->city }}, {{ $invoice->state }}, {{ $invoice->country }} - {{ $invoice->pincode }}

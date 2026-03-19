@@ -73,7 +73,16 @@
             <div class="col px-3">
                 <div class="row">
                     <div class="col-6">
-                        <h4>{{ $invoice->name }}</h4>
+                        <h4 class="d-flex align-items-center">
+                            <span class="me-2" style="display:inline-flex; width:28px; height:28px;">
+                                @if($u->user_type == "Subscriber" or $u->user_type == "admin")
+                                    <img class="border rounded" src="{{ asset('web_assets/users/user'.$userid.'/' . $invoice->logo) }}" style="max-width: 100%;max-height:100%;width:auto;height:auto;">
+                                @else
+                                    <img class="border rounded" src="{{ asset('web_assets/users/user'.$u->added_by.'/' . $invoice->logo) }}" style="max-width: 100%;max-height:100%;width:auto;height:auto;">
+                                @endif
+                            </span>
+                            <span>{{ $invoice->name }}</span>
+                        </h4>
                         <p class="m-1" style="line-height: 1;">{{ $invoice->address }}</p>
                         <p class="m-1" style="line-height: 1;">{{ $invoice->city }}, {{ $invoice->state }}</p>
                         <p class="m-1" style="line-height: 1;">{{ $invoice->country }}, {{ $invoice->pincode }}</p>
@@ -131,11 +140,14 @@
                         </tr>
                     </table>
                 </div>
-@if(!empty($invoiceSetting->payment_link))
+@php
+    $paymentLink = isset($invoiceSetting->payment_link) ? trim((string) $invoiceSetting->payment_link) : '';
+@endphp
+@if(!empty($paymentLink) && filter_var($paymentLink, FILTER_VALIDATE_URL))
                 <div class="m-0 mt-3 p-3 border">
                 <p><strong>Payment Link:</strong> 
                     
-                        <a target="_blank" href="{{ $invoiceSetting->payment_link }}">{{ $invoiceSetting->payment_link }}</a>
+                        <a target="_blank" href="{{ $paymentLink }}">{{ $paymentLink }}</a>
                     
                     
                 </p>
