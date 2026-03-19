@@ -6,7 +6,6 @@ use App\Models\Clients;
 use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\Invoices;
-use App\Models\Internal_Invoices;
 use App\Models\Invoice_settings;
 use App\Models\Activities;
 use App\Models\Applications;
