@@ -4105,30 +4105,6 @@ class WebController extends Controller
                 $invoice->token = $this->generateInternalInvoiceToken();
                 $invoice->save();
 
-                if (!in_array($invoice->status, ['Paid', 'Cancelled'])) {
-                    $application = Applications::where('application_id', $request->application_id)->first();
-                    $paymentSeed = PaymentARs::where('subscriber_id', $subscriber->id)
-                        ->where('type', 'ar')
-                        ->where('invoice_no', $invoice->invoice_no)
-                        ->first();
-
-                    if (!$paymentSeed) {
-                        $paymentSeed = new PaymentARs();
-                    }
-
-                    $paymentSeed->subscriber_id = $subscriber->id;
-                    $paymentSeed->client_id = $client->id;
-                    $paymentSeed->application_id = $application ? $application->id : null;
-                    $paymentSeed->service_description = $request['detail'];
-                    $paymentSeed->amount = $invoice->total;
-                    $paymentSeed->paid_amount = 0;
-                    $paymentSeed->payment_mode = 'Cash';
-                    $paymentSeed->invoice_no = $invoice->invoice_no;
-                    $paymentSeed->type = 'ar';
-                    $paymentSeed->payment_date = now();
-                    $paymentSeed->save();
-                }
-
                 if ($invoice->status == "Paid") {
                     $new_invoice = Invoices::where('invoice', '=', $invoice->invoice_no)->first();
                     if ($new_invoice == null) {
