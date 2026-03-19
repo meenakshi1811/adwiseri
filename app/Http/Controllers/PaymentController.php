@@ -426,6 +426,7 @@ class PaymentController extends Controller
     {
         $invoiceRows = Internal_Invoices::where('subscriber_id', $subscriberId)
             ->where('type', $type)
+            ->where('status', 'UnPaid')
             ->whereNotIn('status', ['Cancelled'])
             ->orderBy('created_at', 'asc')
             ->get();
@@ -456,10 +457,7 @@ class PaymentController extends Controller
                     ->first();
 
                 $clientName = optional($client)->name ?? ($invoice->to_name ?: 'N/A');
-                $clientId = optional($client)->id ?? 'N/A';
-                $serviceDescription = $type === 'ar'
-                    ? ($invoice->detail ?: 'N/A')
-                    : ($invoice->detail ?: 'N/A');
+                $serviceDescription = $invoice->detail ?: 'N/A';
 
                 $applicationId = optional($group->first())->application_id;
                 $serviceProvider = $type === 'ap' ? ($invoice->to_name ?: 'N/A') : optional($group->first())->service_provider;
@@ -475,13 +473,9 @@ class PaymentController extends Controller
                     'amount' => $totalAmount,
                     'paid_amount' => $totalPaid,
                     'outstanding_amount' => $outstanding,
-                    'display_label' => sprintf(
-                        '%s - %s (%s) - %s',
-                        $invoice->invoice_no,
-                        $clientName,
-                        $clientId,
-                        $serviceDescription
-                    ),
+                    'display_label' => $type === 'ap'
+                        ? sprintf('%s - %s - %s', $invoice->invoice_no, $invoice->to_name ?: 'N/A', $serviceDescription)
+                        : sprintf('%s - %s - %s', $invoice->invoice_no, $clientName, $serviceDescription),
                 ];
             })
             ->filter()

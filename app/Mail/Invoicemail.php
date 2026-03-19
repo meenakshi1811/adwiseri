@@ -39,8 +39,17 @@ class Invoicemail extends Mailable
 
         $fileName = 'Invoice-' . ($data->invoice_no ?? 'document') . '.pdf';
 
-        return $this->subject('New Invoice')
-            ->view('web.invoicetemplate', compact('data'))
+        $mail = $this->subject('New Invoice');
+
+        if (!empty($data->from_email)) {
+            $mail->from($data->from_email, $data->from_name ?? null);
+        }
+
+        if (!empty($data->reply_to_email)) {
+            $mail->replyTo($data->reply_to_email, $data->reply_to_name ?? null);
+        }
+
+        return $mail->view('web.invoicetemplate', compact('data'))
             ->attachData($pdf->output(), $fileName, [
                 'mime' => 'application/pdf',
             ]);
