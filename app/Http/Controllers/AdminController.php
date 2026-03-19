@@ -1910,7 +1910,11 @@ class AdminController extends Controller
                 $maildata->due_date = $invoice->due_date;
                 $maildata->invoice_id = $invoice->id;
                 $maildata->token = $invoice->token;
-                $maildata->message = "New invoice has been generated from " . ($user->organization ?? 'Adwiseri') . " for " . ($user->currency ?? 'Rs.') . " " . number_format($invoice->total, 2) . ".";
+                $maildata->message = "You have new invoice from " . ($user->organization ?? 'Adwiseri') . " for " . ($user->currency ?? 'Rs.') . " " . number_format($invoice->total, 2) . ".";
+                $maildata->from_name = 'Adwiseri.com';
+                $maildata->from_email = 'alerts@adwiseri.com';
+                $maildata->reply_to_email = 'care@adwiseri.com';
+                $maildata->reply_to_name = 'Adwiseri Support';
                 Mail::to($subs->email)->send(new Invoicemail($maildata));
                 if (Mail::failures()) {
                     echo 'Sorry! Please try again latter';

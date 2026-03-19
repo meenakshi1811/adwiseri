@@ -16,7 +16,6 @@
                         @csrf
                         <input type="hidden" name="local_time" class="localtime" />
                         <div class="row">
-                        <div class="row">
                              <!-- Payment Entry Type -->
                              <div class="col-md-4 p-1">
                                 <label>Payment Entry Type<span class="text-danger" style="font-size: 18px;">*</span></label>
@@ -43,7 +42,9 @@
                                     @foreach ($invoices as $invoice)
                                     <option {{ (old('invoices_list') == $invoice['id']) ? 'selected' : '' }}
                                             value="{{ $invoice['id'] }}"
-                                            data-client-id="{{ $invoice['client_id'] }}">
+                                            data-client-id="{{ $invoice['client_id'] }}"
+                                            data-outstanding="{{ $invoice['outstanding_amount'] }}"
+                                            data-paid="{{ $invoice['paid_amount'] }}">
                                             {{ $invoice['display_label'] }}
                                         </option>
                                     @endforeach
@@ -54,27 +55,6 @@
                                         <strong>{{ $message }}</strong>
                                     </span>
                                 @enderror
-                            </div>
-
-                            <!-- Outstanding Amount (Hidden by default) -->
-                            <div class="col-md-4 p-1 outstanding-section" style="display: none;">
-                                <label>Outstanding (Read only)</label>
-                            </div>
-                            <div class="col-md-8 p-1 outstanding-section" style="display: none;">
-                                <input name="outstanding_amount" type="number" class="form-control" id="outstanding_amount" placeholder="Outstanding Amount" readonly>
-                            </div>
-
-                            <!-- Client Name -->
-                            <div class="col-md-4 p-1">
-                                <label>Client Name<span class="text-danger" style="font-size: 18px;">*</span></label>
-                            </div>
-                            <div class="col-md-8 p-1">
-                                <select name="client_id" id="client_id" required class="form-control form-select">
-                                    <option value="">Select Client</option>
-                                    @foreach ($clients as $clint)
-                                        <option value="{{ $clint->id }}">{{ $clint->name . '(' . $clint->id . ')' }}</option>
-                                    @endforeach
-                                </select>
                             </div>
 
                             <div class="col-md-4 p-1">
@@ -107,7 +87,7 @@
                             </div>
 
                             <div class="col-md-4 p-1">
-                                <label>Total Amount (Read only)<span class="text-danger" style="font-size: 18px;">*</span></label>
+                                <label>Total Amount<span class="text-danger" style="font-size: 18px;">*</span></label>
                             </div>
                             <div class="col-md-8 p-1">
                                 <input name="amount" required type="number" min="1"
@@ -120,17 +100,29 @@
                                     </span>
                                 @enderror
                             </div>
+                            <div class="col-md-4 p-1 outstanding-section">
+                                <label>Outstanding</label>
+                            </div>
+                            <div class="col-md-8 p-1 outstanding-section">
+                                <input name="outstanding_amount" min="0" step="0.01" type="number" class="form-control" id="outstanding_amount" placeholder="Outstanding Amount" readonly>
+                            </div>
                             <div class="col-md-4 p-1 existing-only" style="display:none;">
-                                <label>Amount Paid (Read only)</label>
+                                <label>Amount Paid</label>
                             </div>
                             <div class="col-md-8 p-1 existing-only" style="display:none;">
                                 <input type="number" class="form-control" id="amount_paid_existing" readonly>
+                            </div>
+                            <div class="col-md-4 p-1 existing-only outstanding-existing" style="display:none;">
+                                <label>Outstanding</label>
+                            </div>
+                            <div class="col-md-8 p-1 existing-only outstanding-existing" style="display:none;">
+                                <input min="0" step="0.01" type="number" class="form-control" id="outstanding_amount_existing" placeholder="Outstanding Amount" readonly>
                             </div>
                             <div class="col-md-4 p-1">
                                 <label>Amount Paying<span class="text-danger" style="font-size: 18px;">*</span></label>
                             </div>
                             <div class="col-md-8 p-1">
-                                <input name="paid_amount" required type="number" min="1"
+                                <input name="paid_amount" required type="number" min="0.01" step="0.01"
                                     class="form-control @error('amount') is-invalid @enderror" id="paid_amount"
                                     aria-describedby="emailHelp" value="{{ old('paid_amount') }}" placeholder="Amount Paying"
                                     autocomplete="amount">
@@ -163,9 +155,7 @@
                                 @enderror
                             </div>
                             <div class="col-md-4 p-1">
-                                <label>Payment Date (Editable)
-                                    {{-- <span class="text-danger" style="font-size: 18px;">*</span> --}}
-                                </label>
+                                <label>Payment Date</label>
                             </div>
                             <div class="col-md-8 p-1">
                                 <input name="payment_date" type="text"
@@ -187,7 +177,8 @@
                                 @enderror
                             </div>
 
-                            <div class="col text-end p-1">
+                            <div class="col-md-4 p-1"></div>
+                            <div class="col-md-8 p-1 text-start">
                                 <button type="submit" class="form-control btn btn-primary"
                                     style="width: fit-content;">Submit</button>
                             </div>
@@ -219,7 +210,7 @@
                     document.getElementById("amount_paid_existing").value = data.paidAmmount.toFixed(2);
                     document.getElementById("paid_amount").value = "";
                     document.getElementById("outstanding_amount").value = data.outstandingAmount.toFixed(2);
-                    document.getElementById("client_id").value = data.client || "";
+                    document.getElementById("outstanding_amount_existing").value = data.outstandingAmount.toFixed(2);
                 })
                 .catch(error => console.error("Error fetching invoice details:", error));
         }
@@ -229,13 +220,23 @@
             invoiceSections.forEach(section => {
                 section.style.display = 'block';
             });
-            let outstandingSections = document.querySelectorAll('.outstanding-section');
-            outstandingSections.forEach(section => {
-                section.style.display = 'block';
+            document.querySelectorAll('.outstanding-existing').forEach(section => {
+                section.style.display = show ? 'block' : 'none';
+            });
+            document.querySelectorAll('.outstanding-section').forEach(section => {
+                section.style.display = show ? 'none' : 'block';
             });
             document.querySelectorAll('.existing-only').forEach(section => {
                 section.style.display = show ? 'block' : 'none';
             });
+            const invoiceSelect = document.getElementById("invoices_list");
+            Array.from(invoiceSelect.options).forEach((opt, idx) => {
+                if (idx === 0) return;
+                const paidAmount = parseFloat(opt.dataset.paid || '0');
+                const shouldShow = show ? paidAmount > 0 : paidAmount <= 0;
+                opt.hidden = !shouldShow;
+            });
+            invoiceSelect.value = '';
 
             if(show ==false) {
 
@@ -251,7 +252,8 @@
                 document.getElementById("paid_amount").removeAttribute("readonly");
                 document.getElementById("paid_amount").value = '';
                 document.getElementById("amount_paid_existing").value = '';
-                document.getElementById("client_id").value = '';
+                document.getElementById("outstanding_amount").value = '';
+                document.getElementById("outstanding_amount_existing").value = '';
 
              }
              else{
@@ -265,17 +267,9 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
     <script>
         $(document).ready(() => {
-            function filterInvoicesByClient() {
-                const selectedClient = $("#client_id").val();
-                const invoiceSelect = document.getElementById("invoices_list");
-                Array.from(invoiceSelect.options).forEach((opt, idx) => {
-                    if (idx === 0) return;
-                    opt.hidden = selectedClient && opt.dataset.clientId !== selectedClient;
-                });
-            }
-
             const amountInput = document.getElementById('amount');
             const outstandingInput = document.getElementById('outstanding_amount');
+            const outstandingExistingInput = document.getElementById('outstanding_amount_existing');
             const paidAmountInput = document.getElementById('paid_amount');
             const registrationForm = document.getElementById('registration_form');
 
@@ -284,8 +278,12 @@
         // Function to validate the paid amount
         function getAllowedAmount() {
             const outstanding = parseFloat(outstandingInput?.value);
+            const outstandingExisting = parseFloat(outstandingExistingInput?.value);
             if (!isNaN(outstanding) && outstanding > 0) {
                 return outstanding;
+            }
+            if (!isNaN(outstandingExisting) && outstandingExisting > 0) {
+                return outstandingExisting;
             }
             return parseFloat(amountInput.value) || 0;
         }
