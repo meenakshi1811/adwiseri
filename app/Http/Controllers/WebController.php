@@ -79,6 +79,36 @@ use App\Services\ScheduledReportService;
 use App\Services\EmailTemplateService;
 class WebController extends Controller
 {
+    private function generateInternalInvoiceId(): string
+    {
+        $ch = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        $id = "";
+        for ($i = 0; $i < 8; $i++) {
+            $id .= $ch[rand(0, strlen($ch) - 1)];
+        }
+
+        if (Internal_Invoices::where('invoice_no', '=', $id)->exists()) {
+            return $this->generateInternalInvoiceId();
+        }
+
+        return $id;
+    }
+
+    private function generateInternalInvoiceToken(): string
+    {
+        $ch = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        $token = "";
+        for ($i = 0; $i < 20; $i++) {
+            $token .= $ch[rand(0, strlen($ch) - 1)];
+        }
+
+        if (Internal_Invoices::where('token', '=', $token)->exists()) {
+            return $this->generateInternalInvoiceToken();
+        }
+
+        return $token;
+    }
+
     private function writeExportCsv($filePath, $rows)
     {
         $handle = fopen($filePath, 'w');
@@ -4024,19 +4054,6 @@ class WebController extends Controller
         $request->validate([
             'amount' => 'required|numeric|min:0',
         ]);
-
-        function invoice_token()
-        {
-            $ch = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-            $token = "";
-            for ($i = 0; $i < 20; $i++) {
-                $token = $token . $ch[rand(0, strlen($ch) - 1)];
-            }
-            if (Internal_Invoices::where('token', '=', $token)->first()) {
-                return invoice_token();
-            }
-            return $token;
-        }
         $user = Auth::user();
         $this->set_timezone();
         $subId =  (Auth::user()->user_type == 'Subscriber') ? $user->id :$user->added_by;
@@ -4050,7 +4067,7 @@ class WebController extends Controller
             if ($request->client) {
                 $client = Clients::find($request->client);
                 $invoice = new Internal_Invoices();
-                $invoice->invoice_no = invoice_id();
+                $invoice->invoice_no = $this->generateInternalInvoiceId();
                 $invoice->subscriber_id = $subscriber->id;
                 $invoice->user_id = $user->id;
                 $invoice->name = $subscriber->name;
@@ -4085,7 +4102,7 @@ class WebController extends Controller
                 $invoice->total = max(0, $subtotal + ($subtotal * $taxRate));
                 $invoice->status = $request['status'];
                 $invoice->due_date = $request['due_date'];
-                $invoice->token = invoice_token();
+                $invoice->token = $this->generateInternalInvoiceToken();
                 $invoice->save();
 
                 if (!in_array($invoice->status, ['Paid', 'Cancelled'])) {
@@ -4202,31 +4219,6 @@ class WebController extends Controller
             'service_taken' => 'required|string|min:2|max:200',
             'amount' => 'required|numeric|min:0',
         ]);
-
-        function invoice_id()
-        {
-            $ch = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-            $id = "";
-            for ($i = 0; $i < 8; $i++) {
-                $id = $id . $ch[rand(0, strlen($ch) - 1)];
-            }
-            if (Internal_Invoices::where('invoice_no', '=', $id)->first()) {
-                return invoice_id();
-            }
-            return $id;
-        }
-        function invoice_token()
-        {
-            $ch = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-            $token = "";
-            for ($i = 0; $i < 20; $i++) {
-                $token = $token . $ch[rand(0, strlen($ch) - 1)];
-            }
-            if (Internal_Invoices::where('token', '=', $token)->first()) {
-                return invoice_token();
-            }
-            return $token;
-        }
         $user = Auth::user();
         $this->set_timezone();
         $subId =  (Auth::user()->user_type == 'Subscriber') ? $user->id :$user->added_by;
@@ -4278,7 +4270,7 @@ class WebController extends Controller
                 $invoice->total = max(0, $subtotal + ($subtotal * $taxRate));
                 $invoice->status = $request['status'];
                 $invoice->due_date = $request['due_date'];
-                $invoice->token = invoice_token();
+                $invoice->token = $this->generateInternalInvoiceToken();
                 $invoice->save();
 
                 if ($invoice->status == "Paid") {
