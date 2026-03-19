@@ -17,6 +17,7 @@ use App\Models\PaymentARs;
 use DateTime;
 use DataTables;
 use DB;
+use App\Models\Internal_Invoices;
 
 class PaymentController extends Controller
 {

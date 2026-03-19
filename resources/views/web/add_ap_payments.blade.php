@@ -90,7 +90,7 @@
                                 <label>Total Amount<span class="text-danger" style="font-size: 18px;">*</span></label>
                             </div>
                             <div class="col-md-8 p-1">
-                                <input name="amount" required type="number" min="1"
+                                <input name="amount" required type="number" min="1" step="any"
                                     class="form-control @error('amount') is-invalid @enderror" id="amount"
                                     aria-describedby="emailHelp" value="{{ old('amount') }}" placeholder="Total Amount"
                                     autocomplete="amount" readonly>
@@ -206,7 +206,7 @@
                 .then(data => {
                     document.getElementById("service_provider").value = data.serviceProvider;
                     document.getElementById("service_taken").value = data.serviceTaken;
-                    document.getElementById("amount").value = data.amount;
+                    document.getElementById("amount").value = data.amount.toFixed(2);
                     document.getElementById("amount_paid_existing").value = data.paidAmmount.toFixed(2);
                     document.getElementById("paid_amount").value = "";
                     document.getElementById("outstanding_amount").value = data.outstandingAmount.toFixed(2);
