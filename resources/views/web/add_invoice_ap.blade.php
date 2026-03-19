@@ -19,16 +19,10 @@
                                 <label>Invoice ID<span class="text-danger" style="font-size: 18px;">*</span></label>
                             </div>
                             <div class="col-md-8 p-1">
-                                <select name="client" id="client_id" required
-                                    class="form-control form-select @error('client') is-invalid @enderror" id="exampleInputEmail1"
-                                    aria-describedby="emailHelp">
-                                    <option value="">Select Invoice</option>
-                                    @foreach ($clients as $clint)
-                                        <option {{ (old('client') == $clint->id) ? 'selected' : '' }} value="{{ $clint->id }}">{{ $clint->name . '(' . $clint->id . ')' }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                                @error('subscriber')
+                                <input name="invoice_vendor_id" type="text" minlength="2" maxlength="100" required
+                                    class="form-control @error('invoice_vendor_id') is-invalid @enderror"
+                                    value="{{ old('invoice_vendor_id') }}" placeholder="Invoice ID">
+                                @error('invoice_vendor_id')
                                     <span class="invalid-feedback" role="alert">
                                         <strong>{{ $message }}</strong>
                                     </span>
@@ -38,16 +32,10 @@
                                 <label>Vendor Name<span class="text-danger" style="font-size: 18px;">*</span></label>
                             </div>
                             <div class="col-md-8 p-1">
-                                <select name="client" id="client_id" required
-                                    class="form-control form-select @error('client') is-invalid @enderror" id="exampleInputEmail1"
-                                    aria-describedby="emailHelp">
-                                    <option value="">Select client</option>
-                                    @foreach ($clients as $clint)
-                                        <option {{ (old('client') == $clint->id) ? 'selected' : '' }} value="{{ $clint->id }}">{{ $clint->name . '(' . $clint->id . ')' }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                                @error('subscriber')
+                                <input name="vendor_name" id="vendor_name" type="text" minlength="2" maxlength="150" required
+                                    class="form-control @error('vendor_name') is-invalid @enderror"
+                                    value="{{ old('vendor_name') }}" placeholder="Vendor Name">
+                                @error('vendor_name')
                                     <span class="invalid-feedback" role="alert">
                                         <strong>{{ $message }}</strong>
                                     </span>
@@ -57,24 +45,10 @@
                                 <label>Product/Service Taken<span class="text-danger" style="font-size: 18px;">*</span></label>
                             </div>
                             <div class="col-md-8 p-1">
-                                <select name="application_id" id="application_id" class="form-control form-select @error('application_id') is-invalid @enderror" id="exampleInputEmail1" aria-describedby="emailHelp" required>
-                                    <option value="">Select Product/Service Taken</option>
-                                </select>
-                                @error('application_id')
-                                    <span class="invalid-feedback" role="alert">
-                                        <strong>{{ $message }}</strong>
-                                    </span>
-                                @enderror
-                            </div>
-                            <div class="col-md-4 p-1">
-                                <label>Service Description<span class="text-danger" style="font-size: 18px;">*</span></label>
-                            </div>
-                            <div class="col-md-8 p-1">
-                                <input name="detail" type="text" minlength="3" maxlength="200"
-                                    class="form-control @error('detail') is-invalid @enderror" id="service_description"
-                                    aria-describedby="ageHelp" value="{{ old('detail') }}" required
-                                    placeholder="Service Description" autocomplete="detail">
-                                @error('detail')
+                                <input name="service_taken" id="service_taken" type="text" minlength="2" maxlength="200" required
+                                    class="form-control @error('service_taken') is-invalid @enderror"
+                                    value="{{ old('service_taken') }}" placeholder="Product/Service Taken">
+                                @error('service_taken')
                                     <span class="invalid-feedback" role="alert">
                                         <strong>{{ $message }}</strong>
                                     </span>
@@ -228,29 +202,6 @@
                 }
             });
           });
-            $("#client_id").change(function(){
-                var id = $(this).val();
-                // console.log(counrty);
-                $.ajax({
-                    url: 'get_application',
-                    method: 'POST',
-                    data: {
-                        "_token": "{{ csrf_token() }}",
-                        id: id,
-                        comm: "invoice",
-                    },
-                    cache:false,
-                    success: function(data){
-                    console.log(data);
-                        $("#application_id").html(data);
-                    }
-                });
-            });
-            $("#application_id").change(function(){
-                var option = $(this).find('option:selected');
-                var service = option.data('name');
-                $("#service_description").val(service);
-            });
         });
     </script>
     <script>
