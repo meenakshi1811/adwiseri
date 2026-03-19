@@ -32,6 +32,14 @@
             background: #1f4bb8;
             color: #ffffff;
             padding: 18px 24px;
+            text-align: center;
+        }
+
+        .header img {
+            width: 170px;
+            max-width: 100%;
+            height: auto;
+            margin-bottom: 10px;
         }
 
         .header h2 {
@@ -84,6 +92,14 @@
             font-size: 12px;
             border-top: 1px solid #e5e7eb;
             background: #fafafa;
+            text-align: center;
+        }
+
+        .footer .thanks {
+            margin: 0 0 8px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #374151;
         }
     </style>
 </head>
@@ -92,6 +108,7 @@
     <div class="wrapper">
         <div class="card">
             <div class="header">
+                <img src="{{ url('web_assets/images/Style2_blue.png') }}" alt="Adwiseri">
                 <h2>Invoice {{ $data->invoice_no ?? '' }}</h2>
             </div>
             <div class="body">
@@ -135,6 +152,7 @@
                 <p>Thank you,<br><strong>{{ $data->company_name ?? 'Adwiseri Team' }}</strong></p>
             </div>
             <div class="footer">
+                <p class="thanks">Thanks for your business !</p>
                 &copy; {{ date('Y') }} adwiseri. All rights reserved.
             </div>
         </div>
