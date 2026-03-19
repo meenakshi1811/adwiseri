@@ -4025,18 +4025,6 @@ class WebController extends Controller
             'amount' => 'required|numeric|min:0',
         ]);
 
-        function invoice_id()
-        {
-            $ch = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-            $id = "";
-            for ($i = 0; $i < 8; $i++) {
-                $id = $id . $ch[rand(0, strlen($ch) - 1)];
-            }
-            if (Internal_Invoices::where('invoice_no', '=', $id)->first()) {
-                return invoice_id();
-            }
-            return $id;
-        }
         function invoice_token()
         {
             $ch = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -4209,6 +4197,9 @@ class WebController extends Controller
     public function create_new_invoice_ap(Request $request)
     {
         $request->validate([
+            'invoice_vendor_id' => 'required|string|min:2|max:100',
+            'vendor_name' => 'required|string|min:2|max:150',
+            'service_taken' => 'required|string|min:2|max:200',
             'amount' => 'required|numeric|min:0',
         ]);
 
@@ -4247,10 +4238,12 @@ class WebController extends Controller
             } else {
                 $subscriber = User::find($user->added_by);
             }
-            if ($request->client) {
-                $client = Clients::find($request->client);
-                $invoice = new Internal_Invoices();
-                $invoice->invoice_no = invoice_id();
+            $client = $request->client ? Clients::find($request->client) : null;
+            $vendorName = trim((string) $request->vendor_name);
+            $vendorInvoiceId = trim((string) $request->invoice_vendor_id);
+            $serviceTaken = trim((string) $request->service_taken);
+            $invoice = new Internal_Invoices();
+                $invoice->invoice_no = $vendorInvoiceId;
                 $invoice->subscriber_id = $subscriber->id;
                 $invoice->user_id = $user->id;
                 $invoice->name = $subscriber->name;
@@ -4262,15 +4255,15 @@ class WebController extends Controller
                 $invoice->pincode = $subscriber->pincode;
                 $invoice->address = $subscriber->address_line;
                 $invoice->logo = $subscriber->organization_logo;
-                $invoice->to_name = $client->name;
-                $invoice->to_email = $client->email;
-                $invoice->to_phone = $client->phone;
-                $invoice->to_country = $client->country;
-                $invoice->to_state = $client->state;
-                $invoice->to_city = $client->city;
-                $invoice->to_pincode = $client->pincode;
-                $invoice->to_address = $client->address;
-                $invoice->detail = $request['detail'];
+                $invoice->to_name = $vendorName;
+                $invoice->to_email = optional($client)->email;
+                $invoice->to_phone = optional($client)->phone;
+                $invoice->to_country = optional($client)->country;
+                $invoice->to_state = optional($client)->state;
+                $invoice->to_city = optional($client)->city;
+                $invoice->to_pincode = optional($client)->pincode;
+                $invoice->to_address = optional($client)->address;
+                $invoice->detail = $serviceTaken;
                 $invoiceAmount = (float) $request['amount'];
                 $discountPercent = max(0, min(100, (float) ($inv_setting->discount ?? 0)));
                 $taxPercent = max(0, min(100, (float) ($inv_setting->tax ?? 0)));
@@ -4287,31 +4280,6 @@ class WebController extends Controller
                 $invoice->due_date = $request['due_date'];
                 $invoice->token = invoice_token();
                 $invoice->save();
-
-                if (!in_array($invoice->status, ['Paid', 'Cancelled'])) {
-                    $application = Applications::where('application_id', $request->application_id)->first();
-                    $paymentSeed = PaymentARs::where('subscriber_id', $subscriber->id)
-                        ->where('type', 'ap')
-                        ->where('invoice_no', $invoice->invoice_no)
-                        ->first();
-
-                    if (!$paymentSeed) {
-                        $paymentSeed = new PaymentARs();
-                    }
-
-                    $paymentSeed->subscriber_id = $subscriber->id;
-                    $paymentSeed->client_id = $client->id;
-                    $paymentSeed->application_id = $application ? $application->id : null;
-                    $paymentSeed->service_provider = $client->name;
-                    $paymentSeed->service_taken = $request['detail'];
-                    $paymentSeed->amount = $invoice->total;
-                    $paymentSeed->paid_amount = 0;
-                    $paymentSeed->payment_mode = 'Cash';
-                    $paymentSeed->invoice_no = $invoice->invoice_no;
-                    $paymentSeed->type = 'ap';
-                    $paymentSeed->payment_date = now();
-                    $paymentSeed->save();
-                }
 
                 if ($invoice->status == "Paid") {
                     $new_invoice = Invoices::where('invoice', '=', $invoice->invoice_no)->first();
@@ -4358,10 +4326,10 @@ class WebController extends Controller
                 $activity->save();
 
                 $maildata = new \stdClass();
-                $maildata->name = $client['name'];
+                $maildata->name = $vendorName;
                 $maildata->email = $subscriber->email;
                 $maildata->from_email = $subscriber->email;
-                $maildata->to_email = $client->email;
+                $maildata->to_email = optional($client)->email ?? $subscriber->email;
                 $maildata->company_name = $subscriber->organization ?? $subscriber->name;
                 $maildata->detail = $invoice->detail;
                 $maildata->amount = $invoice->amount;
@@ -4378,19 +4346,20 @@ class WebController extends Controller
                 $maildata->payment_link =  $subscriber->payment_link;
                 $maildata->message = "New invoice has been generated from " . ($subscriber->organization ?? 'Adwiseri') . " for " . ($subscriber->currency ?? 'Rs.') . " " . number_format($invoice->total, 2) . ".";
                 // Mail::to($client->email)->send(new Invoicemail($maildata));
-                 try {
-                    Mail::to($client->email)->send(new Invoicemail($maildata));
+                try {
+                    if (!empty(optional($client)->email)) {
+                        Mail::to($client->email)->send(new Invoicemail($maildata));
+                    }
                 } catch (\Exception $e) {
                     // skip the error (optional log)
-                    \Log::warning('Invoice email not sent to: '.$client->email);
+                    \Log::warning('Invoice email not sent for AP invoice_no: '.$invoice->invoice_no);
                 }
                  if (Mail::failures()) {
                     echo 'Sorry! Please try again latter';
                 } else {
                     echo 'Success';
                 }
-                return redirect()->route('invoice_payment_made')->with('invoice_generated', 'Invoice created Successfully.');
-            }
+            return redirect()->route('invoice_payment_made')->with('invoice_generated', 'Invoice created Successfully.');
         } else {
             return redirect()->route('login');
         }
