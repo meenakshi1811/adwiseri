@@ -4155,6 +4155,8 @@ class WebController extends Controller
                 $maildata->from_email = $subscriber->email;
                 $maildata->to_email = $client->email;
                 $maildata->company_name = $subscriber->organization ?? $subscriber->name;
+                $maildata->display_from_email = $subscriber->email;
+                $maildata->logo_path = 'web_assets/users/user' . $subscriber->id . '/' . $invoice->logo;
                 $maildata->detail = $invoice->detail;
                 $maildata->amount = $invoice->amount;
                 $maildata->discount = $invoice->discount;
@@ -4303,6 +4305,8 @@ class WebController extends Controller
                 $maildata->from_email = $subscriber->email;
                 $maildata->to_email = optional($client)->email ?? $subscriber->email;
                 $maildata->company_name = $subscriber->organization ?? $subscriber->name;
+                $maildata->display_from_email = $subscriber->email;
+                $maildata->logo_path = 'web_assets/users/user' . $subscriber->id . '/' . $invoice->logo;
                 $maildata->detail = $invoice->detail;
                 $maildata->amount = $invoice->amount;
                 $maildata->discount = $invoice->discount;
