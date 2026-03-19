@@ -1911,8 +1911,8 @@ class AdminController extends Controller
                 $maildata->invoice_id = $invoice->id;
                 $maildata->token = $invoice->token;
                 $maildata->message = "You have new invoice from " . ($user->organization ?? 'Adwiseri') . " for " . ($user->currency ?? 'Rs.') . " " . number_format($invoice->total, 2) . ".";
-                $maildata->from_name = 'Adwiseri.com';
-                $maildata->from_email = 'alerts@adwiseri.com';
+                $maildata->from_name = $user->organization ?? $user->name ?? 'Subscriber';
+                $maildata->from_email = $user->email;
                 $maildata->reply_to_email = 'care@adwiseri.com';
                 $maildata->reply_to_name = 'Adwiseri Support';
                 Mail::to($subs->email)->send(new Invoicemail($maildata));

@@ -46,6 +46,9 @@ class Invoicemail extends Mailable
         }
 
         if (!empty($data->reply_to_email)) {
+            $mail->withSymfonyMessage(function ($message) {
+                $message->getHeaders()->remove('Reply-To');
+            });
             $mail->replyTo($data->reply_to_email, $data->reply_to_name ?? null);
         }
 
