@@ -4169,7 +4169,7 @@ class WebController extends Controller
                 $maildata->token = $invoice->token;
                 $maildata->payment_link = $inv_setting->payment_link ?? null;
                 $maildata->message = "You have new invoice from " . ($subscriber->organization ?? 'Adwiseri') . " for " . ($subscriber->currency ?? 'Rs.') . " " . number_format($invoice->total, 2) . ".";
-                $maildata->from_name = "Sent on behalf of " . ($subscriber->name ?? 'Subscriber');
+                $maildata->from_name = "Sent on behalf of " . ($subscriber->organization ?? $subscriber->name ?? 'Subscriber');
                 $maildata->from_email = "alerts@adwiseri.com";
                 $maildata->reply_to_email = $subscriber->email;
                 $maildata->reply_to_name = $subscriber->name ?? 'Subscriber';
@@ -4317,7 +4317,7 @@ class WebController extends Controller
                 $maildata->token = $invoice->token;
                 $maildata->payment_link = $inv_setting->payment_link ?? null;
                 $maildata->message = "You have new invoice from " . ($subscriber->organization ?? 'Adwiseri') . " for " . ($subscriber->currency ?? 'Rs.') . " " . number_format($invoice->total, 2) . ".";
-                $maildata->from_name = "Sent on behalf of " . ($subscriber->name ?? 'Subscriber');
+                $maildata->from_name = "Sent on behalf of " . ($subscriber->organization ?? $subscriber->name ?? 'Subscriber');
                 $maildata->from_email = "alerts@adwiseri.com";
                 $maildata->reply_to_email = $subscriber->email;
                 $maildata->reply_to_name = $subscriber->name ?? 'Subscriber';
