@@ -150,16 +150,16 @@
 
     </div>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script>
          document.addEventListener("DOMContentLoaded", function () {
             const dueDateInput = document.querySelector('input[name="due_date"]');
-            if (!dueDateInput.value) {
-                const today = new Date();
-                const day = String(today.getDate()).padStart(2, '0');
-                const month = String(today.getMonth() + 1).padStart(2, '0');
-                const year = today.getFullYear();
-                dueDateInput.value = `${day}-${month}-${year}`;
-            }
+            flatpickr(dueDateInput, {
+                dateFormat: "d-m-Y",
+                defaultDate: dueDateInput.value || "today",
+                allowInput: true,
+                clickOpens: true
+            });
         });
         $(document).ready(() => {
 

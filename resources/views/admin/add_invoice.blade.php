@@ -118,8 +118,16 @@
   </div>
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js">
   </script>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script>
       $(document).ready(() => {
+          flatpickr('input[name="due_date"]', {
+            dateFormat: "d-m-Y",
+            defaultDate: $('input[name="due_date"]').val() || "today",
+            allowInput: true,
+            clickOpens: true
+          });
+
           $("#country").change(function(){
             var country = $(this).val();
             // console.log(counrty);
