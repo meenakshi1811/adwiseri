@@ -247,7 +247,7 @@ for (var subCategory in finalGroupedDataSubcategory) {
                 endDate: end,
                 maxDate: moment(),
                 locale: {
-                    format: 'DD/MM/YYYY'
+                    format: 'DD-MM-YYYY'
                 },
                 ranges: {
                     'Since Inception': [moment('2000-01-01'), moment()],

@@ -63,8 +63,8 @@ class ReportFilterController extends Controller
         // this is used for subscriber check $user->membership == 'Adwiseri' || $user->membership == "Adwiseri+" || $user->membership == "Enterprise") &&
         $user = Auth::user();
 
-        $startDate = Carbon::createFromFormat('d/m/Y', request()->input('startDate'))->startOfDay();
-        $endDate = Carbon::createFromFormat('d/m/Y', request()->input('endDate'))->endOfDay();
+        $startDate = Carbon::createFromFormat('d-m-Y', request()->input('startDate'))->startOfDay();
+        $endDate = Carbon::createFromFormat('d-m-Y', request()->input('endDate'))->endOfDay();
         if (request()->type == "homeCountry") {
             if (($user->membership == 'Adwiseri' || $user->membership == "Adwiseri+" || $user->membership == "Enterprise") && $user->user_type == 'Subscriber') {
                 $clientsByCountry = Clients::whereBetween('created_at', [$startDate, $endDate])->where('subscriber_id', '=', $user->id)->select('country as country_name', DB::raw('COUNT(subscriber_id) as No_of_Subscribers'))
@@ -376,8 +376,8 @@ class ReportFilterController extends Controller
     public function applicationsReport()
     {
         $user = Auth::user();
-        $startDate = Carbon::createFromFormat('d/m/Y', request()->input('startDate'))->startOfDay();
-        $endDate = Carbon::createFromFormat('d/m/Y', request()->input('endDate'))->endOfDay();
+        $startDate = Carbon::createFromFormat('d-m-Y', request()->input('startDate'))->startOfDay();
+        $endDate = Carbon::createFromFormat('d-m-Y', request()->input('endDate'))->endOfDay();
         if (request()->type == "visaCountry") {
 
             if (($user->membership == 'Adwiseri' || $user->membership == "Adwiseri+" || $user->membership == "Enterprise") && $user->user_type == 'Subscriber') {
@@ -695,8 +695,8 @@ class ReportFilterController extends Controller
     public function usersReport()
     {
         $user = Auth::user();
-        $startDate = Carbon::createFromFormat('d/m/Y', request()->input('startDate'))->startOfDay();
-        $endDate = Carbon::createFromFormat('d/m/Y', request()->input('endDate'))->endOfDay();
+        $startDate = Carbon::createFromFormat('d-m-Y', request()->input('startDate'))->startOfDay();
+        $endDate = Carbon::createFromFormat('d-m-Y', request()->input('endDate'))->endOfDay();
         if (request()->type == "byRole") {
             if (($user->membership == 'Adwiseri' || $user->membership == "Adwiseri+" || $user->membership == "Enterprise") && $user->user_type == 'Subscriber') {
                 $userFetch = User::where('added_by', $user->id)
@@ -977,8 +977,8 @@ class ReportFilterController extends Controller
     public function invoicesReport()
     {
         $user = Auth::user();
-        $startDate = Carbon::createFromFormat('d/m/Y', request()->input('startDate'))->startOfDay();
-        $endDate = Carbon::createFromFormat('d/m/Y', request()->input('endDate'))->endOfDay();
+        $startDate = Carbon::createFromFormat('d-m-Y', request()->input('startDate'))->startOfDay();
+        $endDate = Carbon::createFromFormat('d-m-Y', request()->input('endDate'))->endOfDay();
         if (request()->type == "byAmount") {
             if (($user->membership == 'Adwiseri' || $user->membership == "Adwiseri+" || $user->membership == "Enterprise") && $user->user_type == 'Subscriber') {
 
@@ -1087,8 +1087,8 @@ class ReportFilterController extends Controller
     {
         $user = Auth::user();
 
-        $startDate = Carbon::createFromFormat('d/m/Y', request()->input('startDate'))->startOfDay();
-        $endDate = Carbon::createFromFormat('d/m/Y', request()->input('endDate'))->endOfDay();
+        $startDate = Carbon::createFromFormat('d-m-Y', request()->input('startDate'))->startOfDay();
+        $endDate = Carbon::createFromFormat('d-m-Y', request()->input('endDate'))->endOfDay();
         if (request()->type == "byPaymentMode") {
             $paymentMode = (request()->payment_mode == 'All' )  ?  PaymentARs::pluck('payment_mode')->toArray() : [request()->payment_mode] ;
             if (($user->membership == 'Adwiseri' || $user->membership == "Adwiseri+" || $user->membership == "Enterprise") && $user->user_type == 'Subscriber') {
@@ -1264,8 +1264,8 @@ class ReportFilterController extends Controller
 
     public function communicationReport()
     {
-        $startDate = Carbon::createFromFormat('d/m/Y', request()->input('startDate'))->startOfDay();
-        $endDate = Carbon::createFromFormat('d/m/Y', request()->input('endDate'))->endOfDay();
+        $startDate = Carbon::createFromFormat('d-m-Y', request()->input('startDate'))->startOfDay();
+        $endDate = Carbon::createFromFormat('d-m-Y', request()->input('endDate'))->endOfDay();
         $user = auth()->user();
         if (request()->type == "byMessages") {
 
@@ -1428,8 +1428,8 @@ class ReportFilterController extends Controller
     public function walletReport()
     {
         $user = Auth::user();
-        $startDate = Carbon::createFromFormat('d/m/Y', request()->input('startDate'))->startOfDay();
-        $endDate = Carbon::createFromFormat('d/m/Y', request()->input('endDate'))->endOfDay();
+        $startDate = Carbon::createFromFormat('d-m-Y', request()->input('startDate'))->startOfDay();
+        $endDate = Carbon::createFromFormat('d-m-Y', request()->input('endDate'))->endOfDay();
         if (request()->type == 'byWallets') {
 
             if (($user->membership == 'Adwiseri' || $user->membership == "Adwiseri+" || $user->membership == "Enterprise") && $user->user_type == 'Subscriber') {
@@ -1584,8 +1584,8 @@ class ReportFilterController extends Controller
 
     public function supportReport()
     {
-        $startDate = Carbon::createFromFormat('d/m/Y', request()->input('startDate'))->startOfDay();
-        $endDate = Carbon::createFromFormat('d/m/Y', request()->input('endDate'))->endOfDay();
+        $startDate = Carbon::createFromFormat('d-m-Y', request()->input('startDate'))->startOfDay();
+        $endDate = Carbon::createFromFormat('d-m-Y', request()->input('endDate'))->endOfDay();
         if (request()->type == 'byTicketType') {
             $cd = Tickets::whereIn('support', ['Billing', 'Sales', 'Support'])->select('support')
                 ->selectRaw('COUNT(*) as number_of_tickets')
@@ -1681,8 +1681,8 @@ class ReportFilterController extends Controller
 
 
         $user = Auth::user();
-        $startDate = Carbon::createFromFormat('d/m/Y', request()->input('startDate'))->startOfDay();
-        $endDate = Carbon::createFromFormat('d/m/Y', request()->input('endDate'))->endOfDay();
+        $startDate = Carbon::createFromFormat('d-m-Y', request()->input('startDate'))->startOfDay();
+        $endDate = Carbon::createFromFormat('d-m-Y', request()->input('endDate'))->endOfDay();
         if (request()->type == "subscribers") {
             if (($user->membership == 'Adwiseri' || $user->membership == "Adwiseri+" || $user->membership == "Enterprise") && $user->user_type == 'Subscriber') {
                
@@ -1903,8 +1903,8 @@ class ReportFilterController extends Controller
     public function affiliatesReport()
     {
 
-        $startDate = Carbon::createFromFormat('d/m/Y', request()->input('startDate'))->startOfDay();
-        $endDate = Carbon::createFromFormat('d/m/Y', request()->input('endDate'))->endOfDay();
+        $startDate = Carbon::createFromFormat('d-m-Y', request()->input('startDate'))->startOfDay();
+        $endDate = Carbon::createFromFormat('d-m-Y', request()->input('endDate'))->endOfDay();
         if (request()->type == "subscribersReferred") {
 
 
@@ -2048,8 +2048,8 @@ class ReportFilterController extends Controller
     public function demoReport(Request $request)
     {
 
-        $startDate = Carbon::createFromFormat('d/m/Y', request()->input('startDate'))->startOfDay();
-        $endDate = Carbon::createFromFormat('d/m/Y', request()->input('endDate'))->endOfDay();
+        $startDate = Carbon::createFromFormat('d-m-Y', request()->input('startDate'))->startOfDay();
+        $endDate = Carbon::createFromFormat('d-m-Y', request()->input('endDate'))->endOfDay();
         $demos = DemoRequests::whereBetween('created_at', [$startDate, $endDate])->get();
 
 
@@ -2086,8 +2086,8 @@ class ReportFilterController extends Controller
     public function demoRequestReport(Request $request)
     {
 
-        $startDate = Carbon::createFromFormat('d/m/Y', request()->input('startDate'))->startOfDay();
-        $endDate = Carbon::createFromFormat('d/m/Y', request()->input('endDate'))->endOfDay();
+        $startDate = Carbon::createFromFormat('d-m-Y', request()->input('startDate'))->startOfDay();
+        $endDate = Carbon::createFromFormat('d-m-Y', request()->input('endDate'))->endOfDay();
         if (request()->type == "byStatus") {
             $demorequest = DB::table('demo_requests')
             ->select('status', DB::raw('COUNT(*) as status_count'))
@@ -2161,8 +2161,8 @@ class ReportFilterController extends Controller
 
     public function documentReport(){
         $user = auth()->user();
-        $startDate = Carbon::createFromFormat('d/m/Y', request()->input('startDate'))->startOfDay();
-        $endDate = Carbon::createFromFormat('d/m/Y', request()->input('endDate'))->endOfDay();
+        $startDate = Carbon::createFromFormat('d-m-Y', request()->input('startDate'))->startOfDay();
+        $endDate = Carbon::createFromFormat('d-m-Y', request()->input('endDate'))->endOfDay();
         if (request()->type == "byApplication") {
 
             if (($user->membership == 'Adwiseri' || $user->membership == "Adwiseri+" || $user->membership == "Enterprise") && $user->user_type == 'Subscriber') {

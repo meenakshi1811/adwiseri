@@ -7666,7 +7666,7 @@ function checkDataAndToggleButtons(table) {
                 endDate: end,
                 maxDate: moment(),
                 locale: {
-                    format: 'DD/MM/YYYY',
+                    format: 'DD-MM-YYYY',
                     customRangeLabel: 'Custom Duration' // Rename Custom Range
                 },
                 ranges: {

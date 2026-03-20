@@ -96,6 +96,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
 <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
 <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
 <script>
   var local_time = new Date();
@@ -150,6 +151,33 @@
 
 
     });
+</script>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const dateInputs = document.querySelectorAll('input.date, input.datepicker, input[type="date"]');
+    dateInputs.forEach((input) => {
+      if (input.dataset.calendarInit === '1') return;
+      const minDate = input.getAttribute('min') || null;
+      const maxDate = input.getAttribute('max') || null;
+      const currentValue = input.value || null;
+
+      if (input.type === 'date') {
+        input.type = 'text';
+      }
+
+      flatpickr(input, {
+        dateFormat: "d-m-Y",
+        defaultDate: currentValue,
+        allowInput: true,
+        clickOpens: true,
+        disableMobile: true,
+        minDate: minDate,
+        maxDate: maxDate
+      });
+
+      input.dataset.calendarInit = '1';
+    });
+  });
 </script>
 <style>
   @media screen and (max-width: 767px){
