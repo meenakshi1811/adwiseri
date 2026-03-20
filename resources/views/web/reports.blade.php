@@ -8244,7 +8244,7 @@ $support_roles = UserRoles::where('user_id', '=', $user->id)
                 endDate: end,
                 maxDate: moment(),
                 locale: {
-                    format: 'DD/MM/YYYY',
+                    format: 'DD-MM-YYYY',
                     customRangeLabel: 'Custom Duration' // Rename Custom Range
                 },
                 ranges: {
