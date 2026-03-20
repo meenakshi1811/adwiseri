@@ -163,7 +163,7 @@
                                 id="payment_date"
                                 aria-describedby="emailHelp"
                                 value="{{ old('payment_date') ? date('Y-m-d', strtotime(old('payment_date'))) : '' }}"
-                                placeholder="{{ date('m/d/Y')}}"
+                                placeholder="{{ date('d-m-Y')}}"
                                 autocomplete="dob"
                                 max="{{ date('Y-m-d')}}"
 
