@@ -94,8 +94,8 @@
                                 <label>Payment Due Date<span class="text-danger" style="font-size: 18px;">*</span></label>
                             </div>
                             <div class="col-md-8 p-1">
-                                <input name="due_date" required type="date" min="{{date('d-m-Y')}}" class="form-control date @error('due_date') is-invalid @enderror" id="exampleInputEmail1" aria-describedby="emailHelp" value="{{ old('due_date', date('Y-m-d')) }}"
-                                placeholder="Payment Due Date" autocomplete="due_date">
+                                <input name="due_date" required type="text" class="form-control date @error('due_date') is-invalid @enderror" id="exampleInputEmail1" aria-describedby="emailHelp" value="{{ old('due_date', date('d-m-Y')) }}"
+                                placeholder="dd-mm-yyyy" autocomplete="due_date" pattern="\d{2}-\d{2}-\d{4}">
                             @error('due_date')
                                 <span class="invalid-feedback" role="alert">
                                     <strong>{{ $message }}</strong>
