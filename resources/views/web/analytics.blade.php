@@ -21401,7 +21401,7 @@ numbers.push(currentElement.total_clients);
         var end = moment();
 
         function cb(start, end) {
-            $('#custom_date_picker').val(start.format('DD/MM/YYYY') + ' - ' + end.format('DD/MM/YYYY'));
+            $('#custom_date_picker').val(start.format('DD-MM-YYYY') + ' - ' + end.format('DD-MM-YYYY'));
         }
 
         // Initialize daterangepicker
@@ -21410,7 +21410,7 @@ numbers.push(currentElement.total_clients);
             endDate: end,
             maxDate: moment(),
             locale: {
-                format: 'DD/MM/YYYY',
+                format: 'DD-MM-YYYY',
                 customRangeLabel: 'Custom Duration' // Rename Custom Range
             },
             ranges: {

@@ -308,8 +308,8 @@ class AdminController extends Controller
         $user = Auth::user();
         $page = "subscriber";
         if (request()->ajax()) {
-            $startDate = Carbon::createFromFormat('d/m/Y', request()->startdate)->startOfDay();
-            $endDate = Carbon::createFromFormat('d/m/Y', request()->enddate)->endOfDay();
+            $startDate = Carbon::createFromFormat('d-m-Y', request()->startdate)->startOfDay();
+            $endDate = Carbon::createFromFormat('d-m-Y', request()->enddate)->endOfDay();
             $subscribers = User::where('user_type', '=', 'Subscriber')->whereBetween('created_at', [$startDate, $endDate])->get();
 
 
@@ -686,8 +686,8 @@ class AdminController extends Controller
     }
     public function manage_user_reports()
     {
-        $startDate = Carbon::createFromFormat('d/m/Y', request()->input('startDate'))->startOfDay();
-        $endDate = Carbon::createFromFormat('d/m/Y', request()->input('endDate'))->endOfDay();
+        $startDate = Carbon::createFromFormat('d-m-Y', request()->input('startDate'))->startOfDay();
+        $endDate = Carbon::createFromFormat('d-m-Y', request()->input('endDate'))->endOfDay();
         $query = new User ();
         if(auth()->user()->user_type == 'Subscriber'){
             $query = $query->where('added_by',auth()->id()); 
@@ -994,8 +994,8 @@ class AdminController extends Controller
     }
     public function manage_clients_report()
     {
-        $startDate = Carbon::createFromFormat('d/m/Y', request()->input('startDate'))->startOfDay();
-        $endDate = Carbon::createFromFormat('d/m/Y', request()->input('endDate'))->endOfDay();
+        $startDate = Carbon::createFromFormat('d-m-Y', request()->input('startDate'))->startOfDay();
+        $endDate = Carbon::createFromFormat('d-m-Y', request()->input('endDate'))->endOfDay();
         $user = auth()->user();
         $query = new Clients ();
         if($user->user_type == 'Subscriber'){
@@ -1028,8 +1028,8 @@ class AdminController extends Controller
     }
     public function client_documents_reports()
     {
-        $startDate = Carbon::createFromFormat('d/m/Y', request()->input('startDate'))->startOfDay();
-        $endDate = Carbon::createFromFormat('d/m/Y', request()->input('endDate'))->endOfDay();
+        $startDate = Carbon::createFromFormat('d-m-Y', request()->input('startDate'))->startOfDay();
+        $endDate = Carbon::createFromFormat('d-m-Y', request()->input('endDate'))->endOfDay();
         $query = new Client_Docs();
         if(auth()->user()->user_type == 'Subscriber'){
             $query =  $query->where('user_id',auth()->user()->id);
@@ -1216,8 +1216,8 @@ class AdminController extends Controller
     }
     public function manage_reports_applications()
     {
-        $startDate = Carbon::createFromFormat('d/m/Y', request()->input('startDate'))->startOfDay();
-        $endDate = Carbon::createFromFormat('d/m/Y', request()->input('endDate'))->endOfDay();
+        $startDate = Carbon::createFromFormat('d-m-Y', request()->input('startDate'))->startOfDay();
+        $endDate = Carbon::createFromFormat('d-m-Y', request()->input('endDate'))->endOfDay();
         $user = auth()->user();
         $query = new Applications();
         if($user->user_type == 'Subscriber'){
@@ -1675,8 +1675,8 @@ class AdminController extends Controller
     
     public function manage_report_payments()
     {
-        $startDate = Carbon::createFromFormat('d/m/Y', request()->input('startDate'))->startOfDay();
-        $endDate = Carbon::createFromFormat('d/m/Y', request()->input('endDate'))->endOfDay();
+        $startDate = Carbon::createFromFormat('d-m-Y', request()->input('startDate'))->startOfDay();
+        $endDate = Carbon::createFromFormat('d-m-Y', request()->input('endDate'))->endOfDay();
         $user = auth()->user();
         $query = new PaymentArs ();
         if($user->user_type == 'Subscriber'){
@@ -1727,8 +1727,8 @@ class AdminController extends Controller
     }
     public function manage_reports_invoices()
     {
-        $startDate = Carbon::createFromFormat('d/m/Y', request()->input('startDate'))->startOfDay();
-        $endDate = Carbon::createFromFormat('d/m/Y', request()->input('endDate'))->endOfDay();
+        $startDate = Carbon::createFromFormat('d-m-Y', request()->input('startDate'))->startOfDay();
+        $endDate = Carbon::createFromFormat('d-m-Y', request()->input('endDate'))->endOfDay();
         $user = Auth::user();
         $query = Internal_Invoices::where('type', 'ar');
         if($user->user_type == 'Subscriber'){
@@ -1774,8 +1774,8 @@ class AdminController extends Controller
 
     public function manage_reports_invoices_ap()
     {
-        $startDate = Carbon::createFromFormat('d/m/Y', request()->input('startDate'))->startOfDay();
-        $endDate = Carbon::createFromFormat('d/m/Y', request()->input('endDate'))->endOfDay();
+        $startDate = Carbon::createFromFormat('d-m-Y', request()->input('startDate'))->startOfDay();
+        $endDate = Carbon::createFromFormat('d-m-Y', request()->input('endDate'))->endOfDay();
         $user = Auth::user();
         $query = Internal_Invoices::where('type', 'ap');
         if($user->user_type == 'Subscriber'){
@@ -1888,7 +1888,9 @@ class AdminController extends Controller
                 $invoice->tax = $taxPercent;
                 $invoice->total = max(0, $subtotal + ($subtotal * ($taxPercent / 100)));
                 $invoice->status = $request['status'];
-                $invoice->due_date = $request['due_date'];
+                $invoice->due_date = preg_match('/^\d{2}-\d{2}-\d{4}$/', (string) $request['due_date'])
+                    ? \Carbon\Carbon::createFromFormat('d-m-Y', $request['due_date'])->format('Y-m-d')
+                    : $request['due_date'];
                 $invoice->token = invoice_token();
                 $invoice->save();
                 $activity = new Activities();
@@ -1991,8 +1993,8 @@ class AdminController extends Controller
     }
     public function manage_report_wallet()
     {
-        $startDate = Carbon::createFromFormat('d/m/Y', request()->input('startDate'))->startOfDay();
-        $endDate = Carbon::createFromFormat('d/m/Y', request()->input('endDate'))->endOfDay();
+        $startDate = Carbon::createFromFormat('d-m-Y', request()->input('startDate'))->startOfDay();
+        $endDate = Carbon::createFromFormat('d-m-Y', request()->input('endDate'))->endOfDay();
         $user = auth()->user();
         $query = new Referrals ();
         if($user->user_type == 'Subscriber'){
@@ -2073,8 +2075,8 @@ class AdminController extends Controller
 
     public function manage_report_referrals()
     {
-        $startDate = Carbon::createFromFormat('d/m/Y', request()->input('startDate'))->startOfDay();
-        $endDate = Carbon::createFromFormat('d/m/Y', request()->input('endDate'))->endOfDay();
+        $startDate = Carbon::createFromFormat('d-m-Y', request()->input('startDate'))->startOfDay();
+        $endDate = Carbon::createFromFormat('d-m-Y', request()->input('endDate'))->endOfDay();
         //  $referrals = Referrals::where('debit_amount', '=', null)->whereBetween('created_at', [$startDate, $endDate])->whereNotIn('type', ['one_off', 'double_term', 'cashback'])->orderBy('created_at', 'desc')->get();
         $user = auth()->user();
         $query = Referrals::join('users', 'referrals.userid', '=', 'users.id')
@@ -2282,8 +2284,8 @@ class AdminController extends Controller
        
         $query = new  Tickets();
         if(request()->has('startDate') &&  request()->has('endDate')){
-            $startDate = Carbon::createFromFormat('d/m/Y', request()->input('startDate'))->startOfDay();
-            $endDate = Carbon::createFromFormat('d/m/Y', request()->input('endDate'))->endOfDay();
+            $startDate = Carbon::createFromFormat('d-m-Y', request()->input('startDate'))->startOfDay();
+            $endDate = Carbon::createFromFormat('d-m-Y', request()->input('endDate'))->endOfDay();
             $query = $query->whereBetween('created_at', [$startDate, $endDate]);
         }
         if ($user) {
@@ -2339,8 +2341,8 @@ class AdminController extends Controller
     }
     public function affiliates_records()
     {
-        $startDate = Carbon::createFromFormat('d/m/Y', request()->input('startDate'))->startOfDay();
-        $endDate = Carbon::createFromFormat('d/m/Y', request()->input('endDate'))->endOfDay();
+        $startDate = Carbon::createFromFormat('d-m-Y', request()->input('startDate'))->startOfDay();
+        $endDate = Carbon::createFromFormat('d-m-Y', request()->input('endDate'))->endOfDay();
             // $referral = Referrals::selectRaw('COUNT(userid) as Referred, referral_code, MAX(wallet_balance) as balance')->whereBetween('created_at',[$startDate,$endDate])
             // ->groupBy('referral_code');
             $affiliates =  User::where('user_type', 'Affiliate')
@@ -2438,8 +2440,8 @@ class AdminController extends Controller
 
         $query = new  Activities();
         if(request()->has('startDate') &&  request()->has('endDate')){
-            $startDate = Carbon::createFromFormat('d/m/Y', request()->input('startDate'))->startOfDay();
-            $endDate = Carbon::createFromFormat('d/m/Y', request()->input('endDate'))->endOfDay();
+            $startDate = Carbon::createFromFormat('d-m-Y', request()->input('startDate'))->startOfDay();
+            $endDate = Carbon::createFromFormat('d-m-Y', request()->input('endDate'))->endOfDay();
             $query->whereBetween('created_at', [$startDate, $endDate]);
         }
        
@@ -2994,8 +2996,8 @@ class AdminController extends Controller
     public function manage_report_communications()
     {
 
-        $startDate = Carbon::createFromFormat('d/m/Y', request()->input('startDate'))->startOfDay();
-        $endDate = Carbon::createFromFormat('d/m/Y', request()->input('endDate'))->endOfDay();
+        $startDate = Carbon::createFromFormat('d-m-Y', request()->input('startDate'))->startOfDay();
+        $endDate = Carbon::createFromFormat('d-m-Y', request()->input('endDate'))->endOfDay();
         $user = Auth::user();
         $query = new Internal_communications();
         if($user->user_type == 'Subscriber'){

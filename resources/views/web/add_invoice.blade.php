@@ -126,16 +126,13 @@
                                 <label>Payment Due Date<span class="text-danger" style="font-size: 18px;">*</span></label>
                             </div>
                             <div class="col-md-8 p-1">
-                                <input name="due_date" type="text" required min="{{date('d-m-Y')}}"
+                                <input name="due_date" type="text" required
                                     class="form-control date @error('due_date') is-invalid @enderror"
                                     id="exampleInputEmail1" aria-describedby="emailHelp"
-                                      value="{{ old('due_date', date('Y-m-d')) }}"
-                                      
-                                         autocomplete="due_date"
-                                    min={{ date('Y-m-d')}}
-                                    required
-                                   onfocus="(this.type='date')"
-                                    onblur="(this.type='text')" />
+                                    value="{{ old('due_date', date('d-m-Y')) }}"
+                                    placeholder="dd-mm-yyyy"
+                                    autocomplete="due_date"
+                                    pattern="\\d{2}-\\d{2}-\\d{4}" />
 
                                    
                                 @error('due_date')
@@ -160,16 +157,16 @@
 
     </div>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script>
          document.addEventListener("DOMContentLoaded", function () {
-            let dueDateInput = document.getElementsByName("due_date");
-
-            // If there's no old value, set the current date
-            if (!dueDateInput.value) {
-                let today = new Date();
-                let formattedDate = today.toISOString().split('T')[0]; // Format: YYYY-MM-DD
-                dueDateInput.value = formattedDate;
-            }
+            const dueDateInput = document.querySelector('input[name="due_date"]');
+            flatpickr(dueDateInput, {
+                dateFormat: "d-m-Y",
+                defaultDate: dueDateInput.value || "today",
+                allowInput: true,
+                clickOpens: true
+            });
         });
         $(document).ready(() => {
 
