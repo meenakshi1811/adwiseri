@@ -1052,8 +1052,8 @@ class WebController extends Controller
         $applications = Applications::where('subscriber_id', '=', $subscriber->id)->get();
         $invoices = Internal_Invoices::where('subscriber_id', '=', $subscriber->id)->get();
         // $referrals = Referrals::where('referral_code', '=', $subscriber->referral)->get();
-        // $startDate = Carbon::createFromFormat('d/m/Y', request()->input('startDate'))->startOfDay();
-        // $endDate = Carbon::createFromFormat('d/m/Y', request()->input('endDate'))->endOfDay();
+        // $startDate = Carbon::createFromFormat('d-m-Y', request()->input('startDate'))->startOfDay();
+        // $endDate = Carbon::createFromFormat('d-m-Y', request()->input('endDate'))->endOfDay();
         //  $referrals = Referrals::where('debit_amount', '=', null)->whereBetween('created_at', [$startDate, $endDate])->whereNotIn('type', ['one_off', 'double_term', 'cashback'])->orderBy('created_at', 'desc')->get();
         $user = auth()->user();
         $query = Referrals::join('users', 'referrals.userid', '=', 'users.id')
