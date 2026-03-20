@@ -94,7 +94,7 @@
                                 <label>Payment Due Date<span class="text-danger" style="font-size: 18px;">*</span></label>
                             </div>
                             <div class="col-md-8 p-1">
-                                <input name="due_date" required type="text" class="form-control date @error('due_date') is-invalid @enderror" id="exampleInputEmail1" aria-describedby="emailHelp" value="{{ old('due_date', date('d-m-Y')) }}"
+                                <input name="due_date" required type="text" class="form-control datepicker @error('due_date') is-invalid @enderror" id="exampleInputEmail1" aria-describedby="emailHelp" value="{{ old('due_date', date('d-m-Y')) }}"
                                 placeholder="dd-mm-yyyy" autocomplete="due_date" pattern="\d{2}-\d{2}-\d{4}">
                             @error('due_date')
                                 <span class="invalid-feedback" role="alert">
@@ -116,12 +116,13 @@
     </div>
 
   </div>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js">
   </script>
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script>
       $(document).ready(() => {
-          flatpickr('input[name="due_date"]', {
+          flatpickr('.datepicker', {
             dateFormat: "d-m-Y",
             defaultDate: $('input[name="due_date"]').val() || "today",
             allowInput: true,

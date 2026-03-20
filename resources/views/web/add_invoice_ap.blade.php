@@ -120,7 +120,7 @@
                             </div>
                             <div class="col-md-8 p-1">
                                 <input name="due_date" type="text" required
-                                    class="form-control date @error('due_date') is-invalid @enderror"
+                                    class="form-control datepicker @error('due_date') is-invalid @enderror"
                                     id="exampleInputEmail1" aria-describedby="emailHelp"
                                     value="{{ old('due_date', date('d-m-Y')) }}"
                                     placeholder="dd-mm-yyyy"
@@ -149,14 +149,14 @@
     </div>
 
     </div>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script>
          document.addEventListener("DOMContentLoaded", function () {
-            const dueDateInput = document.querySelector('input[name="due_date"]');
-            flatpickr(dueDateInput, {
+            flatpickr(".datepicker", {
                 dateFormat: "d-m-Y",
-                defaultDate: dueDateInput.value || "today",
+                defaultDate: document.querySelector('input[name="due_date"]').value || "today",
                 allowInput: true,
                 clickOpens: true
             });
