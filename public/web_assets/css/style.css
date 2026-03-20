@@ -16,7 +16,11 @@ textarea,
 .btn {
     font-family: var(--adwiseri-font-family) !important;
 }
-
+.fa,
+.fa-solid,
+.fas {
+    font-family: "Font Awesome 6 Free" !important;
+}
 a.btn,
 button.btn,
 input.btn,
