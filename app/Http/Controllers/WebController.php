@@ -4101,7 +4101,9 @@ class WebController extends Controller
                 $subtotal = $invoiceAmount - ($invoiceAmount * $discountRate);
                 $invoice->total = max(0, $subtotal + ($subtotal * $taxRate));
                 $invoice->status = $request['status'];
-                $invoice->due_date = $request['due_date'];
+                $invoice->due_date = preg_match('/^\d{2}-\d{2}-\d{4}$/', (string) $request['due_date'])
+                    ? \Carbon\Carbon::createFromFormat('d-m-Y', $request['due_date'])->format('Y-m-d')
+                    : $request['due_date'];
                 $invoice->token = $this->generateInternalInvoiceToken();
                 $invoice->save();
 
@@ -4251,7 +4253,9 @@ class WebController extends Controller
                 $subtotal = $invoiceAmount - ($invoiceAmount * $discountRate);
                 $invoice->total = max(0, $subtotal + ($subtotal * $taxRate));
                 $invoice->status = $request['status'];
-                $invoice->due_date = $request['due_date'];
+                $invoice->due_date = preg_match('/^\d{2}-\d{2}-\d{4}$/', (string) $request['due_date'])
+                    ? \Carbon\Carbon::createFromFormat('d-m-Y', $request['due_date'])->format('Y-m-d')
+                    : $request['due_date'];
                 $invoice->token = $this->generateInternalInvoiceToken();
                 $invoice->save();
 
