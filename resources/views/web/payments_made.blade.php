@@ -58,8 +58,8 @@ $support_roles = UserRoles::where('user_id','=',$user->id)->where('module','=','
                       <tr>
                         <th class="p-1 text-center">Sr No.</th>
                         <th class="p-1 text-center">InvoiceID</th>
-                        <th class="p-1 text-center">Client Name (ID)</th>
-                        <th class="p-1 text-center">Service Offered</th>
+                        <th class="p-1 text-center">Vendor Name (ID)</th>
+                        <th class="p-1 text-center">Product/Service Taken</th>
                         <th class="p-1 text-center">Payment Mode</th>
                         <th class="p-1 text-center">Amount To Pay</th>
                         <th class="p-1 text-center">Paid Amount</th>
@@ -77,10 +77,10 @@ $support_roles = UserRoles::where('user_id','=',$user->id)->where('module','=','
                           <td class="p-1 text-center">{{ $key+1 }}</td>
                           <td class="p-1 text-center">{{ $payment->invoice_no }}</td>
                           <td class="p-1 text-center">
-                            {{ $payment->client ? $payment->client->name .'('.$payment->client_id.')' : ''}}
+                            {{ $payment->service_provider ? $payment->service_provider .'('.$payment->client_id.')' : ''}}
                           </td>
                           <td class="p-1 text-center">
-                            {{ $payment->application ? $payment->application->application_name : $payment->service_description }}
+                            {{ $payment->service_taken }}
                           </td>
                           <td class="p-1 text-center">{{ $payment->payment_mode }}</td>
                           <td class="p-1 text-center amount">{{ $payment->amount }}</td>

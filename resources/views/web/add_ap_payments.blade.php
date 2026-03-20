@@ -63,7 +63,7 @@
                             <div class="col-md-8 p-1">
                                 <input name="service_provider" type="text" minlength="3" maxlength="200"
                                     class="form-control @error('service_provider') is-invalid @enderror" id="service_provider"
-                                    aria-describedby="ageHelp" value="{{ old('service_provider') }}" required
+                                    aria-describedby="ageHelp" value="{{ old('service_provider') }}" required readonly
                                     placeholder="Product/Service Provider" autocomplete="detail">
                                 @error('service_provider')
                                     <span class="invalid-feedback" role="alert">
@@ -77,7 +77,7 @@
                             <div class="col-md-8 p-1">
                                 <input name="service_taken" type="text" minlength="3" maxlength="200"
                                     class="form-control @error('detail') is-invalid @enderror" id="service_taken"
-                                    aria-describedby="ageHelp" value="{{ old('service_taken') }}" required
+                                    aria-describedby="ageHelp" value="{{ old('service_taken') }}" required readonly
                                     placeholder="Product/Service Taken" autocomplete="service_taken">
                                 @error('service_taken')
                                     <span class="invalid-feedback" role="alert">
@@ -240,13 +240,10 @@
 
             if(show ==false) {
 
-                document.getElementById("service_provider").removeAttribute("readonly");
                 document.getElementById("service_provider").value = '';
 
-                document.getElementById("service_taken").removeAttribute("readonly");
                 document.getElementById("service_taken").value = '';
 
-                document.getElementById("amount").removeAttribute("readonly");
                 document.getElementById("amount").value = '';
 
                 document.getElementById("paid_amount").removeAttribute("readonly");
@@ -257,7 +254,7 @@
 
              }
              else{
-                                document.getElementById("service_provider").setAttribute("readonly", "readonly");
+                document.getElementById("service_provider").setAttribute("readonly", "readonly");
                 document.getElementById("service_taken").setAttribute("readonly", "readonly");
                 document.getElementById("amount").setAttribute("readonly", "readonly");
                 // document.getElementById("paid_amount").setAttribute("readonly", "readonly");
