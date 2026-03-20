@@ -3922,7 +3922,7 @@ class WebController extends Controller
                         $html .= ' href="#"';
                     }
 
-                    $html .= ' class="m-0 p-0"><i class="fa-solid fa-eye btn p-1 text-info" style="font-size:14px;"></i></a>';
+                    $html .= ' class="m-0 p-0"><i class="fa-solid fa-eye p-1 text-info" style="font-size:14px;"></i></a>';
 
                     return $html;
                 })
