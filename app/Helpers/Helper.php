@@ -13,8 +13,8 @@ use Illuminate\Support\Facades\Log;
 //         Log::debug('Country Code: ' . $countryCode);
 
 //         $dateFormat = match (strtoupper($countryCode)) {
-//             'US' => 'm/d/Y',
-//             default => 'd/m/Y',
+//             'US' => 'd-m-Y',
+//             default => 'd-m-Y',
 //         };
 
 //         Log::debug('Date Format: ' . $dateFormat);
