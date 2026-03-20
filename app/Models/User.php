@@ -61,8 +61,8 @@ class User extends Authenticatable
 
         // Define date formats based on the country
         $dateFormat = match (strtoupper($countryCode)) {
-            'US' => 'm/d/Y', // MM/DD/YYYY for US
-            default => 'd/m/Y', // DD/MM/YYYY for other countries
+            'US' => 'd-m-Y', // MM/DD/YYYY for US
+            default => 'd-m-Y', // DD-MM-YYYY for other countries
         };
 
         // Format and return the `dob` field
@@ -77,8 +77,8 @@ class User extends Authenticatable
 
         // Define date formats based on the country
         $dateFormat = match (strtoupper($countryCode)) {
-            'US' => 'm/d/Y', // MM/DD/YYYY for US
-            default => 'd/m/Y', // DD/MM/YYYY for other countries
+            'US' => 'd-m-Y', // MM/DD/YYYY for US
+            default => 'd-m-Y', // DD-MM-YYYY for other countries
         };
 
         // Format and return the `dob` field
@@ -92,8 +92,8 @@ class User extends Authenticatable
 
         // Define date formats based on the country
         $dateFormat = match (strtoupper($countryCode)) {
-            'US' => 'm/d/Y', // MM/DD/YYYY for US
-            default => 'd/m/Y', // DD/MM/YYYY for other countries
+            'US' => 'd-m-Y', // MM/DD/YYYY for US
+            default => 'd-m-Y', // DD-MM-YYYY for other countries
         };
 
         // Format and return the `dob` field

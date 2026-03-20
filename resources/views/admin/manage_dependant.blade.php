@@ -224,7 +224,7 @@
                                 id="dob"
                                 aria-describedby="emailHelp"
                                 value="{{ old('dob') ? date('Y-m-d', strtotime(old('dob'))) : '' }}"
-                                placeholder="{{ date('m/d/Y')}}"
+                                placeholder="{{ date('d-m-Y')}}"
                                 autocomplete="dob"
                                 max="{{ date('Y-m-d')}}"
 
