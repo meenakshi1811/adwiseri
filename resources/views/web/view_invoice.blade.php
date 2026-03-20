@@ -220,18 +220,6 @@ else{
                 </tr>
             </tbody>
         </table>
-        @php
-            $paymentLink = isset($invoiceSetting->payment_link) ? trim((string) $invoiceSetting->payment_link) : '';
-        @endphp
-        @if(!empty($paymentLink) && filter_var($paymentLink, FILTER_VALIDATE_URL))
-            <div class="note-box">
-                <p><strong>Payment Link:</strong> 
-                    <a style="color: inherit !important;
-    text-decoration: none !important;
-    background: none !important; border: none;" target="_blank" href="{{ $paymentLink }}">{{ $paymentLink }}</a>
-                </p>
-            </div>
-        @endif
         <div style="margin-top: 60px; text-align: center; font-size: 0.9rem; line-height: 1.6;">
             <div>
                 Thanks for your business !

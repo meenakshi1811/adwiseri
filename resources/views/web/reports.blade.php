@@ -713,7 +713,7 @@ $support_roles = UserRoles::where('user_id', '=', $user->id)
                                         <th>Status</th>
                                         <th>Due Date</th>
                                         <th class="squeeze-column">CreatedDate</th>
-                                        {{-- <th>Action</th> --}}
+                                        <th>Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -779,7 +779,7 @@ $support_roles = UserRoles::where('user_id', '=', $user->id)
                                         <th>Status</th>
                                         <th>Due Date</th>
                                         <th class="squeeze-column">CreatedDate</th>
-                                        {{-- <th>Action</th> --}}
+                                        <th>Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -1881,8 +1881,7 @@ $support_roles = UserRoles::where('user_id', '=', $user->id)
                 {
                     data: 'created_at',
                     name: 'created_at'
-                }
-                //{ data: 'action', name: 'action' },
+                },
             ],
 
         });
@@ -2469,8 +2468,7 @@ $support_roles = UserRoles::where('user_id', '=', $user->id)
                 {
                     data: 'created_at',
                     name: 'created_at'
-                }
-                //{ data: 'action', name: 'action' },
+                },
             ],
 
         });
@@ -3001,8 +2999,7 @@ $support_roles = UserRoles::where('user_id', '=', $user->id)
                 {
                     data: 'created_at',
                     name: 'created_at'
-                }
-                //{ data: 'action', name: 'action' },
+                },
             ],
 
         });
@@ -4455,8 +4452,13 @@ $support_roles = UserRoles::where('user_id', '=', $user->id)
                 {
                     data: 'created_at',
                     name: 'created_at'
-                }
-                //{ data: 'action', name: 'action' },
+                },
+                {
+                    data: 'action',
+                    name: 'action',
+                    orderable: false,
+                    searchable: false
+                },
             ],
             order: [1, 'asc']
 
@@ -4645,8 +4647,13 @@ $support_roles = UserRoles::where('user_id', '=', $user->id)
             {
                 data: 'created_at',
                 name: 'created_at'
-            }
-            //{ data: 'action', name: 'action' },
+            },
+            {
+                data: 'action',
+                name: 'action',
+                orderable: false,
+                searchable: false
+            },
         ],
         order: [1, 'asc']
 

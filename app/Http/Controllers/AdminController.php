@@ -1765,6 +1765,10 @@ class AdminController extends Controller
             ->editColumn('created_at', function ($row) {
                 return date("d-m-Y", strtotime($row->created_at));
             })
+            ->addColumn('action', function ($row) {
+                return '<a style="background:none; border:none;" href="' . route('view_invoice', $row->id) . '" class="m-0 p-0"><i class="fa-solid fa-eye btn p-1 text-info" style="font-size:14px;"></i></a>';
+            })
+            ->rawColumns(['action'])
             ->make(true);
     }
 
@@ -1808,6 +1812,10 @@ class AdminController extends Controller
             ->editColumn('created_at', function ($row) {
                 return date("d-m-Y", strtotime($row->created_at));
             })
+            ->addColumn('action', function ($row) {
+                return '<a style="background:none; border:none;" href="' . route('view_invoice', $row->id) . '" class="m-0 p-0"><i class="fa-solid fa-eye btn p-1 text-info" style="font-size:14px;"></i></a>';
+            })
+            ->rawColumns(['action'])
             ->make(true);
     }
 
