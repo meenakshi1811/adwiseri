@@ -46,10 +46,15 @@ class Invoicemail extends Mailable
         }
 
         if (!empty($data->reply_to_email)) {
-            $mail->withSymfonyMessage(function ($message) {
-                $message->getHeaders()->remove('Reply-To');
+            $replyToEmail = $data->reply_to_email;
+            $replyToName = $data->reply_to_name ?? null;
+            $mail->withSymfonyMessage(function ($message) use ($replyToEmail, $replyToName) {
+                $headers = $message->getHeaders();
+                if ($headers->has('Reply-To')) {
+                    $headers->remove('Reply-To');
+                }
+                $message->replyTo($replyToEmail, $replyToName);
             });
-            $mail->replyTo($data->reply_to_email, $data->reply_to_name ?? null);
         }
 
         return $mail->view('web.invoicetemplate', compact('data'))

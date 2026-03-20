@@ -18,6 +18,10 @@
             margin-bottom: 16px;
         }
 
+        .header td {
+            vertical-align: middle;
+        }
+
         .company {
             font-size: 22px;
             font-weight: bold;
@@ -28,6 +32,12 @@
             text-align: right;
             font-size: 20px;
             font-weight: bold;
+        }
+
+        .logo {
+            max-height: 55px;
+            max-width: 200px;
+            margin-bottom: 6px;
         }
 
         .grid {
@@ -94,20 +104,12 @@
             background: #eff3ff;
         }
 
-        .status {
-            display: inline-block;
-            padding: 3px 8px;
-            border-radius: 12px;
-            font-size: 10px;
-            font-weight: bold;
-            color: #fff;
-            background: #6b7280;
+        .footer {
+            margin-top: 50px;
+            text-align: center;
+            font-size: 12px;
+            color: #4b5563;
         }
-
-        .status.Paid { background: #0f8a3d; }
-        .status.UnPaid { background: #d9480f; }
-        .status.PartiallyPaid { background: #9a6700; }
-        .status.Cancelled { background: #6b7280; }
     </style>
 </head>
 
@@ -121,13 +123,19 @@
         $taxAmount = $taxable * ($taxPercent / 100);
         $total = (float) ($data->total ?? ($taxable + $taxAmount));
         $currency = $data->currency ?? 'Rs.';
+        $statusRaw = (string) ($data->status ?? '-');
+        $statusLabel = $statusRaw === 'PartiallyPaid' ? 'Partially Paid' : ($statusRaw === 'UnPaid' ? 'Unpaid' : $statusRaw);
+        $logoPath = !empty($data->logo_path) ? public_path($data->logo_path) : null;
     @endphp
 
     <table class="header">
         <tr>
             <td>
+                @if(!empty($logoPath) && file_exists($logoPath))
+                    <img class="logo" src="{{ $logoPath }}" alt="Logo">
+                @endif
                 <div class="company">{{ $data->company_name ?? 'Adwiseri' }}</div>
-                <div>{{ $data->from_email ?? '' }}</div>
+                <div>{{ $data->display_from_email ?? ($data->from_email ?? '') }}</div>
             </td>
             <td class="title">
                 INVOICE
@@ -152,8 +160,7 @@
                     @if(($data->status ?? '') !== 'Paid')
                         <strong>Due Date:</strong> {{ !empty($data->due_date) ? date('d-m-Y', strtotime($data->due_date)) : '-' }}<br>
                     @endif
-                    <strong>Status:</strong>
-                    <strong>{{ $data->status ?? '-' }}</strong> 
+                    <strong>Status:</strong> {{ $statusLabel }}
                 </div>
             </td>
         </tr>
@@ -192,6 +199,8 @@
             <td class="right">{{ $currency }} {{ number_format($total, 2) }}</td>
         </tr>
     </table>
+
+    <div class="footer">Thanks for your business !</div>
 </body>
 
 </html>
