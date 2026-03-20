@@ -33,6 +33,7 @@
 
  <script src="https://cdn.anychart.com/releases/8.0.1/js/anychart-pie.min.js"></script>
  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+ <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
 
 
@@ -52,6 +53,33 @@
           }
         });
       });
+  </script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const dateInputs = document.querySelectorAll('input.date, input.datepicker, input[type="date"]');
+      dateInputs.forEach((input) => {
+        if (input.dataset.calendarInit === '1') return;
+        const minDate = input.getAttribute('min') || null;
+        const maxDate = input.getAttribute('max') || null;
+        const currentValue = input.value || null;
+
+        if (input.type === 'date') {
+          input.type = 'text';
+        }
+
+        flatpickr(input, {
+          dateFormat: "d-m-Y",
+          defaultDate: currentValue,
+          allowInput: true,
+          clickOpens: true,
+          disableMobile: true,
+          minDate: minDate,
+          maxDate: maxDate
+        });
+
+        input.dataset.calendarInit = '1';
+      });
+    });
   </script>
 
 
