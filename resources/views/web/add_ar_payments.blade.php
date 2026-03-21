@@ -134,7 +134,7 @@
                                     aria-describedby="emailHelp" 
                                     value="{{ old('amount') }}" 
                                     placeholder="Total Amount To Pay"
-                                    autocomplete="amount">
+                                    autocomplete="amount" readonly>
                                 @error('amount')
                                     <span class="invalid-feedback" role="alert">
                                         <strong>{{ $message }}</strong>
