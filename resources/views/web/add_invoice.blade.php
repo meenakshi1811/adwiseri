@@ -162,7 +162,7 @@
     <script>
          document.addEventListener("DOMContentLoaded", function () {
             flatpickr(".datepicker", {
-                dateFormat: "d-m-Y",
+                dateFormat: "d-m-y",
                 defaultDate: document.querySelector('input[name="due_date"]').value || "today",
                 allowInput: true,
                 clickOpens: true
