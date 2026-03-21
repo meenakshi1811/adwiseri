@@ -1007,7 +1007,7 @@ class AdminController extends Controller
             $endDate   = $this->parseDateFlexible($endInput)->endOfDay();
         } catch (\Exception $e) {
             return response()->json([
-                'error' => 'Invalid date format. Supported formats: Y-m-d or d-m-Y'
+                'error' => 'Invalid date format. Please use a valid date (for example: 2026-03-21, 21-03-2026, 03/21/2026, or 21 March 2026).'
             ], 400);
         }
 
@@ -1049,17 +1049,47 @@ class AdminController extends Controller
         }
 
         try {
-            // Y-m-d → 2026-03-21
-            if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
-                return \Carbon\Carbon::createFromFormat('Y-m-d', $date);
+            $date = trim((string) $date);
+
+            // Handle unix timestamps as well.
+            if (ctype_digit($date)) {
+                return \Carbon\Carbon::createFromTimestamp((int) $date);
             }
 
-            // d-m-Y → 21-03-2026
-            if (preg_match('/^\d{2}-\d{2}-\d{4}$/', $date)) {
-                return \Carbon\Carbon::createFromFormat('d-m-Y', $date);
+            // Normalize separator variants once so we can support slash and dot inputs.
+            $normalizedDate = str_replace(['/', '.'], '-', $date);
+
+            $supportedFormats = [
+                // Numeric formats.
+                'Y-m-d',
+                'd-m-Y',
+                'm-d-Y',
+                'Y-n-j',
+                'j-n-Y',
+                'n-j-Y',
+                // Textual month formats.
+                'd M Y',
+                'd F Y',
+                'M d Y',
+                'F d Y',
+                'd M, Y',
+                'd F, Y',
+                'M d, Y',
+                'F d, Y',
+            ];
+
+            foreach ($supportedFormats as $format) {
+                try {
+                    $parsedDate = \Carbon\Carbon::createFromFormat($format, $normalizedDate);
+                    if ($parsedDate !== false) {
+                        return $parsedDate;
+                    }
+                } catch (\Exception $e) {
+                    // Try next format.
+                }
             }
 
-            // fallback
+            // Last fallback for valid date strings accepted by Carbon.
             return \Carbon\Carbon::parse($date);
 
         } catch (\Exception $e) {
