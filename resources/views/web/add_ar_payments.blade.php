@@ -277,10 +277,10 @@
                 document.getElementById("application_id").removeAttribute("readonly");
                 document.getElementById("application_id").value = '';
 
-                document.getElementById("service_description").removeAttribute("readonly");
+                // document.getElementById("service_description").removeAttribute("readonly");
                 document.getElementById("service_description").value = '';
 
-                document.getElementById("amount").removeAttribute("readonly");
+                // document.getElementById("amount").removeAttribute("readonly");
                 document.getElementById("amount").value = '';
 
                 document.getElementById("paid_amount").removeAttribute("readonly");
