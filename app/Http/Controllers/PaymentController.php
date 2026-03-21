@@ -424,9 +424,9 @@ class PaymentController extends Controller
     }
 
     private function buildOutstandingInvoices($subscriberId, $type)
-    {echo $type;exit;
+    {
         $invoiceRows = Internal_Invoices::where('subscriber_id', $subscriberId)
-            // ->where('type', $type)
+            ->where('type', $type)
             ->where('status', '!=', 'Cancelled')
             ->orderBy('created_at', 'asc')
             ->get();
@@ -445,7 +445,10 @@ class PaymentController extends Controller
                 $totalPaid = (float) $group->sum('paid_amount');
                 $outstanding = max(0, $totalAmount - $totalPaid);
 
-                if ($outstanding <= 0) {
+                // if ($outstanding <= 0) {
+                //     return null;
+                // }
+                if ($outstanding == 0) {
                     return null;
                 }
 
