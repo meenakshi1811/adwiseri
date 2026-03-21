@@ -23,11 +23,11 @@
                             </div>
                             <div class="col-md-8 p-1">
                                 <div class="form-check form-check-inline">
-                                    <input class="form-check-input" type="radio" name="payment_entry_type" id="new_entry" value="New" checked onclick="toggleOutstanding(false)">
+                                    <input class="form-check-input" type="radio" name="payment_entry_type" id="new_entry" value="New" onclick="toggleOutstanding(false)">
                                     <label class="form-check-label" for="new_entry">New</label>
                                 </div>
                                 <div class="form-check form-check-inline">
-                                    <input class="form-check-input" type="radio" name="payment_entry_type" id="existing_entry" value="Existing" onclick="toggleOutstanding(true)">
+                                    <input class="form-check-input" type="radio" name="payment_entry_type" id="existing_entry" value="Existing" checked onclick="toggleOutstanding(true)">
                                     <label class="form-check-label" for="existing_entry">Existing</label>
                                 </div>
                             </div>
@@ -259,7 +259,7 @@
                 })
                 .catch(error => console.error("Error fetching invoice details:", error));
         }
-        toggleOutstanding(false);
+        toggleOutstanding(true);
         function toggleOutstanding(show) {
             let invoiceSections = document.querySelectorAll('.inovice-section');
             invoiceSections.forEach(section => {
@@ -269,12 +269,6 @@
                 section.style.display = show ? 'block' : 'none';
             });
             const invoiceSelect = document.getElementById("invoices_list");
-            Array.from(invoiceSelect.options).forEach((opt, idx) => {
-                if (idx === 0) return;
-                const paidAmount = parseFloat(opt.dataset.paid || '0');
-                const shouldShow = show ? paidAmount > 0 : paidAmount <= 0;
-                opt.hidden = !shouldShow;
-            });
             invoiceSelect.value = '';
 
             if(show ==false) {
