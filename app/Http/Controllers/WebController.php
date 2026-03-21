@@ -797,7 +797,11 @@ class WebController extends Controller
         $welcomedata->email = $email;
         $welcomedata->plan_name = $plan->plan_name;
         $welcomedata->duration = $plan->validity . " Days";
-        Mail::to($email)->send(new WelcomeMail($welcomedata));
+        try {
+            Mail::to($email)->send(new WelcomeMail($welcomedata));
+        } catch (\Exception $e) {
+            \Log::error('Welcome mail failed: ' . $e->getMessage());
+        }
         if (Mail::failures()) {
             echo 'Sorry! Please try again latter';
         } else {
@@ -810,7 +814,11 @@ class WebController extends Controller
         $maildata->email = $email;
         $maildata->otp = $eotp;
         // return view('web.emailtemplate',compact('maildata'));
-        Mail::to($email)->send(new EmailVerification($maildata));
+        try {
+            Mail::to($email)->send(new EmailVerification($maildata));
+        } catch (\Exception $e) {
+            \Log::error('Verification mail failed: ' . $e->getMessage());
+        }
         if (Mail::failures()) {
             echo 'Sorry! Please try again latter';
         } else {
