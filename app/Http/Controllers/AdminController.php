@@ -1006,7 +1006,9 @@ class AdminController extends Controller
             $startDate = $this->parseDateFlexible($startInput)->startOfDay();
             $endDate   = $this->parseDateFlexible($endInput)->endOfDay();
         } catch (\Exception $e) {
-            return response()->json(['error' => 'Invalid date format. Expected d-m-Y'], 400);
+            return response()->json([
+                'error' => 'Invalid date format. Supported formats: Y-m-d or d-m-Y'
+            ], 400);
         }
 
         $user = auth()->user();
@@ -1043,21 +1045,26 @@ class AdminController extends Controller
     private function parseDateFlexible($date)
     {
         if (!$date) {
-            return null;
+            throw new \Exception('Empty date');
         }
 
-        // If format contains '-' and starts with 4 digits → Y-m-d
-        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
-            return Carbon::createFromFormat('Y-m-d', $date);
-        }
-    
-        // If format is d-m-Y
-        if (preg_match('/^\d{2}-\d{2}-\d{4}$/', $date)) {
-            return Carbon::createFromFormat('d-m-Y', $date);
-        }
+        try {
+            // Y-m-d → 2026-03-21
+            if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+                return \Carbon\Carbon::createFromFormat('Y-m-d', $date);
+            }
 
-        // fallback (last option)
-        return Carbon::parse($date);
+            // d-m-Y → 21-03-2026
+            if (preg_match('/^\d{2}-\d{2}-\d{4}$/', $date)) {
+                return \Carbon\Carbon::createFromFormat('d-m-Y', $date);
+            }
+
+            // fallback
+            return \Carbon\Carbon::parse($date);
+
+        } catch (\Exception $e) {
+            throw new \Exception('Invalid date');
+        }
     }
 
     public function client_documents_reports()
