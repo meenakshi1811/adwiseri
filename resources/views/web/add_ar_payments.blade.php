@@ -124,10 +124,17 @@
                                 <label>Total Amount To Pay<span class="text-danger" style="font-size: 18px;">*</span></label>
                             </div>
                             <div class="col-md-8 p-1">
-                                <input name="amount" required type="number" min="1"
-                                    class="form-control @error('amount') is-invalid @enderror" id="amount"
-                                    aria-describedby="emailHelp" value="{{ old('amount') }}" placeholder="Total Amount To Pay"
-                                    autocomplete="amount" readonly>
+                                <input name="amount" 
+                                    required 
+                                    type="number" 
+                                    min="0.01"
+                                    step="0.01"
+                                    class="form-control @error('amount') is-invalid @enderror" 
+                                    id="amount"
+                                    aria-describedby="emailHelp" 
+                                    value="{{ old('amount') }}" 
+                                    placeholder="Total Amount To Pay"
+                                    autocomplete="amount">
                                 @error('amount')
                                     <span class="invalid-feedback" role="alert">
                                         <strong>{{ $message }}</strong>
