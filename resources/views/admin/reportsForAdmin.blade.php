@@ -1426,13 +1426,13 @@ $support_roles = UserRoles::where('user_id', '=', $user->id)
 
 
         // Ensure the date value is not empty or invalid
-        if (!selectedDate || !selectedDate.includes("-")) {
-            console.error("Invalid date format. Ensure the date is in 'YYYY-MM-DD - YYYY-MM-DD' format.");
+        if (!selectedDate || !selectedDate.includes(" - ")) {
+            console.error("Invalid date format. Ensure the date is in 'DD-MM-YYYY - DD-MM-YYYY' format.");
             return null;
         }
 
         // Split the selected date into start and end date
-        var dateParts = selectedDate.split("-");
+        var dateParts = selectedDate.split(" - ");
         var startDate = dateParts[0].trim(); // Extract and trim the start date
         var endDate = dateParts[1].trim(); // Extract and trim the end date
 
