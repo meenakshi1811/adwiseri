@@ -1003,8 +1003,8 @@ class AdminController extends Controller
         }
 
         try {
-            $startDate = parseDateFlexible('d-m-Y', $startInput)->startOfDay();
-            $endDate   = parseDateFlexible('d-m-Y', $endInput)->endOfDay();
+            $startDate = $this->parseDateFlexible($startInput)->startOfDay();
+            $endDate   = $this->parseDateFlexible($endInput)->endOfDay();
         } catch (\Exception $e) {
             return response()->json(['error' => 'Invalid date format. Expected d-m-Y'], 400);
         }
@@ -1040,7 +1040,7 @@ class AdminController extends Controller
         }
     }
 
-    public function parseDateFlexible($date)
+    private function parseDateFlexible($date)
     {
         if (!$date) {
             return null;
@@ -1050,7 +1050,7 @@ class AdminController extends Controller
         if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
             return Carbon::createFromFormat('Y-m-d', $date);
         }
-
+    
         // If format is d-m-Y
         if (preg_match('/^\d{2}-\d{2}-\d{4}$/', $date)) {
             return Carbon::createFromFormat('d-m-Y', $date);
