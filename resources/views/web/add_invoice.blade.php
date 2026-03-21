@@ -130,9 +130,9 @@
                                     class="form-control datepicker @error('due_date') is-invalid @enderror"
                                     id="exampleInputEmail1" aria-describedby="emailHelp"
                                     value="{{ old('due_date', date('d-m-Y')) }}"
-                                    placeholder="dd-mm-yyyy"
+                                    placeholder="dd-mm-yyyy or dd-mm-yy"
                                     autocomplete="due_date"
-                                    pattern="\\d{2}-\\d{2}-\\d{4}" />
+                                    />
 
                                    
                                 @error('due_date')
@@ -162,7 +162,7 @@
     <script>
          document.addEventListener("DOMContentLoaded", function () {
             flatpickr(".datepicker", {
-                dateFormat: "d-m-Y",
+                dateFormat: "d-m-y",
                 defaultDate: document.querySelector('input[name="due_date"]').value || "today",
                 allowInput: true,
                 clickOpens: true
