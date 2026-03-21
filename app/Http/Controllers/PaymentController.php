@@ -424,9 +424,9 @@ class PaymentController extends Controller
     }
 
     private function buildOutstandingInvoices($subscriberId, $type)
-    {
+    {echo $type;exit;
         $invoiceRows = Internal_Invoices::where('subscriber_id', $subscriberId)
-            ->where('type', $type)
+            // ->where('type', $type)
             ->where('status', '!=', 'Cancelled')
             ->orderBy('created_at', 'asc')
             ->get();
