@@ -1925,8 +1925,8 @@ class AdminController extends Controller
                 $maildata->message = "You have new invoice from " . ($user->organization ?? 'Adwiseri') . " for " . ($user->currency ?? 'Rs.') . " " . number_format($invoice->total, 2) . ".";
                 $maildata->from_name = $user->organization ?? $user->name ?? 'Subscriber';
                 $maildata->from_email = $user->email;
-                $maildata->reply_to_email = 'care@adwiseri.com';
-                $maildata->reply_to_name = 'Adwiseri Support';
+                $maildata->reply_to_email = $user->email;
+                $maildata->reply_to_name = $user->organization ?? $user->name ?? 'Subscriber';
                 Mail::to($subs->email)->send(new Invoicemail($maildata));
                 if (Mail::failures()) {
                     echo 'Sorry! Please try again latter';
