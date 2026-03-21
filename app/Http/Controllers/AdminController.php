@@ -994,36 +994,49 @@ class AdminController extends Controller
     }
     public function manage_clients_report()
     {
-        $startDate = Carbon::createFromFormat('d-m-Y', request()->input('startDate'))->startOfDay();
-        $endDate = Carbon::createFromFormat('d-m-Y', request()->input('endDate'))->endOfDay();
-        $user = auth()->user();
-        $query = new Clients ();
-        if($user->user_type == 'Subscriber'){
-            $query  =$query->where('subscriber_id',$user->id);
-        }else{
+        $startInput = request()->input('startDate');
+        $endInput   = request()->input('endDate');
+
+        // Handle empty dates safely
+        if (!$startInput || !$endInput) {
+            return response()->json(['error' => 'Start date and end date are required'], 400);
         }
-         $clients = $query->whereBetween('created_at', [$startDate, $endDate])->orderBy('created_at', 'desc')->get();
+
+        try {
+            $startDate = Carbon::createFromFormat('d-m-Y', $startInput)->startOfDay();
+            $endDate   = Carbon::createFromFormat('d-m-Y', $endInput)->endOfDay();
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Invalid date format. Expected d-m-Y'], 400);
+        }
+
+        $user = auth()->user();
+        $query = new Clients();
+
+        if ($user->user_type == 'Subscriber') {
+            $query = $query->where('subscriber_id', $user->id);
+        }
+
+        $clients = $query->whereBetween('created_at', [$startDate, $endDate])
+                        ->orderBy('created_at', 'desc')
+                        ->get();
+
         if (request()->ajax()) {
-        return DataTables::of($clients)
-            ->addIndexColumn()
-            ->editColumn('name', function ($row) {
-                // Format the `start_date` for better readability
-                return $row->name . '(' . $row->id . ')';
-            })
-            ->editColumn('subscriber', function ($row) {
-                // Format the `start_date` for better readability
-                return $row->subscriber ? $row->subscriber->name . '(' . $row->id . ')' : '';
-            })
-            ->addColumn('noa', function ($row) {
-                // Format the `start_date` for better readability
-                return $row->dependants ? $row->dependants()->count() : '';
-            })
-            ->editColumn('created_at', function ($row) {
-                // Format the `start_date` for better readability
-                return \Carbon\Carbon::parse($row->created_at)->format('d-m-Y'); 
-            })
-            ->rawColumns(['name', 'subscriber','noa','created_at'])
-            ->make(true);
+            return DataTables::of($clients)
+                ->addIndexColumn()
+                ->editColumn('name', function ($row) {
+                    return $row->name . '(' . $row->id . ')';
+                })
+                ->editColumn('subscriber', function ($row) {
+                    return $row->subscriber ? $row->subscriber->name . '(' . $row->subscriber->id . ')' : '';
+                })
+                ->addColumn('noa', function ($row) {
+                    return $row->dependants ? $row->dependants()->count() : 0;
+                })
+                ->editColumn('created_at', function ($row) {
+                    return \Carbon\Carbon::parse($row->created_at)->format('d-m-Y');
+                })
+                ->rawColumns(['name', 'subscriber', 'noa', 'created_at'])
+                ->make(true);
         }
     }
     public function client_documents_reports()
