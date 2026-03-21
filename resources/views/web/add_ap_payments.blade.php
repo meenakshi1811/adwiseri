@@ -291,7 +291,7 @@
 
             // Check if Paid Amount is greater than Amount to Pay
             if (paidAmount > allowedAmount) {
-                const message = `Total Paid amount should not exceed ${allowedAmount.toFixed(2)} (Outstanding) !.`;
+                const message = `Amount Paying should not exceed  ${allowedAmount.toFixed(2)} (Outstanding).`;
                 paidAmountInput.setCustomValidity(message);
                 paidAmountInput.classList.add('is-invalid'); // Add invalid class for styling
                 if (showAlert) {
