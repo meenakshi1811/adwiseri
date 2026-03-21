@@ -1003,8 +1003,8 @@ class AdminController extends Controller
         }
 
         try {
-            $startDate = Carbon::createFromFormat('d-m-Y', $startInput)->startOfDay();
-            $endDate   = Carbon::createFromFormat('d-m-Y', $endInput)->endOfDay();
+            $startDate = parseDateFlexible('d-m-Y', $startInput)->startOfDay();
+            $endDate   = parseDateFlexible('d-m-Y', $endInput)->endOfDay();
         } catch (\Exception $e) {
             return response()->json(['error' => 'Invalid date format. Expected d-m-Y'], 400);
         }
@@ -1039,6 +1039,27 @@ class AdminController extends Controller
                 ->make(true);
         }
     }
+
+    public function parseDateFlexible($date)
+    {
+        if (!$date) {
+            return null;
+        }
+
+        // If format contains '-' and starts with 4 digits → Y-m-d
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+            return Carbon::createFromFormat('Y-m-d', $date);
+        }
+
+        // If format is d-m-Y
+        if (preg_match('/^\d{2}-\d{2}-\d{4}$/', $date)) {
+            return Carbon::createFromFormat('d-m-Y', $date);
+        }
+
+        // fallback (last option)
+        return Carbon::parse($date);
+    }
+
     public function client_documents_reports()
     {
         $startDate = Carbon::createFromFormat('d-m-Y', request()->input('startDate'))->startOfDay();
