@@ -444,12 +444,8 @@ class PaymentController extends Controller
                 $totalAmount = (float) $invoice->total;
                 $totalPaid = (float) $group->sum('paid_amount');
                 $outstanding = round(max(0, $totalAmount - $totalPaid), 2);
-                echo $outstanding;exit();
 
-                // if ($outstanding <= 0) {
-                //     return null;
-                // }
-                if ($outstanding == 0) {
+                if ($outstanding <= 0) {
                     return null;
                 }
 
