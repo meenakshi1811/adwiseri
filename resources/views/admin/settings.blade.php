@@ -578,35 +578,6 @@
             console.log($().jquery);
             console.log($.fn.select2 ? "Select2 is loaded" : "Select2 is NOT loaded");
 
-            $('a[data-bs-toggle="tab"]').on('shown.bs.tab', function(e) {
-                $('#subscribers, #discount_type').select2('destroy').select2({});
-            });
-
-            $('#subscribers').select2({
-                placeholder: "Select Subscribers",
-                allowClear: true,
-                width: '100%'
-            });
-            $('#subscribers').on('select2:select', function(e) {
-                let selectedValues = $(this).val();
-
-                // If "All" is selected
-                if (selectedValues.includes("all")) {
-                    // Deselect all other options except "All"
-                    $(this).val(["all"]).trigger('change');
-                }
-            });
-
-            $('#subscribers').on('select2:unselect', function(e) {
-                // Allow other selections if "All" is unselected
-                if (!$(this).val().includes("all")) {
-                    return;
-                }
-
-                // If "All" is unselected, deselect everything
-                $(this).val(null).trigger('change');
-            });
-
             $("#country").change(function() {
                 var country = $(this).val();
                 // console.log(counrty);
