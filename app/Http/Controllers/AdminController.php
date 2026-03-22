@@ -3466,9 +3466,21 @@ class AdminController extends Controller
             $currencies = Currency::orderBy('currency_code')->get();
             $inv_setting = Invoice_settings::find($user->id);
             $subscribers = User::where('user_type', 'Subscriber')->where('membership', '!=', 'Free')->where('membership_type', 'Subscription')->orderBy('name')->get();
+            $reportSetting = ReportSetting::where('user_id', $user->id)->first();
             $emailTemplates = app(EmailTemplateService::class)->getTemplatesForSettings($user);
             $emailTemplateAudience = strtolower($user->user_type) === 'admin' ? 'admin' : 'subscriber';
-            return view('admin.settings', compact('tzlist', 'user', 'page', 'countries', 'currencies', 'inv_setting', 'subscribers', 'emailTemplates', 'emailTemplateAudience'));
+            $reportModules = [
+                'clients' => 'Clients',
+                'applications' => 'Applications',
+                'invoices' => 'Invoices',
+                'payments' => 'Payments',
+                'referrals' => 'Referrals',
+                'wallets' => 'Wallets',
+                'subscribers' => 'Subscribers',
+                'affiliates' => 'Affiliates',
+            ];
+
+            return view('admin.settings', compact('tzlist', 'user', 'page', 'countries', 'currencies', 'inv_setting', 'subscribers', 'reportSetting', 'reportModules', 'emailTemplates', 'emailTemplateAudience'));
         } else {
             return redirect()->route('admin');
         }
