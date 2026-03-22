@@ -33,6 +33,8 @@ date_default_timezone_set("Asia/Kolkata");
   <link rel="stylesheet" href="https://cdn.datatables.net/1.12.1/css/dataTables.bootstrap5.min.css">
   <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css">
 
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+
   <script src="https://kit.fontawesome.com/b140011afa.js" crossorigin="anonymous"></script>
   <!-- Owl Carousel CSS -->
 
