@@ -15,6 +15,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use DateTime;
 use DateTimeZone;
+use App\Models\ReportSetting;
 
 use App\Mail\Invoicemail;
 use App\Mail\PlanSubscriptionMail;

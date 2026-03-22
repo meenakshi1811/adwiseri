@@ -34,8 +34,16 @@
                 <!-- Second Row -->
                 <div class="row">
                     <div class="col-lg-6 mb-3">
-                        <input name="email" minlength="3" maxlength="100" type="email" class="form-control @error('email') is-invalid @enderror" placeholder="Email ID" value="{{ old('email') }}" required>
-                        @error('email')
+                    <input 
+                        name="email"
+                        type="email"
+                        pattern="^[^\s@]+@[^\s@]+\.[^\s@]+$"
+                        class="form-control @error('email') is-invalid @enderror"
+                        placeholder="Email ID"
+                        value="{{ old('email') }}"
+                        required
+                        >    
+                    @error('email')
                             <span class="invalid-feedback" role="alert">
                                 <strong>{{ $message }}</strong>
                             </span>
