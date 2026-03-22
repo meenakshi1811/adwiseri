@@ -6,10 +6,6 @@
     }
 </style>
 
-<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-
-
-
 @section('main-section')
     <div class="col-lg-10 column-client">
         <div class="client-dashboard">
@@ -254,31 +250,101 @@
                     </form>
                 </div>
                 <div class="tab-pane fade" id="reports" role="tabpanel" aria-labelledby="reports-tab">
+                    <div class="row p-1 m-0">
+                        <p class="m-0 p-1" style="font-size:18px;font-weight:550;">Reports Settings</p>
+                        <small class="text-muted px-2">A single PDF will be generated for the selected modules and sent on the selected frequency.</small>
+                    </div>
+
+                    @if(!empty($reportSetting) && !empty($reportSetting->last_sent_status))
+                        <div class="alert alert-info py-2 px-3 m-2">
+                            <strong>Last Dispatch Status:</strong> {{ ucfirst($reportSetting->last_sent_status) }}
+                            @if(!empty($reportSetting->last_sent_at))
+                                | <strong>Time:</strong> {{ $reportSetting->last_sent_at }}
+                            @endif
+                            @if(!empty($reportSetting->last_sent_message))
+                                <br><strong>Message:</strong> {{ $reportSetting->last_sent_message }}
+                            @endif
+                            @if(!empty($reportSetting->last_file_name))
+                                <br><strong>File:</strong> {{ $reportSetting->last_file_name }}
+                            @endif
+                        </div>
+                    @endif
+
+                    <form id="reports-settings-form">
+                        @csrf
                     <div class="row p-1 mb-3 align-items-center">
                         <div class="col-6">
                                     <label>Select Module(s)</label>
                                 </div>
                                 <div class="col-6">
-
-                                    <div class="dropdown">
-                                        <div class="form-control dropdown-toggle" data-bs-toggle="dropdown">
-                                            Select Module(s)
+                                    @php
+                                        $selectedModules = old('modules', !empty($reportSetting) ? (array) $reportSetting->modules : []);
+                                    @endphp
+                                    @foreach ($reportModules as $moduleKey => $moduleLabel)
+                                        <div class="form-check">
+                                            <input type="checkbox" name="modules[]" value="{{ $moduleKey }}" class="form-check-input"
+                                                {{ in_array($moduleKey, $selectedModules) ? 'checked' : '' }}>
+                                            <label class="form-check-label">{{ $moduleLabel }}</label>
                                         </div>
-                                        <div class="dropdown-menu form-control">
-
-                                            <div class="dropdown-item" style="width: 100%;"><input type="checkbox"  id="selectAll"
-                                                    name="module[]" value="All" />All</div>
-
-                                        
-
-                                        </div>
-                                    </div>
-                                    @error('module')
+                                    @endforeach
+                                    @error('modules')
                                         <span style="color: red;">{{ $message }}</span>
                                     @enderror
 
                                 </div>
                     </div>
+
+                    <div class="row p-1 mb-3 align-items-center">
+                        <div class="col-6">
+                            <label>Select Frequency</label>
+                        </div>
+                        <div class="col-6">
+                            <select name="frequency" class="form-control form-select">
+                                @php
+                                    $selectedFrequency = old('frequency', !empty($reportSetting) ? $reportSetting->frequency : 'daily');
+                                @endphp
+                                <option value="daily" {{ $selectedFrequency == 'daily' ? 'selected' : '' }}>Daily</option>
+                                <option value="weekly" {{ $selectedFrequency == 'weekly' ? 'selected' : '' }}>Weekly</option>
+                                <option value="monthly" {{ $selectedFrequency == 'monthly' ? 'selected' : '' }}>Monthly</option>
+                                <option value="quarterly" {{ $selectedFrequency == 'quarterly' ? 'selected' : '' }}>Quarterly</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row p-1 mb-3 align-items-center">
+                        <div class="col-6">
+                            <label>Delivery Mode</label>
+                        </div>
+                        <div class="col-6">
+                            @php
+                                $selectedDeliveryMode = old('delivery_mode', !empty($reportSetting) ? $reportSetting->delivery_mode : 'attachment');
+                            @endphp
+                            <select name="delivery_mode" class="form-control form-select">
+                                <option value="attachment" {{ $selectedDeliveryMode == 'attachment' ? 'selected' : '' }}>Reports as PDF in Email Attachment</option>
+                                <option value="link" {{ $selectedDeliveryMode == 'link' ? 'selected' : '' }}>Links to View / Download Reports</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row p-1 mb-3 align-items-center">
+                        <div class="col-6">
+                            <label>Send To</label>
+                        </div>
+                        <div class="col-6">
+                            <textarea name="emails" class="form-control"
+                                placeholder="Enter upto 5 emails separated by comma">{{ old('emails', !empty($reportSetting) ? $reportSetting->emails : '') }}</textarea>
+                            <small class="text-muted">Example: test1@gmail.com, test2@gmail.com</small>
+                        </div>
+                    </div>
+
+                    <div class="row p-1 m-0">
+                        <div class="col-6"></div>
+                        <div class="col-6 text-end">
+                            <button type="button" class="btn btn-primary" id="save-reports-settings">Apply</button>
+                            <button type="reset" class="btn btn-secondary">Cancel</button>
+                        </div>
+                    </div>
+                    </form>
                 </div>
                 <div class="tab-pane fade" id="email-template" role="tabpanel" aria-labelledby="email-template-tab">
                     <div class="row p-1 m-0">
@@ -321,13 +387,10 @@
         </div>
     </div>
 
-    </div>
-    </div>
-@endsection()
+@endsection
 @push('scripts')
 
 
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/classic/ckeditor.js"></script>
 
@@ -368,6 +431,52 @@
     </script>
 
     <script>
+        $('#save-reports-settings').click(function() {
+            let formData = $('#reports-settings-form').serialize();
+
+            $.ajax({
+                url: "{{ route('save_report_settings') }}",
+                method: "POST",
+                data: formData,
+
+                success: function(response) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Success',
+                        text: response.message
+                    });
+
+                    $('#reports-settings-form')[0].reset();
+                    setTimeout(function() {
+                        window.location.reload();
+                    }, 600);
+                },
+
+                error: function(xhr) {
+                    let message = 'Failed to save report settings';
+
+                    if (xhr.responseJSON) {
+                        if (xhr.responseJSON.message) {
+                            message = xhr.responseJSON.message;
+                        }
+
+                        if (xhr.responseJSON.errors) {
+                            const firstErrorKey = Object.keys(xhr.responseJSON.errors)[0];
+                            if (firstErrorKey && xhr.responseJSON.errors[firstErrorKey][0]) {
+                                message = xhr.responseJSON.errors[firstErrorKey][0];
+                            }
+                        }
+                    }
+
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: message
+                    });
+                }
+            });
+        });
+
         function deleteapplication(id) {
             Swal.fire({
                 title: 'Are you sure?',
@@ -459,38 +568,6 @@
         });
 
         $(document).ready(() => {
-            console.log($().jquery);
-            console.log($.fn.select2 ? "Select2 is loaded" : "Select2 is NOT loaded");
-
-            $('a[data-bs-toggle="tab"]').on('shown.bs.tab', function(e) {
-                $('#subscribers, #discount_type').select2('destroy').select2({});
-            });
-
-            $('#subscribers').select2({
-                placeholder: "Select Subscribers",
-                allowClear: true,
-                width: '100%'
-            });
-            $('#subscribers').on('select2:select', function(e) {
-                let selectedValues = $(this).val();
-
-                // If "All" is selected
-                if (selectedValues.includes("all")) {
-                    // Deselect all other options except "All"
-                    $(this).val(["all"]).trigger('change');
-                }
-            });
-
-            $('#subscribers').on('select2:unselect', function(e) {
-                // Allow other selections if "All" is unselected
-                if (!$(this).val().includes("all")) {
-                    return;
-                }
-
-                // If "All" is unselected, deselect everything
-                $(this).val(null).trigger('change');
-            });
-
             $("#country").change(function() {
                 var country = $(this).val();
                 // console.log(counrty);
