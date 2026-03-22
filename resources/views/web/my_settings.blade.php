@@ -1047,11 +1047,11 @@
             });
     </script>
 
-<script src="https://cdn.ckeditor.com/4.25.1-lts/standard/ckeditor.js"></script>
+<script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/classic/ckeditor.js"></script>
     <script>
         const emailTemplateAudience = @json($emailTemplateAudience);
         const emailTemplatesData = @json(($emailTemplates[$emailTemplateAudience] ?? collect())->values());
-        const emailTemplateState = { editorReady: false };
+        const emailTemplateState = { editor: null };
 
         function mapTemplatesByAudience() {
             const items = (emailTemplatesData || []);
@@ -1077,24 +1077,34 @@
             $('#otherTemplateRow').toggleClass('d-none', key !== 'other');
             $('#otherTemplateName').val(template.custom_name || '');
             $('#emailTemplateSubject').val(template.subject || '');
-            if (CKEDITOR.instances.emailTemplateBody) {
-                CKEDITOR.instances.emailTemplateBody.setData(template.body || '');
+            if (emailTemplateState.editor) {
+                emailTemplateState.editor.setData(template.body || '');
             } else {
                 $('#emailTemplateBody').val(template.body || '');
             }
         }
 
         $(document).ready(function () {
-            if (window.CKEDITOR) {
-                CKEDITOR.replace('emailTemplateBody');
-            }
-            loadEmailTemplateOptions();
+            const editorElement = document.querySelector('#emailTemplateBody');
+            const editorInit = window.ClassicEditor
+                ? window.ClassicEditor.create(editorElement)
+                    .then((editor) => {
+                        emailTemplateState.editor = editor;
+                    })
+                    .catch(() => {
+                        emailTemplateState.editor = null;
+                    })
+                : Promise.resolve();
+
+            editorInit.finally(() => {
+                loadEmailTemplateOptions();
+            });
                         $('#emailTemplateKey').on('change', loadEmailTemplateDetails);
 
             $('#save-email-template').on('click', function () {
                 const key = $('#emailTemplateKey').val();
                 const selectedText = $('#emailTemplateKey option:selected').text();
-                const body = CKEDITOR.instances.emailTemplateBody ? CKEDITOR.instances.emailTemplateBody.getData() : $('#emailTemplateBody').val();
+                const body = emailTemplateState.editor ? emailTemplateState.editor.getData() : $('#emailTemplateBody').val();
                 $.ajax({
                     url: "{{ route('save_email_template') }}",
                     method: 'POST',
