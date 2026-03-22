@@ -4,18 +4,20 @@
         margin: 0px !important;
         --bs-nav-tabs-border-radius: 0px !important;
     }
-    <style>
-        .error {
-            border: 2px red solid !important;
-        }
-        #serviceTable th, #serviceTable td {
+
+    .error {
+        border: 2px red solid !important;
+    }
+
+    #serviceTable th,
+    #serviceTable td {
         text-align: center;
         vertical-align: middle;
-        }
-        #serviceTable th {
-            font-weight: bold;
-        }
-    </style>
+    }
+
+    #serviceTable th {
+        font-weight: bold;
+    }
 </style>
 
 @section('main-section')
@@ -233,9 +235,6 @@
                                             <th class="text-center">Action</th>
                                         </tr>
                                     </thead>
-                                    <tbody>
-
-
                                     <tbody>
                                 </table>
                             </div>
