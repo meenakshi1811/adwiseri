@@ -360,21 +360,6 @@
                         <small class="text-muted px-2">A single PDF will be generated for the selected modules and sent on the selected frequency.</small>
                     </div>
 
-                    @if(!empty($reportSetting) && !empty($reportSetting->last_sent_status))
-                        <div class="alert alert-info py-2 px-3 m-2">
-                            <strong>Last Dispatch Status:</strong> {{ ucfirst($reportSetting->last_sent_status) }}
-                            @if(!empty($reportSetting->last_sent_at))
-                                | <strong>Time:</strong> {{ $reportSetting->last_sent_at }}
-                            @endif
-                            @if(!empty($reportSetting->last_sent_message))
-                                <br><strong>Message:</strong> {{ $reportSetting->last_sent_message }}
-                            @endif
-                            @if(!empty($reportSetting->last_file_name))
-                                <br><strong>File:</strong> {{ $reportSetting->last_file_name }}
-                            @endif
-                        </div>
-                    @endif
-
                     <form id="reports-settings-form">
                         @csrf
 
@@ -386,7 +371,7 @@
 
                             <div class="col-6">
                                 @php
-                                    $selectedModules = old('modules', !empty($reportSetting) ? (array) $reportSetting->modules : []);
+                                    $selectedModules = [];
                                 @endphp
                                 @foreach ($reportModules as $moduleKey => $moduleLabel)
                                     <div class="form-check">
@@ -407,7 +392,7 @@
                             <div class="col-6">
                                 <select name="frequency" class="form-control form-select">
                                     @php
-                                        $selectedFrequency = old('frequency', !empty($reportSetting) ? $reportSetting->frequency : 'daily');
+                                        $selectedFrequency = 'daily';
                                     @endphp
                                     <option value="daily" {{ $selectedFrequency == 'daily' ? 'selected' : '' }}>Daily</option>
                                     <option value="weekly" {{ $selectedFrequency == 'weekly' ? 'selected' : '' }}>Weekly</option>
@@ -425,7 +410,7 @@
 
                             <div class="col-6">
                                 @php
-                                    $selectedDeliveryMode = old('delivery_mode', !empty($reportSetting) ? $reportSetting->delivery_mode : 'attachment');
+                                    $selectedDeliveryMode = 'attachment';
                                 @endphp
                                 <select name="delivery_mode" class="form-control form-select">
                                     <option value="attachment" {{ $selectedDeliveryMode == 'attachment' ? 'selected' : '' }}>Reports as PDF in Email Attachment</option>
@@ -442,7 +427,7 @@
 
                             <div class="col-6">
                                 <textarea name="emails" class="form-control"
-                                    placeholder="Enter upto 5 emails separated by comma">{{ old('emails', !empty($reportSetting) ? $reportSetting->emails : '') }}</textarea>
+                                    placeholder="Enter upto 5 emails separated by comma"></textarea>
                                 <small class="text-muted">Example: test1@gmail.com, test2@gmail.com</small>
                             </div>
                         </div>
@@ -616,16 +601,16 @@
 
                 success: function(response){
 
+                    const icon = (response.dispatch_status === 'sent') ? 'success' : 'warning';
+                    const title = (response.dispatch_status === 'sent') ? 'Success' : 'Saved with warning';
+
                     Swal.fire({
-                        icon:'success',
-                        title:'Success',
+                        icon: icon,
+                        title: title,
                         text: response.message
                     });
 
                     $('#reports-settings-form')[0].reset();
-                    setTimeout(function () {
-                        window.location.reload();
-                    }, 600);
 
                 },
 

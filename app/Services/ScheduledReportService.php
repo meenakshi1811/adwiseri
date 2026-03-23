@@ -72,6 +72,8 @@ class ScheduledReportService
 
         try {
             $subject = 'Adwiseri Scheduled Report (' . $startDate->format('d M Y') . ' - ' . $endDate->format('d M Y') . ')';
+            $sentRecipients = [];
+            $failedRecipients = [];
 
             foreach ($recipients as $recipient) {
                 $mailData = [
@@ -82,10 +84,48 @@ class ScheduledReportService
                     'download_link' => $downloadLink,
                 ];
 
-                Mail::to($recipient)->send(new ScheduledReportMail($mailData, $filePath, $fileName));
+                try {
+                    Mail::to($recipient)->send(new ScheduledReportMail($mailData, $filePath, $fileName));
+                    $sentRecipients[] = $recipient;
+                } catch (\Exception $mailException) {
+                    $failedRecipients[] = $recipient;
+                }
             }
 
-            $log = ReportDispatchLog::create([
+            if (!empty($sentRecipients)) {
+                $statusMessage = 'Report sent successfully.';
+                if (!empty($failedRecipients)) {
+                    $statusMessage = 'Report sent to some recipients only. Failed recipients: ' . implode(', ', $failedRecipients);
+                }
+
+                $log = ReportDispatchLog::create([
+                    'report_setting_id' => $setting->id,
+                    'user_id' => $setting->user_id,
+                    'frequency' => $setting->frequency,
+                    'delivery_mode' => $setting->delivery_mode,
+                    'modules_hash' => $modulesHash,
+                    'period_start' => $startDate->toDateString(),
+                    'period_end' => $endDate->toDateString(),
+                    'file_name' => $fileName,
+                    'recipients' => json_encode($recipients),
+                    'status' => 'sent',
+                    'triggered_by' => $trigger,
+                    'sent_at' => now(),
+                    'error_message' => empty($failedRecipients) ? null : $statusMessage,
+                ]);
+
+                $setting->last_sent_at = $log->sent_at;
+                $setting->last_sent_status = empty($failedRecipients) ? 'sent' : 'partial';
+                $setting->last_sent_message = $statusMessage;
+                $setting->last_file_name = $fileName;
+                $setting->save();
+
+                return ['status' => empty($failedRecipients) ? 'sent' : 'partial', 'message' => $statusMessage, 'file' => $fileName];
+            }
+
+            $failedMessage = 'Report could not be sent to recipients. Please verify recipient emails and SMTP configuration.';
+
+            ReportDispatchLog::create([
                 'report_setting_id' => $setting->id,
                 'user_id' => $setting->user_id,
                 'frequency' => $setting->frequency,
@@ -95,18 +135,16 @@ class ScheduledReportService
                 'period_end' => $endDate->toDateString(),
                 'file_name' => $fileName,
                 'recipients' => json_encode($recipients),
-                'status' => 'sent',
+                'status' => 'failed',
                 'triggered_by' => $trigger,
-                'sent_at' => now(),
+                'error_message' => $failedMessage,
             ]);
 
-            $setting->last_sent_at = $log->sent_at;
-            $setting->last_sent_status = 'sent';
-            $setting->last_sent_message = 'Report sent successfully.';
-            $setting->last_file_name = $fileName;
+            $setting->last_sent_status = 'failed';
+            $setting->last_sent_message = $failedMessage;
             $setting->save();
 
-            return ['status' => 'sent', 'message' => 'Report sent successfully.', 'file' => $fileName];
+            return ['status' => 'failed', 'message' => $failedMessage];
         } catch (\Exception $e) {
             ReportDispatchLog::create([
                 'report_setting_id' => $setting->id,
@@ -196,7 +234,7 @@ class ScheduledReportService
         if (in_array('applications', $modules)) {
             $rows = Applications::where('subscriber_id', $subscriberId)
                 ->whereBetween('created_at', [$startDate, $endDate])
-                ->select('id', 'application_id', 'application_name', 'client_id', 'status', 'created_at')
+                ->select('id', 'application_id', 'application_name', 'client_id', 'application_status as status', 'created_at')
                 ->orderBy('created_at', 'desc')
                 ->get()->toArray();
             $data[] = ['title' => 'Applications', 'rows' => $rows];
