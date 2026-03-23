@@ -196,7 +196,7 @@ class ScheduledReportService
         if (in_array('applications', $modules)) {
             $rows = Applications::where('subscriber_id', $subscriberId)
                 ->whereBetween('created_at', [$startDate, $endDate])
-                ->select('id', 'application_id', 'application_name', 'client_id', 'status', 'created_at')
+                ->select('id', 'application_id', 'application_name', 'client_id', 'application_status as status', 'created_at')
                 ->orderBy('created_at', 'desc')
                 ->get()->toArray();
             $data[] = ['title' => 'Applications', 'rows' => $rows];
