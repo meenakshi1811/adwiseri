@@ -417,6 +417,14 @@
 
     <script>
         $('#save-reports-settings').click(function() {
+            const $saveReportsButton = $('#save-reports-settings');
+            const defaultButtonText = ($saveReportsButton.data('default-text') || $.trim($saveReportsButton.text()) || 'Apply');
+
+            $saveReportsButton
+                .data('default-text', defaultButtonText)
+                .prop('disabled', true)
+                .text('Submitting...');
+
             let formData = $('#reports-settings-form').serialize();
 
             $.ajax({
@@ -458,6 +466,12 @@
                         title: 'Error',
                         text: message
                     });
+                },
+
+                complete: function() {
+                    $saveReportsButton
+                        .prop('disabled', false)
+                        .text(defaultButtonText);
                 }
             });
         });
