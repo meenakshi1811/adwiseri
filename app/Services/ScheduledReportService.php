@@ -243,7 +243,7 @@ class ScheduledReportService
         if (in_array('invoices', $modules)) {
             $rows = Internal_Invoices::where('subscriber_id', $subscriberId)
                 ->whereBetween('created_at', [$startDate, $endDate])
-                ->select('id', 'invoice_id', 'client_name', 'status', 'total', 'created_at')
+                ->select('id', 'invoice_no', 'to_name as client_name', 'status', 'total', 'created_at')
                 ->orderBy('created_at', 'desc')
                 ->get()->toArray();
             $data[] = ['title' => 'Invoices', 'rows' => $rows];
