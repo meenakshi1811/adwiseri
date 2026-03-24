@@ -32,7 +32,7 @@
                 </li>
                 <li class="nav-item">
                     <button class="nav-link" id="email-template-tab" data-bs-toggle="tab" href="#email-template" role="tab"
-                        aria-controls="email-template" aria-selected="false">Email Template</button>
+                        aria-controls="email-template" aria-selected="false">Email Templates</button>
                 </li>
             </ul>
 
