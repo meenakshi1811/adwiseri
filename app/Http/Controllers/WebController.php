@@ -7022,9 +7022,7 @@ public function showFeedbackPopup()
             $setting->refresh();
 
             $message = 'Report settings saved successfully! ';
-            if ($dispatchResult['status'] === 'sent') {
-                $message .= 'Report sent immediately.';
-            } elseif ($dispatchResult['status'] === 'skipped') {
+            if ($dispatchResult['status'] === 'skipped') {
                 $message .= $dispatchResult['message'];
             } else {
                 $message .= $dispatchResult['message'];
