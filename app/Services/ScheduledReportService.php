@@ -15,7 +15,9 @@ use App\Mail\ScheduledReportMail;
 use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\URL;
 
 class ScheduledReportService
@@ -243,7 +245,14 @@ class ScheduledReportService
         if (in_array('invoices', $modules)) {
             $rows = Internal_Invoices::where('subscriber_id', $subscriberId)
                 ->whereBetween('created_at', [$startDate, $endDate])
-                ->select('id', 'invoice_no', 'to_name as client_name', 'status', 'total', 'created_at')
+                ->select($this->resolveReportColumns('internal_invoices', [
+                    'id' => ['id'],
+                    'invoice_no' => ['invoice_no', 'invoice_id'],
+                    'client_name' => ['client_name', 'to_name', 'name'],
+                    'status' => ['status'],
+                    'total' => ['total', 'amount'],
+                    'created_at' => ['created_at'],
+                ]))
                 ->orderBy('created_at', 'desc')
                 ->get()->toArray();
             $data[] = ['title' => 'Invoices', 'rows' => $rows];
@@ -259,18 +268,35 @@ class ScheduledReportService
         }
 
         if (in_array('referrals', $modules)) {
-            $rows = Referrals::whereIn('userid', $userIds)
+            $referralUserColumn = $this->resolveExistingColumn('referrals', ['userid', 'user_id']) ?? 'userid';
+
+            $rows = Referrals::whereIn($referralUserColumn, $userIds)
                 ->whereBetween('created_at', [$startDate, $endDate])
-                ->select('id', 'userid', 'type', 'commission_earnt', 'wallet_balance', 'created_at')
+                ->select($this->resolveReportColumns('referrals', [
+                    'id' => ['id'],
+                    'userid' => ['userid', 'user_id'],
+                    'type' => ['type'],
+                    'commission_earnt' => ['commission_earnt', 'amount_added', 'total_amount'],
+                    'wallet_balance' => ['wallet_balance'],
+                    'created_at' => ['created_at'],
+                ]))
                 ->orderBy('created_at', 'desc')
                 ->get()->toArray();
             $data[] = ['title' => 'Referrals', 'rows' => $rows];
         }
 
         if (in_array('wallets', $modules)) {
-            $rows = Used_referrals::where('subscriber_id', $subscriberId)
+            $walletSubscriberColumn = $this->resolveExistingColumn('used_referrals', ['subscriber_id', 'user_id']) ?? 'subscriber_id';
+
+            $rows = Used_referrals::where($walletSubscriberColumn, $subscriberId)
                 ->whereBetween('created_at', [$startDate, $endDate])
-                ->select('id', 'referral_code', 'commission_earnt', 'wallet_balance', 'created_at')
+                ->select($this->resolveReportColumns('used_referrals', [
+                    'id' => ['id'],
+                    'referral_code' => ['referral_code'],
+                    'commission_earnt' => ['commission_earnt', 'amount_added', 'total_amount'],
+                    'wallet_balance' => ['wallet_balance'],
+                    'created_at' => ['created_at'],
+                ]))
                 ->orderBy('created_at', 'desc')
                 ->get()->toArray();
             $data[] = ['title' => 'Wallets', 'rows' => $rows];
@@ -294,6 +320,45 @@ class ScheduledReportService
         }
 
         return $data;
+    }
+
+
+    private function resolveExistingColumn(string $table, array $candidates): ?string
+    {
+        foreach ($candidates as $candidate) {
+            if (Schema::hasColumn($table, $candidate)) {
+                return $candidate;
+            }
+        }
+
+        return null;
+    }
+
+    private function resolveReportColumns(string $table, array $columnMap): array
+    {
+        $columns = [];
+
+        foreach ($columnMap as $alias => $candidates) {
+            $selectedColumn = null;
+
+            foreach ($candidates as $candidate) {
+                if (Schema::hasColumn($table, $candidate)) {
+                    $selectedColumn = $candidate;
+                    break;
+                }
+            }
+
+            if ($selectedColumn === null) {
+                $columns[] = DB::raw('NULL as ' . $alias);
+                continue;
+            }
+
+            $columns[] = $selectedColumn === $alias
+                ? $selectedColumn
+                : DB::raw($selectedColumn . ' as ' . $alias);
+        }
+
+        return $columns;
     }
 
     private function extractRecipients($emails, $fallbackEmail)
