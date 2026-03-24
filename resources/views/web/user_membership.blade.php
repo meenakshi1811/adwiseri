@@ -30,11 +30,12 @@ $support_roles = UserRoles::where('user_id','=',$user->id)->where('module','=','
                         @php
                             $showRenewButton = false;
                             $today = \Carbon\Carbon::now();
-                            $expiryDate = \Carbon\Carbon::parse($subscriber->membership_expiry_date); // Adjust field name as needed
+                            $expiryDate = \Carbon\Carbon::parse($subscriber->membership_expiry_date);
+                            $isPaidPlan = strtoupper(trim($myplan->plan_name ?? '')) !== 'FREE';
 
                             $daysBeforeExpiry = $today->diffInDays($expiryDate, false); // Negative = expired
 
-                            if ($daysBeforeExpiry <= 60 && $daysBeforeExpiry >= -30) {
+                            if ($isPaidPlan && $daysBeforeExpiry <= 60 && $daysBeforeExpiry >= -30) {
                                 $showRenewButton = true;
                             }
                         @endphp
