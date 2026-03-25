@@ -17,7 +17,7 @@ class SendScheduledReports extends Command
         $settings = ReportSetting::all();
 
         foreach ($settings as $setting) {
-            if (!$scheduledReportService->shouldRunForFrequency($setting->frequency)) {
+            if (!$scheduledReportService->shouldRunForSetting($setting)) {
                 continue;
             }
 

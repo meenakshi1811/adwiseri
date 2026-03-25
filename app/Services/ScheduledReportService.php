@@ -30,7 +30,7 @@ class ScheduledReportService
             return ['status' => 'skipped', 'message' => 'Invalid report setting configuration.'];
         }
 
-        [$startDate, $endDate] = $this->resolveDateRange($setting->frequency);
+        [$startDate, $endDate] = $this->resolveDateRange($setting->frequency, $setting);
         $normalizedModules = (array) $setting->modules;
         sort($normalizedModules);
         $modulesHash = md5(json_encode($normalizedModules));
@@ -171,50 +171,73 @@ class ScheduledReportService
         }
     }
 
-    public function shouldRunForFrequency($frequency)
+    public function shouldRunForSetting(ReportSetting $setting)
     {
-        $today = now();
+        $timezone = $this->resolveTimezone($setting);
+        $now = now($timezone);
 
-        if ($frequency === 'daily') {
+        if ((int) $now->format('G') !== 8 || (int) $now->format('i') >= 30) {
+            return false;
+        }
+
+        if ($setting->frequency === 'daily') {
             return true;
         }
 
-        if ($frequency === 'weekly') {
-            return $today->dayOfWeek === Carbon::MONDAY;
+        if ($setting->frequency === 'weekly') {
+            return $now->dayOfWeek === Carbon::MONDAY;
         }
 
-        if ($frequency === 'monthly') {
-            return $today->day === 1;
+        if ($setting->frequency === 'monthly') {
+            return $now->day === 1;
         }
 
-        if ($frequency === 'quarterly') {
-            return $today->day === 1 && in_array($today->month, [1, 4, 7, 10]);
+        if ($setting->frequency === 'quarterly') {
+            return $now->day === 1 && in_array($now->month, [1, 4, 7, 10], true);
         }
 
         return false;
     }
 
-    private function resolveDateRange($frequency)
+    private function resolveDateRange($frequency, ReportSetting $setting)
     {
-        $now = now();
+        $timezone = $this->resolveTimezone($setting);
+        $now = now($timezone);
 
         if ($frequency === 'daily') {
-            return [$now->copy()->startOfDay(), $now->copy()->endOfDay()];
+            $period = $now->copy()->subDay();
+            return [$period->copy()->startOfDay(), $period->copy()->endOfDay()];
         }
 
         if ($frequency === 'weekly') {
-            return [$now->copy()->startOfWeek(), $now->copy()->endOfWeek()];
+            $period = $now->copy()->subWeek();
+            return [
+                $period->copy()->startOfWeek(Carbon::MONDAY),
+                $period->copy()->endOfWeek(Carbon::SUNDAY),
+            ];
         }
 
         if ($frequency === 'monthly') {
-            return [$now->copy()->startOfMonth(), $now->copy()->endOfMonth()];
+            $period = $now->copy()->subMonthNoOverflow();
+            return [$period->copy()->startOfMonth(), $period->copy()->endOfMonth()];
         }
 
         if ($frequency === 'quarterly') {
-            return [$now->copy()->startOfQuarter(), $now->copy()->endOfQuarter()];
+            $period = $now->copy()->subQuarter();
+            return [$period->copy()->startOfQuarter(), $period->copy()->endOfQuarter()];
         }
 
         return [$now->copy()->startOfDay(), $now->copy()->endOfDay()];
+    }
+
+    private function resolveTimezone(ReportSetting $setting): string
+    {
+        $user = User::find($setting->user_id);
+        $timezone = $user?->timezone ?: config('app.timezone', 'UTC');
+
+        return in_array($timezone, timezone_identifiers_list(), true)
+            ? $timezone
+            : config('app.timezone', 'UTC');
     }
 
     private function buildReportData($modules, $subscriberId, $startDate, $endDate, $user)
