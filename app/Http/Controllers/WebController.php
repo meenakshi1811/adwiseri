@@ -7021,16 +7021,9 @@ public function showFeedbackPopup()
             $dispatchResult = $scheduledReportService->dispatchForSetting($setting, 'manual');
             $setting->refresh();
 
-            $message = 'Report settings saved successfully! ';
-            if ($dispatchResult['status'] === 'skipped') {
-                $message .= $dispatchResult['message'];
-            } else {
-                $message .= $dispatchResult['message'];
-            }
-
             return response()->json([
                 'status' => true,
-                'message' => $message,
+                'message' => 'Report settings saved successfully!',
                 'dispatch_status' => $dispatchResult['status'],
                 'data' => $setting
             ]);
