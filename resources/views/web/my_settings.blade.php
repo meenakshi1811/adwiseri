@@ -609,12 +609,9 @@
 
                 success: function(response){
 
-                    const icon = (response.dispatch_status === 'sent') ? 'success' : 'warning';
-                    const title = (response.dispatch_status === 'sent') ? 'Success' : 'Saved with warning';
-
                     Swal.fire({
-                        icon: icon,
-                        title: title,
+                        icon: 'success',
+                        title: 'Success',
                         text: response.message
                     });
 
