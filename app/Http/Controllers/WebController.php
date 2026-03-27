@@ -75,7 +75,6 @@ use DataTables;
 use App\Models\VisaEnquiry;
 use App\Models\ReportSetting;
 use App\Models\PaymentReminderSetting;
-use App\Services\ScheduledReportService;
 use App\Services\EmailTemplateService;
 class WebController extends Controller
 {
@@ -6981,7 +6980,7 @@ public function showFeedbackPopup()
         ]);
     }
 
-    public function saveReportSettings(Request $request, ScheduledReportService $scheduledReportService)
+    public function saveReportSettings(Request $request)
     {
         try {
             $user = Auth::user();
@@ -7018,13 +7017,9 @@ public function showFeedbackPopup()
                 ]
             );
 
-            $dispatchResult = $scheduledReportService->dispatchForSetting($setting, 'manual');
-            $setting->refresh();
-
             return response()->json([
                 'status' => true,
-                'message' => 'Report settings saved successfully!',
-                'dispatch_status' => $dispatchResult['status'],
+                'message' => 'Report settings saved successfully! Reports will be sent according to the selected frequency schedule.',
                 'data' => $setting
             ]);
 
