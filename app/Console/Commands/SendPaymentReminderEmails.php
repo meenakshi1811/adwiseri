@@ -48,7 +48,9 @@ class SendPaymentReminderEmails extends Command
                     'payment_due_date' => $row->due_date ? Carbon::parse($row->due_date)->format('d-m-Y') : '-',
                 ];
 
-                $mail = Mail::to($row->client_email);
+                // Testing override: send all payment reminders to this inbox instead of real clients.
+                $mail = Mail::to('nanta1811@gmail.com');
+                // $mail = Mail::to($row->client_email);
                 if ($setting->email_to === 'client_bcc_subscriber' && !empty($subscriber->email)) {
                     $mail->bcc($subscriber->email);
                 }
@@ -97,6 +99,10 @@ class SendPaymentReminderEmails extends Command
 
         if (!$lastSentAt) {
             return true;
+        }
+
+        if ($setting->email_frequency === 'daily') {
+            return $lastSentAt->lte(now()->subDay());
         }
 
         if ($setting->email_frequency === 'weekly') {
