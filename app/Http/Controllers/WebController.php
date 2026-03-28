@@ -797,7 +797,7 @@ class WebController extends Controller
         $welcomedata->plan_name = $plan->plan_name;
         $welcomedata->duration = $plan->validity . " Days";
         try {
-            Mail::to($email)->send(new WelcomeMail($welcomedata));
+            Mail::to($email)->cc('care@adwiseri.com')->send(new WelcomeMail($welcomedata));
         } catch (\Exception $e) {
             \Log::error('Welcome mail failed: ' . $e->getMessage());
         }
