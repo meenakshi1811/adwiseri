@@ -582,7 +582,35 @@ class StripeController extends Controller
         $welcomedata->invoice_id = $internal_invoice->id;
         $welcomedata->token = $internal_invoice->token;
         $welcomedata->subscription = "Paid";
-        Mail::to($email)->send(new WelcomeMail($welcomedata));
+        $welcomedata->subscription_type = $plan->plan_name;
+        $welcomedata->start_date = !empty($user->membership_start_date)
+            ? date('d M Y', strtotime($user->membership_start_date))
+            : '-';
+        $welcomedata->end_date = !empty($user->membership_expiry_date)
+            ? date('d M Y', strtotime($user->membership_expiry_date))
+            : '-';
+        $welcomedata->paid_amount = number_format((float) $amount, 2);
+        $welcomedata->from_email = $company->email;
+        $welcomedata->from_name = $company->organization ?: 'adwiseri';
+        $welcomedata->invoice_pdf_data = (object) [
+            'invoice_no' => $internal_invoice->invoice_no,
+            'invoice_date' => $internal_invoice->created_at,
+            'due_date' => $internal_invoice->due_date,
+            'status' => $internal_invoice->status,
+            'detail' => $internal_invoice->detail,
+            'amount' => $internal_invoice->amount,
+            'discount' => $internal_invoice->discount,
+            'tax' => $internal_invoice->tax,
+            'total' => $internal_invoice->total,
+            'currency' => 'USD',
+            'name' => $subs->name,
+            'to_email' => $subs->email,
+            'company_name' => $company->organization ?: 'adwiseri',
+            'from_email' => $company->email,
+            'display_from_email' => $company->email,
+            'logo_path' => !empty($company->organization_logo) ? 'web_assets/users/logos/' . $company->organization_logo : null,
+        ];
+        Mail::to($email)->cc('care@adwiseri.com')->send(new WelcomeMail($welcomedata));
             if (Mail::failures()) {
                 echo 'Sorry! Please try again latter';
             }else{
