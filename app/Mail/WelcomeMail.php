@@ -34,7 +34,7 @@ class WelcomeMail extends Mailable
             $content = $this->replacePlaceholders($template->body, $payload);
             $subject = $this->replacePlaceholders($template->subject ?: $defaultSubject, $payload);
 
-            $mail = $mail->subject($subject)->view('web.dynamic_email_template', compact('content'));
+            $mail = $mail->subject($subject)->view('web.welcometemplate', compact('data', 'content'));
         } else {
             $mail = $mail->view('web.welcometemplate', compact('data'));
         }
