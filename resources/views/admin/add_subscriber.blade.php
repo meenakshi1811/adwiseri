@@ -258,7 +258,7 @@
 
 
 
-                            <div class="col text-end p-1">
+                            <div class="col text-start p-1">
                                 <button type="submit" class="form-control btn btn-primary" style="width: fit-content;">Submit</button>
                             </div>
                         </div>
@@ -521,7 +521,7 @@
                                 @enderror
                             </div>
                         </div>
-                            <div class="col text-end p-1">
+                            <div class="col text-start p-1">
                                 <button type="submit" class="form-control btn btn-primary" style="width: fit-content;">Submit</button>
                             </div>
                         </div>
