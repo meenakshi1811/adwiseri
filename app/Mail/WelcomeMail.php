@@ -2,7 +2,7 @@
 
 namespace App\Mail;
 
-use App\Services\EmailTemplateService;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
@@ -21,31 +21,28 @@ class WelcomeMail extends Mailable
     public function build()
     {
         $data = $this->data;
-        $templateService = app(EmailTemplateService::class);
-        $owner = $templateService->resolveTemplateOwner($data);
-        $template = $templateService->getTemplateForUser($owner, 'admin', 'welcome_email_admin_to_subscriber');
+        $mail = $this->subject('Welcome to adwiseri')
+            ->view('web.welcometemplate', compact('data'));
 
-        if (!$template) {
-            return $this->subject('Welcome to adwiseri')->view('web.welcometemplate', compact('data'));
+        if (!empty($data->from_email)) {
+            $mail->from($data->from_email, $data->from_name ?? null);
         }
 
-        $content = $this->replacePlaceholders($template->body, $data);
-        $subject = $this->replacePlaceholders($template->subject ?: 'Welcome to adwiseri', $data);
+        if (!empty($data->invoice_pdf_data)) {
+            $invoiceData = is_array($data->invoice_pdf_data)
+                ? (object) $data->invoice_pdf_data
+                : $data->invoice_pdf_data;
 
-        return $this->subject($subject)->view('web.dynamic_email_template', compact('content'));
-    }
-
-    private function replacePlaceholders(?string $text, $data): string
-    {
-        $content = (string) $text;
-        $map = is_object($data) ? (array) $data : (array) $data;
-
-        foreach ($map as $key => $value) {
-            if (is_scalar($value) || is_null($value)) {
-                $content = str_replace('{{' . $key . '}}', (string) $value, $content);
-            }
+            $pdf = Pdf::loadView('web.invoice_pdf', ['data' => $invoiceData])
+                ->setPaper('a4', 'portrait')
+                ->setOption('isHtml5ParserEnabled', true)
+                ->setOption('isPhpEnabled', true);
+            $invoiceNo = $invoiceData->invoice_no ?? 'document';
+            $mail->attachData($pdf->output(), 'Invoice-' . $invoiceNo . '.pdf', [
+                'mime' => 'application/pdf',
+            ]);
         }
 
-        return $content;
+        return $mail;
     }
 }
