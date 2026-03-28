@@ -32,6 +32,42 @@ input[type="button"].btn {
     vertical-align: middle;
 }
 
+/* Unified button look across modules/forms */
+:root {
+    --adwiseri-btn-font-size: 14px;
+    --adwiseri-btn-font-weight: 600;
+    --adwiseri-btn-radius: 6px;
+    --adwiseri-btn-min-height: 38px;
+    --adwiseri-btn-padding-y: 0.45rem;
+    --adwiseri-btn-padding-x: 0.95rem;
+}
+
+.btn,
+a.btn,
+button.btn,
+input.btn,
+input[type="submit"].btn,
+input[type="button"].btn,
+a[role="button"] {
+    font-family: var(--adwiseri-font-family) !important;
+    font-size: var(--adwiseri-btn-font-size);
+    font-weight: var(--adwiseri-btn-font-weight);
+    line-height: 1.2;
+    min-height: var(--adwiseri-btn-min-height);
+    padding: var(--adwiseri-btn-padding-y) var(--adwiseri-btn-padding-x);
+    border-radius: var(--adwiseri-btn-radius);
+    text-decoration: none;
+    gap: 0.35rem;
+    white-space: nowrap;
+}
+
+.btn i,
+a.btn i,
+button.btn i,
+a[role="button"] i {
+    line-height: 1;
+}
+
 textarea {
     resize: none; /* Disables resizing */
 }
