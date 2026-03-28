@@ -269,6 +269,12 @@
                 section.style.display = show ? 'block' : 'none';
             });
             const invoiceSelect = document.getElementById("invoices_list");
+            Array.from(invoiceSelect.options).forEach((opt, idx) => {
+                if (idx === 0) return;
+                const paidAmount = parseFloat(opt.dataset.paid || '0');
+                const shouldShow = show ? paidAmount > 0 : paidAmount <= 0;
+                opt.hidden = !shouldShow;
+            });
             invoiceSelect.value = '';
 
             if(show ==false) {
@@ -287,10 +293,11 @@
                 document.getElementById("paid_amount").removeAttribute("readonly");
                 document.getElementById("paid_amount").value = '';
                 document.getElementById("amount_paid_existing").value = '';
+                document.getElementById("outstanding_amount").value = '';
 
              }
              else{
-                                                document.getElementById("service_description").setAttribute("readonly", "readonly");
+                document.getElementById("service_description").setAttribute("readonly", "readonly");
                 document.getElementById("amount").setAttribute("readonly", "readonly");
                 // document.getElementById("paid_amount").setAttribute("readonly", "readonly");
              }
