@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\Services\EmailTemplateService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
@@ -21,8 +22,22 @@ class WelcomeMail extends Mailable
     public function build()
     {
         $data = $this->data;
-        $mail = $this->subject('Welcome to adwiseri')
-            ->view('web.welcometemplate', compact('data'));
+        $templateService = app(EmailTemplateService::class);
+        $owner = $templateService->resolveTemplateOwner($data);
+        $template = $templateService->getTemplateForUser($owner, 'admin', 'welcome_email_admin_to_subscriber');
+
+        $defaultSubject = 'Welcome to adwiseri';
+        $mail = $this->subject($defaultSubject);
+
+        if ($template && !empty(trim((string) $template->body))) {
+            $payload = $this->buildPlaceholderData($data);
+            $content = $this->replacePlaceholders($template->body, $payload);
+            $subject = $this->replacePlaceholders($template->subject ?: $defaultSubject, $payload);
+
+            $mail = $mail->subject($subject)->view('web.welcometemplate', compact('data', 'content'));
+        } else {
+            $mail = $mail->view('web.welcometemplate', compact('data'));
+        }
 
         if (!empty($data->from_email)) {
             $mail->from($data->from_email, $data->from_name ?? null);
@@ -44,5 +59,35 @@ class WelcomeMail extends Mailable
         }
 
         return $mail;
+    }
+
+    private function buildPlaceholderData($data): array
+    {
+        $map = is_array($data) ? $data : (array) $data;
+
+        if (empty($map['invoice_link']) && !empty($map['invoice_id']) && !empty($map['token'])) {
+            $map['invoice_link'] = route('invoice_preview', $map['invoice_id'] . '/' . $map['token']);
+        }
+
+        if (empty($map['subscription_type']) && !empty($map['plan_name'])) {
+            $map['subscription_type'] = $map['plan_name'];
+        }
+
+        return $map;
+    }
+
+    private function replacePlaceholders(?string $text, array $data): string
+    {
+        $content = (string) $text;
+
+        foreach ($data as $key => $value) {
+            if (!is_scalar($value) && !is_null($value)) {
+                continue;
+            }
+
+            $content = preg_replace('/{{\s*' . preg_quote((string) $key, '/') . '\s*}}/', (string) $value, $content);
+        }
+
+        return $content;
     }
 }
