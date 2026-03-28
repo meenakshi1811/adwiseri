@@ -28,6 +28,47 @@ input[type="button"].btn {
     vertical-align: middle;
 }
 
+/* Unified button look across modules/forms */
+:root {
+    --adwiseri-btn-font-size: 14px;
+    --adwiseri-btn-font-weight: 600;
+    --adwiseri-btn-radius: 6px;
+    --adwiseri-btn-min-height: 38px;
+    --adwiseri-btn-padding-y: 0.45rem;
+    --adwiseri-btn-padding-x: 0.95rem;
+}
+
+.btn,
+a.btn,
+button.btn,
+input.btn,
+input[type="submit"].btn,
+input[type="button"].btn,
+a[role="button"] {
+    font-family: var(--adwiseri-font-family) !important;
+    font-size: var(--adwiseri-btn-font-size);
+    font-weight: var(--adwiseri-btn-font-weight);
+    line-height: 1.2;
+    min-height: var(--adwiseri-btn-min-height);
+    padding: var(--adwiseri-btn-padding-y) var(--adwiseri-btn-padding-x);
+    border-radius: var(--adwiseri-btn-radius);
+    text-decoration: none;
+    gap: 0.35rem;
+    white-space: nowrap;
+}
+
+.btn i,
+a.btn i,
+button.btn i,
+a[role="button"] i {
+    line-height: 1;
+}
+
+.form-control.btn {
+    width: auto;
+    min-width: 140px;
+}
+
 /*---- Navbar CSS ---*/
 .mainav-head {
     padding-top: 40px;
@@ -1348,13 +1389,20 @@ td {
 .column-client a {
     background: #17CFCF;
     border: 1px solid #17CFCF;
-    border-radius: 4px;
+    border-radius: var(--adwiseri-btn-radius);
     text-decoration: #000;
     color: #fff;
-    padding: 7px 30px;
+    padding: var(--adwiseri-btn-padding-y) var(--adwiseri-btn-padding-x);
+    min-height: var(--adwiseri-btn-min-height);
     margin: 0 7px;
-    font-size: 14px;
+    font-size: var(--adwiseri-btn-font-size);
+    font-weight: var(--adwiseri-btn-font-weight);
     text-align: center;
+    font-family: var(--adwiseri-font-family);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
 }
 .column-client .paginate_button a {
     padding: 5px 10px;
