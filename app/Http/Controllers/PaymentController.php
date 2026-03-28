@@ -427,7 +427,7 @@ class PaymentController extends Controller
     {
         $invoiceRows = Internal_Invoices::where('subscriber_id', $subscriberId)
             ->where('type', $type)
-            ->where('status', '!=', 'Cancelled')
+            ->whereNotIn(DB::raw('LOWER(status)'), ['cancelled', 'withdrawn'])
             ->orderBy('created_at', 'asc')
             ->get();
 
