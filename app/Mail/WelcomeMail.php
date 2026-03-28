@@ -29,7 +29,7 @@ class WelcomeMail extends Mailable
         $defaultSubject = 'Welcome to adwiseri';
         $mail = $this->subject($defaultSubject);
 
-        if ($template && !empty(trim((string) $template->body))) {
+        if ($template && !empty(trim((string) $template->body)) && $this->isPaidSubscriptionMail($data)) {
             $payload = $this->buildPlaceholderData($data);
             $content = $this->replacePlaceholders($template->body, $payload);
             $subject = $this->replacePlaceholders($template->subject ?: $defaultSubject, $payload);
@@ -61,6 +61,13 @@ class WelcomeMail extends Mailable
         return $mail;
     }
 
+    private function isPaidSubscriptionMail($data): bool
+    {
+        $map = is_array($data) ? $data : (array) $data;
+
+        return strtolower((string) ($map['subscription'] ?? '')) === 'paid';
+    }
+
     private function buildPlaceholderData($data): array
     {
         $map = is_array($data) ? $data : (array) $data;
@@ -72,6 +79,11 @@ class WelcomeMail extends Mailable
         if (empty($map['subscription_type']) && !empty($map['plan_name'])) {
             $map['subscription_type'] = $map['plan_name'];
         }
+
+        $map['start_date'] = $map['start_date'] ?? '-';
+        $map['end_date'] = $map['end_date'] ?? '-';
+        $map['paid_amount'] = $map['paid_amount'] ?? ($map['amount'] ?? '0.00');
+        $map['invoice_link'] = $map['invoice_link'] ?? '#';
 
         return $map;
     }
@@ -88,6 +100,6 @@ class WelcomeMail extends Mailable
             $content = preg_replace('/{{\s*' . preg_quote((string) $key, '/') . '\s*}}/', (string) $value, $content);
         }
 
-        return $content;
+        return preg_replace('/{{\s*[A-Za-z0-9_]+\s*}}/', '-', $content);
     }
 }
