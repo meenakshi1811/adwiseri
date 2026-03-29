@@ -40,7 +40,7 @@ class WelcomeMail extends Mailable
         }
 
         if (!empty($data->from_email)) {
-            $mail->from($data->from_email, $data->from_name ?? null);
+            $mail->from($data->from_email, $this->sanitizeFromNameForWelcome($data->from_name ?? null));
         }
 
         if (!empty($data->invoice_pdf_data)) {
@@ -101,5 +101,20 @@ class WelcomeMail extends Mailable
         }
 
         return preg_replace('/{{\s*[A-Za-z0-9_]+\s*}}/', '-', $content);
+    }
+
+    private function sanitizeFromNameForWelcome(?string $fromName): ?string
+    {
+        if ($fromName === null) {
+            return null;
+        }
+
+        $trimmed = trim($fromName);
+
+        if ($trimmed === '') {
+            return null;
+        }
+
+        return preg_replace('/\s*-\s*Alert\s*$/i', '', $trimmed);
     }
 }
