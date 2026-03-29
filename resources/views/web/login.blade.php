@@ -30,9 +30,14 @@
                         <!---  <img src="{{ asset('web_assets/images/user.png') }}" width="20" height="20" class="useimg" alt=""> --->
                     </div>
                     <div class="mb-4">
-                        <input type="password" name="password" required
-                            class="form-control @error('password') is-invalid @enderror" id="exampleInputEmail1"
-                            aria-describedby="emailHelp" placeholder="Password">
+                        <div style="position: relative;">
+                            <input type="password" name="password" required
+                                class="form-control @error('password') is-invalid @enderror toggle-password-input"
+                                id="login-password" aria-describedby="emailHelp" placeholder="Password">
+                            <button type="button" class="toggle-password-visibility"
+                                style="position:absolute;top:50%;right:12px;transform:translateY(-50%);border:none;background:transparent;padding:0;cursor:pointer;font-size:18px;"
+                                aria-label="Show password" data-target="login-password">👁</button>
+                        </div>
                         @error('password')
                             <span class="invalid-feedback" role="alert">
                                 <strong>{{ $message }}</strong>
@@ -82,4 +87,18 @@
             })
         </script>
     @endif
+    <script>
+        document.querySelectorAll('.toggle-password-visibility').forEach(function(toggleButton) {
+            toggleButton.addEventListener('click', function() {
+                const targetId = this.getAttribute('data-target');
+                const passwordField = document.getElementById(targetId);
+                if (!passwordField) return;
+
+                const isPassword = passwordField.type === 'password';
+                passwordField.type = isPassword ? 'text' : 'password';
+                this.textContent = isPassword ? '🙈' : '👁';
+                this.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
+            });
+        });
+    </script>
 @endsection()
