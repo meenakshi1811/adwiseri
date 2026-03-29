@@ -37,7 +37,9 @@
                                 value="{{ old('password') }}" placeholder="password">
                             <button type="button" class="toggle-password-visibility"
                                 style="position:absolute;top:50%;right:12px;transform:translateY(-50%);border:none;background:transparent;padding:0;cursor:pointer;font-size:18px;"
-                                aria-label="Show password" data-target="affiliate-login-password">👁</button>
+                                aria-label="Show password" data-target="affiliate-login-password">
+                                <i class="fa fa-eye" aria-hidden="true"></i>
+                            </button>
                         </div>
                         @error('password')
                             <span class="invalid-feedback" role="alert">
@@ -106,7 +108,11 @@ Swal.fire({
 
         const isPassword = passwordField.type === 'password';
         passwordField.type = isPassword ? 'text' : 'password';
-        this.textContent = isPassword ? '🙈' : '👁';
+        const icon = this.querySelector('i');
+        if (icon) {
+          icon.classList.toggle('fa-eye', !isPassword);
+          icon.classList.toggle('fa-eye-slash', isPassword);
+        }
         this.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
       });
     });
