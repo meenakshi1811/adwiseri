@@ -30,9 +30,17 @@
                     </div>
 
                     <div class="mb-4">
-                        <input type="password" name="password" required
-                            class="form-control @error('password') is-invalid @enderror" id="exampleInputpassword1"
-                            aria-describedby="passwordHelp" value="{{ old('password') }}" placeholder="password">
+                        <div style="position: relative;">
+                            <input type="password" name="password" required
+                                class="form-control @error('password') is-invalid @enderror"
+                                id="affiliate-login-password" aria-describedby="passwordHelp"
+                                value="{{ old('password') }}" placeholder="password">
+                            <button type="button" class="toggle-password-visibility"
+                                style="position:absolute;top:50%;right:12px;transform:translateY(-50%);border:none;background:transparent;padding:0;cursor:pointer;font-size:18px;"
+                                aria-label="Show password" data-target="affiliate-login-password">
+                                <i class="fa fa-eye" aria-hidden="true"></i>
+                            </button>
+                        </div>
                         @error('password')
                             <span class="invalid-feedback" role="alert">
                                 <strong>{{ $message }}</strong>
@@ -92,4 +100,21 @@ Swal.fire({
     })
   </script>
   @endif
+  <script>
+    document.querySelectorAll('.toggle-password-visibility').forEach(function(toggleButton) {
+      toggleButton.addEventListener('click', function() {
+        const passwordField = document.getElementById(this.getAttribute('data-target'));
+        if (!passwordField) return;
+
+        const isPassword = passwordField.type === 'password';
+        passwordField.type = isPassword ? 'text' : 'password';
+        const icon = this.querySelector('i');
+        if (icon) {
+          icon.classList.toggle('fa-eye', !isPassword);
+          icon.classList.toggle('fa-eye-slash', isPassword);
+        }
+        this.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
+      });
+    });
+  </script>
 @endsection()
