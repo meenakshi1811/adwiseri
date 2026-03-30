@@ -25,6 +25,7 @@ use App\Mail\Invoicemail;
 use App\Mail\SupportMail;
 use App\Mail\WelcomeMail;
 use App\Mail\SubscriptionMail;
+use App\Mail\PlanSubscriptionMail;
 use App\Mail\AppointmentSchedulerMail;
 use App\Mail\ClientCareLetterMail;
 
@@ -130,6 +131,89 @@ class WebController extends Controller
     private function safeArchiveName($name)
     {
         return trim(preg_replace('/[^A-Za-z0-9\-_. ]/', '', (string) $name)) ?: 'Unknown';
+    }
+
+    private function createAdminApInvoiceAndPayment(User $subscriber, User $company, float $amount, string $paymentMode, string $detail = 'Subscription Fees'): Internal_Invoices
+    {
+        $amount = round(max(0, $amount), 2);
+
+        $internalInvoice = new Internal_Invoices();
+        $internalInvoice->invoice_no = $this->generateInternalInvoiceId();
+        $internalInvoice->subscriber_id = $subscriber->id;
+        $internalInvoice->name = $company->organization;
+        $internalInvoice->email = $company->email;
+        $internalInvoice->phone = $company->phone;
+        $internalInvoice->country = $company->country;
+        $internalInvoice->state = $company->state;
+        $internalInvoice->city = $company->city;
+        $internalInvoice->pincode = $company->pincode;
+        $internalInvoice->address = $company->address_line;
+        $internalInvoice->logo = $company->organization_logo;
+        $internalInvoice->to_name = $subscriber->name;
+        $internalInvoice->to_email = $subscriber->email;
+        $internalInvoice->to_phone = $subscriber->phone;
+        $internalInvoice->to_country = $subscriber->country;
+        $internalInvoice->to_state = $subscriber->state;
+        $internalInvoice->to_city = $subscriber->city;
+        $internalInvoice->to_pincode = $subscriber->pincode;
+        $internalInvoice->to_address = $subscriber->address_line;
+        $internalInvoice->detail = $detail;
+        $internalInvoice->amount = $amount;
+        $internalInvoice->discount = 0;
+        $internalInvoice->tax = 0;
+        $internalInvoice->total = $amount;
+        $internalInvoice->status = 'Paid';
+        $internalInvoice->type = 'ap';
+        $internalInvoice->due_date = date('Y-m-d');
+        $internalInvoice->token = $this->generateInternalInvoiceToken();
+        $internalInvoice->save();
+
+        PaymentARs::create([
+            'subscriber_id' => $subscriber->id,
+            'invoice_no' => $internalInvoice->invoice_no,
+            'service_provider' => $company->organization ?: 'adwiseri.com',
+            'service_taken' => $detail,
+            'amount' => $amount,
+            'paid_amount' => $amount,
+            'payment_mode' => $paymentMode,
+            'payment_date' => now(),
+            'type' => 'ap',
+        ]);
+
+        return $internalInvoice;
+    }
+
+    private function buildInvoicePdfData(Internal_Invoices $internalInvoice, User $subscriber, User $company): object
+    {
+        return (object) [
+            'invoice_no' => $internalInvoice->invoice_no,
+            'invoice_date' => $internalInvoice->created_at,
+            'due_date' => $internalInvoice->due_date,
+            'status' => $internalInvoice->status,
+            'detail' => $internalInvoice->detail,
+            'amount' => $internalInvoice->amount,
+            'discount' => $internalInvoice->discount,
+            'tax' => $internalInvoice->tax,
+            'total' => $internalInvoice->total,
+            'currency' => 'USD',
+            'name' => $subscriber->name,
+            'to_email' => $subscriber->email,
+            'company_name' => $company->organization ?: 'adwiseri',
+            'from_email' => $company->email,
+            'display_from_email' => $company->email,
+            'logo_path' => !empty($company->organization_logo) ? 'web_assets/users/logos/' . $company->organization_logo : null,
+        ];
+    }
+
+    private function sendPlanUpdateMail(User $subscriber, ?Membership $plan, Internal_Invoices $internalInvoice, User $company): void
+    {
+        Mail::to($subscriber->email)->send(new PlanSubscriptionMail(
+            $subscriber->name,
+            $plan->membership ?? $subscriber->membership,
+            $plan->validity ?? 'N/A',
+            'Your Subscription Plan Has Been Updated',
+            $this->buildInvoicePdfData($internalInvoice, $subscriber, $company)
+        ));
     }
 
     public function add_subscriber_roles()
@@ -622,6 +706,21 @@ class WebController extends Controller
         $data->password = Hash::make($request['password']);
         $data->save();
 
+        $company = User::where('user_type', '=', 'admin')->first();
+        $signupInvoiceAmount = strtolower((string) $plan->plan_name) === 'free'
+            ? 0.0
+            : (float) ($request['amount'] ?? $plan->price_per_year ?? 0);
+        $internalInvoice = null;
+        if ($company) {
+            $internalInvoice = $this->createAdminApInvoiceAndPayment(
+                $data,
+                $company,
+                $signupInvoiceAmount,
+                "Manual",
+                "Subscription Signup Fees"
+            );
+        }
+
         $role = UserRoles::where('user_id', '=', $data->id)->get();
         if ($role) {
             foreach ($role as $r) {
@@ -796,6 +895,29 @@ class WebController extends Controller
         $welcomedata->email = $email;
         $welcomedata->plan_name = $plan->plan_name;
         $welcomedata->duration = $plan->validity . " Days";
+        $welcomedata->amount = number_format((float) $signupInvoiceAmount, 2);
+        $welcomedata->subscription_type = $plan->plan_name;
+        $welcomedata->start_date = !empty($data->membership_start_date)
+            ? (($data->membership_start_date instanceof \DateTimeInterface)
+                ? $data->membership_start_date->format('d-m-Y')
+                : date("d-m-Y", strtotime((string) $data->membership_start_date)))
+            : '-';
+        $welcomedata->end_date = !empty($data->membership_expiry_date)
+            ? (($data->membership_expiry_date instanceof \DateTimeInterface)
+                ? $data->membership_expiry_date->format('d-m-Y')
+                : date("d-m-Y", strtotime((string) $data->membership_expiry_date)))
+            : '-';
+        $welcomedata->paid_amount = number_format((float) $signupInvoiceAmount, 2);
+
+        if ($company) {
+            $welcomedata->from_email = $company->email;
+            $welcomedata->from_name = $company->organization ?: 'adwiseri';
+        }
+        if ($internalInvoice && $company) {
+            $welcomedata->invoice_id = $internalInvoice->id;
+            $welcomedata->token = $internalInvoice->token;
+            $welcomedata->invoice_pdf_data = $this->buildInvoicePdfData($internalInvoice, $data, $company);
+        }
         try {
             Mail::to($email)->cc('care@adwiseri.com')->send(new WelcomeMail($welcomedata));
         } catch (\Exception $e) {
@@ -3494,6 +3616,8 @@ class WebController extends Controller
                     $invoice->total = $service_fee - $discount + $tax;
                     $invoice->payment_mode = "Wallet";
                     $invoice->save();
+                    $internalInvoice = $this->createAdminApInvoiceAndPayment($user, $company, (float) $invoice->total, "Wallet", "Subscription Fees");
+                    $this->sendPlanUpdateMail($user, $membership, $internalInvoice, $company);
                     $save_referral = new Referrals();
                     $save_referral->userid = $user->id;
                     $save_referral->user_name = $user->name;
@@ -3649,6 +3773,8 @@ class WebController extends Controller
                 $invoice->total = $service_fee - 0 + $tax;
                 $invoice->payment_mode = "Wallet";
                 $invoice->save();
+                $internalInvoice = $this->createAdminApInvoiceAndPayment($user, $company, (float) $invoice->total, "Wallet", "Subscription Fees");
+                $this->sendPlanUpdateMail($user, $membership, $internalInvoice, $company);
                 $save_referral = new Referrals();
                 $save_referral->userid = $user->id;
                 $save_referral->user_name = $user->name;
@@ -3693,6 +3819,7 @@ class WebController extends Controller
             return $id;
         }
         $user = Auth::user();
+        $paymentMode = isset($request->wallet_pay) ? 'Wallet' : 'Card';
         if ($request->id == $user->id) {
             if (isset($request->wallet_pay)) {
                 $amt = $user->wallet;
@@ -3776,6 +3903,8 @@ class WebController extends Controller
             $invoice->tax = $tax;
             $invoice->total = $service_fee - $discount + $tax;
             $invoice->save();
+            $internalInvoice = $this->createAdminApInvoiceAndPayment($user, $company, (float) $invoice->total, $paymentMode, "Subscription Fees");
+            $this->sendPlanUpdateMail($user, $plan, $internalInvoice, $company);
             $activity = new Activities();
             $activity->subscriber_id = $user->id;
             $activity->user_id = $user->id;

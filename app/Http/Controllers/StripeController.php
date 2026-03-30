@@ -28,6 +28,7 @@ use App\Models\Used_referrals;
 use App\Models\Referrals;
 use App\Models\UserRoles;
 use App\Models\AffiliateCommissionEarnt;
+use App\Models\PaymentARs;
 
 use App\Mail\EmailVerification;
 use App\Mail\WelcomeMail;
@@ -37,6 +38,108 @@ use function App\Helpers\commission_amount;
 
 class StripeController extends Controller
 {
+    private function generateInternalInvoiceNo(): string
+    {
+        $ch = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        $id = "";
+        for ($i = 0; $i < 10; $i++) {
+            $id .= $ch[rand(0, strlen($ch) - 1)];
+        }
+
+        if (Internal_Invoices::where('invoice_no', '=', $id)->exists()) {
+            return $this->generateInternalInvoiceNo();
+        }
+
+        return $id;
+    }
+
+    private function generateInternalInvoiceToken(): string
+    {
+        $ch = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        $token = "";
+        for ($i = 0; $i < 20; $i++) {
+            $token .= $ch[rand(0, strlen($ch) - 1)];
+        }
+
+        if (Internal_Invoices::where('token', '=', $token)->exists()) {
+            return $this->generateInternalInvoiceToken();
+        }
+
+        return $token;
+    }
+
+    private function createAdminApInvoiceAndPayment(User $subscriber, User $company, float $amount, string $paymentMode, string $detail = 'Subscription Fees'): Internal_Invoices
+    {
+        $amount = round(max(0, $amount), 2);
+
+        $internalInvoice = new Internal_Invoices();
+        $internalInvoice->invoice_no = $this->generateInternalInvoiceNo();
+        $internalInvoice->subscriber_id = $subscriber->id;
+        $internalInvoice->name = $company->organization;
+        $internalInvoice->email = $company->email;
+        $internalInvoice->phone = $company->phone;
+        $internalInvoice->country = $company->country;
+        $internalInvoice->state = $company->state;
+        $internalInvoice->city = $company->city;
+        $internalInvoice->pincode = $company->pincode;
+        $internalInvoice->address = $company->address_line;
+        $internalInvoice->logo = $company->organization_logo;
+        $internalInvoice->to_name = $subscriber->name;
+        $internalInvoice->to_email = $subscriber->email;
+        $internalInvoice->to_phone = $subscriber->phone;
+        $internalInvoice->to_country = $subscriber->country;
+        $internalInvoice->to_state = $subscriber->state;
+        $internalInvoice->to_city = $subscriber->city;
+        $internalInvoice->to_pincode = $subscriber->pincode;
+        $internalInvoice->to_address = $subscriber->address_line;
+        $internalInvoice->detail = $detail;
+        $internalInvoice->amount = $amount;
+        $internalInvoice->discount = 0;
+        $internalInvoice->tax = 0;
+        $internalInvoice->total = $amount;
+        $internalInvoice->status = "Paid";
+        $internalInvoice->type = 'ap';
+        $internalInvoice->due_date = date("Y-m-d");
+        $internalInvoice->token = $this->generateInternalInvoiceToken();
+        $internalInvoice->save();
+
+        PaymentARs::create([
+            'subscriber_id' => $subscriber->id,
+            'invoice_no' => $internalInvoice->invoice_no,
+            'service_provider' => $company->organization ?: 'adwiseri.com',
+            'service_taken' => $detail,
+            'amount' => $amount,
+            'paid_amount' => $amount,
+            'payment_mode' => $paymentMode,
+            'payment_date' => now(),
+            'type' => 'ap',
+        ]);
+
+        return $internalInvoice;
+    }
+
+    private function buildInvoicePdfData(Internal_Invoices $internalInvoice, User $subscriber, User $company): object
+    {
+        return (object) [
+            'invoice_no' => $internalInvoice->invoice_no,
+            'invoice_date' => $internalInvoice->created_at,
+            'due_date' => $internalInvoice->due_date,
+            'status' => $internalInvoice->status,
+            'detail' => $internalInvoice->detail,
+            'amount' => $internalInvoice->amount,
+            'discount' => $internalInvoice->discount,
+            'tax' => $internalInvoice->tax,
+            'total' => $internalInvoice->total,
+            'currency' => 'USD',
+            'name' => $subscriber->name,
+            'to_email' => $subscriber->email,
+            'company_name' => $company->organization ?: 'adwiseri',
+            'from_email' => $company->email,
+            'display_from_email' => $company->email,
+            'logo_path' => !empty($company->organization_logo) ? 'web_assets/users/logos/' . $company->organization_logo : null,
+        ];
+    }
+
     public function transaction_id()
     {
         $ch = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -157,6 +260,8 @@ class StripeController extends Controller
         // $tax = ($service_fee + $discount) * (18/100);
         $tax = 0;
         $company = User::where('user_type','=','admin')->first();
+        $chargedAmount = $service_fee - $discount + $tax;
+        $internalInvoice = $this->createAdminApInvoiceAndPayment($user, $company, $chargedAmount, "Card", "Subscription Fees");
         $invoice = new Invoices();
         $invoice->user_id = $user->id;
         $invoice->invoice = $this->transaction_id();
@@ -180,7 +285,7 @@ class StripeController extends Controller
         $invoice->discount = $discount;
         $invoice->tax = $tax;
         $invoice->payment_mode = "Card";
-        $invoice->total = $service_fee - $discount + $tax;
+        $invoice->total = $chargedAmount;
         $invoice->save();
         $activity = new Activities();
         $activity->subscriber_id = $user->id;
@@ -191,7 +296,13 @@ class StripeController extends Controller
         $activity->activity_icon = "invoice.jpg";
         $activity->local_time = $data['local_time'];
         $activity->save();
-        Mail::to($user->email)->send(new PlanSubscriptionMail( $user->name,  $plan['membership'], $plan['validity'],'Your Subscription Plan Has Been Updated'));
+        Mail::to($user->email)->send(new PlanSubscriptionMail(
+            $user->name,
+            $plan['membership'],
+            $plan['validity'],
+            'Your Subscription Plan Has Been Updated',
+            $this->buildInvoicePdfData($internalInvoice, $user, $company)
+        ));
         session()->forget('pay_data');
         return redirect()->route('user_membership')->with('payment_success','Payment completed successfully.');
 
@@ -275,30 +386,6 @@ class StripeController extends Controller
             else{
                 return $ref;
             }
-        }
-        function invoice_id()
-        {
-            $ch = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-            $id = "";
-            for($i=0; $i<10; $i++){
-                $id = $id.$ch[rand(0, strlen($ch)-1)];
-            }
-            if(Internal_Invoices::where('invoice_no','=',$id)->first()){
-                return invoice_id();
-            }
-            return $id;
-        }
-        function invoice_token()
-        {
-            $ch = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-            $token = "";
-            for($i=0; $i<20; $i++){
-                $token = $token.$ch[rand(0, strlen($ch)-1)];
-            }
-            if(Internal_Invoices::where('token','=',$token)->first()){
-                return invoice_token();
-            }
-            return $token;
         }
         if($data['referral'] != null){
             $find_referral = User::where('referral','=',$data['referral'])->first();
@@ -505,36 +592,7 @@ class StripeController extends Controller
         $company = User::where('user_type','=','admin')->first();
 
         $subs = User::find($user->id);
-        $internal_invoice = new Internal_Invoices();
-        $internal_invoice->invoice_no = invoice_id();
-        $internal_invoice->subscriber_id = $subs->id;
-        // $internal_invoice->user_id = $user->id;
-        $internal_invoice->name = $company->organization;
-        $internal_invoice->email = $company->email;
-        $internal_invoice->phone = $company->phone;
-        $internal_invoice->country = $company->country;
-        $internal_invoice->state = $company->state;
-        $internal_invoice->city = $company->city;
-        $internal_invoice->pincode = $company->pincode;
-        $internal_invoice->address = $company->address_line;
-        $internal_invoice->logo = $company->organization_logo;
-        $internal_invoice->to_name = $subs->name;
-        $internal_invoice->to_email = $subs->email;
-        $internal_invoice->to_phone = $subs->phone;
-        $internal_invoice->to_country = $subs->country;
-        $internal_invoice->to_state = $subs->state;
-        $internal_invoice->to_city = $subs->city;
-        $internal_invoice->to_pincode = $subs->pincode;
-        $internal_invoice->to_address = $subs->address_line;
-        $internal_invoice->detail = "Subscription Fees";
-        $internal_invoice->amount = $amount;
-        $internal_invoice->discount = 0;
-        $internal_invoice->tax = 0;
-        $internal_invoice->total = $amount;
-        $internal_invoice->status = "Paid";
-        $internal_invoice->due_date = date("Y-m-d");
-        $internal_invoice->token = invoice_token();
-        $internal_invoice->save();
+        $internal_invoice = $this->createAdminApInvoiceAndPayment($subs, $company, (float) $amount, "Card", "Subscription Fees");
 
         $invoice = new Invoices();
         $invoice->user_id = $user->id;
@@ -592,24 +650,7 @@ class StripeController extends Controller
         $welcomedata->paid_amount = number_format((float) $amount, 2);
         $welcomedata->from_email = $company->email;
         $welcomedata->from_name = $company->organization ?: 'adwiseri';
-        $welcomedata->invoice_pdf_data = (object) [
-            'invoice_no' => $internal_invoice->invoice_no,
-            'invoice_date' => $internal_invoice->created_at,
-            'due_date' => $internal_invoice->due_date,
-            'status' => $internal_invoice->status,
-            'detail' => $internal_invoice->detail,
-            'amount' => $internal_invoice->amount,
-            'discount' => $internal_invoice->discount,
-            'tax' => $internal_invoice->tax,
-            'total' => $internal_invoice->total,
-            'currency' => 'USD',
-            'name' => $subs->name,
-            'to_email' => $subs->email,
-            'company_name' => $company->organization ?: 'adwiseri',
-            'from_email' => $company->email,
-            'display_from_email' => $company->email,
-            'logo_path' => !empty($company->organization_logo) ? 'web_assets/users/logos/' . $company->organization_logo : null,
-        ];
+        $welcomedata->invoice_pdf_data = $this->buildInvoicePdfData($internal_invoice, $subs, $company);
         Mail::to($email)->cc('care@adwiseri.com')->send(new WelcomeMail($welcomedata));
             if (Mail::failures()) {
                 echo 'Sorry! Please try again latter';

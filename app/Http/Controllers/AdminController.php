@@ -59,6 +59,109 @@ use DataTables;
 use App\Services\EmailTemplateService;
 
 class AdminController extends Controller
+{
+    private function generateInternalInvoiceId(): string
+    {
+        $ch = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        $id = "";
+        for ($i = 0; $i < 8; $i++) {
+            $id .= $ch[rand(0, strlen($ch) - 1)];
+        }
+
+        if (Internal_Invoices::where('invoice_no', '=', $id)->exists()) {
+            return $this->generateInternalInvoiceId();
+        }
+
+        return $id;
+    }
+
+    private function generateInternalInvoiceToken(): string
+    {
+        $ch = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        $token = "";
+        for ($i = 0; $i < 20; $i++) {
+            $token .= $ch[rand(0, strlen($ch) - 1)];
+        }
+
+        if (Internal_Invoices::where('token', '=', $token)->exists()) {
+            return $this->generateInternalInvoiceToken();
+        }
+
+        return $token;
+    }
+
+    private function createAdminApInvoiceAndPayment(User $subscriber, User $company, float $amount, string $paymentMode, string $detail = 'Subscription Fees'): Internal_Invoices
+    {
+        $amount = round(max(0, $amount), 2);
+
+        $internalInvoice = new Internal_Invoices();
+        $internalInvoice->invoice_no = $this->generateInternalInvoiceId();
+        $internalInvoice->subscriber_id = $subscriber->id;
+        $internalInvoice->name = $company->organization;
+        $internalInvoice->email = $company->email;
+        $internalInvoice->phone = $company->phone;
+        $internalInvoice->country = $company->country;
+        $internalInvoice->state = $company->state;
+        $internalInvoice->city = $company->city;
+        $internalInvoice->pincode = $company->pincode;
+        $internalInvoice->address = $company->address_line;
+        $internalInvoice->logo = $company->organization_logo;
+        $internalInvoice->to_name = $subscriber->name;
+        $internalInvoice->to_email = $subscriber->email;
+        $internalInvoice->to_phone = $subscriber->phone;
+        $internalInvoice->to_country = $subscriber->country;
+        $internalInvoice->to_state = $subscriber->state;
+        $internalInvoice->to_city = $subscriber->city;
+        $internalInvoice->to_pincode = $subscriber->pincode;
+        $internalInvoice->to_address = $subscriber->address_line;
+        $internalInvoice->detail = $detail;
+        $internalInvoice->amount = $amount;
+        $internalInvoice->discount = 0;
+        $internalInvoice->tax = 0;
+        $internalInvoice->total = $amount;
+        $internalInvoice->status = 'Paid';
+        $internalInvoice->type = 'ap';
+        $internalInvoice->due_date = date('Y-m-d');
+        $internalInvoice->token = $this->generateInternalInvoiceToken();
+        $internalInvoice->save();
+
+        PaymentARs::create([
+            'subscriber_id' => $subscriber->id,
+            'invoice_no' => $internalInvoice->invoice_no,
+            'service_provider' => $company->organization ?: 'adwiseri.com',
+            'service_taken' => $detail,
+            'amount' => $amount,
+            'paid_amount' => $amount,
+            'payment_mode' => $paymentMode,
+            'payment_date' => now(),
+            'type' => 'ap',
+        ]);
+
+        return $internalInvoice;
+    }
+
+    private function buildInvoicePdfData(Internal_Invoices $internalInvoice, User $subscriber, User $company): object
+    {
+        return (object) [
+            'invoice_no' => $internalInvoice->invoice_no,
+            'invoice_date' => $internalInvoice->created_at,
+            'due_date' => $internalInvoice->due_date,
+            'status' => $internalInvoice->status,
+            'detail' => $internalInvoice->detail,
+            'amount' => $internalInvoice->amount,
+            'discount' => $internalInvoice->discount,
+            'tax' => $internalInvoice->tax,
+            'total' => $internalInvoice->total,
+            'currency' => 'USD',
+            'name' => $subscriber->name,
+            'to_email' => $subscriber->email,
+            'company_name' => $company->organization ?: 'adwiseri',
+            'from_email' => $company->email,
+            'display_from_email' => $company->email,
+            'logo_path' => !empty($company->organization_logo) ? 'web_assets/users/logos/' . $company->organization_logo : null,
+        ];
+    }
+
 { 
     public function index()
     {
@@ -424,6 +527,7 @@ class AdminController extends Controller
             // print_r($requet->$data);
             // die();
             $data->save();
+
             $activity = new Activities();
             $activity->subscriber_id = $user->id;
             $activity->user_id = $user->id;
@@ -488,6 +592,9 @@ class AdminController extends Controller
             // print_r($requet->$data);
             // die();
             $data->save();
+            $company = User::where('user_type', '=', 'admin')->first() ?: $user;
+            $subscriptionAmount = (float) ($membership->price_per_year ?? 0);
+            $internalInvoice = $this->createAdminApInvoiceAndPayment($data, $company, $subscriptionAmount, "Manual", "Subscription Signup Fees");
 
             $role = UserRoles::where('user_id', '=', $data->id)->get();
             if ($role) {
@@ -621,7 +728,13 @@ class AdminController extends Controller
             $activity->activity_detail = "New Subscriber " . $request->name . " added by " . $user->name . " at " . date('d M, Y H:i:s');
             $activity->activity_icon = "user.png";
             $activity->save();
-            Mail::to($request['email'])->send(new PlanSubscriptionMail($request['name'], $request['membership'], $validityDuration, 'Your Subscription Plan Has Been  Added!'));
+            Mail::to($request['email'])->send(new PlanSubscriptionMail(
+                $request['name'],
+                $request['membership'],
+                $validityDuration,
+                'Your Subscription Plan Has Been  Added!',
+                $this->buildInvoicePdfData($internalInvoice, $data, $company)
+            ));
             return redirect()->route('subscribers')->with('user_added', "user added successfully");
         }
     }
