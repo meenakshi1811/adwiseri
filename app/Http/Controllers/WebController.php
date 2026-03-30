@@ -706,6 +706,21 @@ class WebController extends Controller
         $data->password = Hash::make($request['password']);
         $data->save();
 
+        $company = User::where('user_type', '=', 'admin')->first();
+        $signupInvoiceAmount = strtolower((string) $plan->plan_name) === 'free'
+            ? 0.0
+            : (float) ($request['amount'] ?? $plan->price_per_year ?? 0);
+        $internalInvoice = null;
+        if ($company) {
+            $internalInvoice = $this->createAdminApInvoiceAndPayment(
+                $data,
+                $company,
+                $signupInvoiceAmount,
+                "Manual",
+                "Subscription Signup Fees"
+            );
+        }
+
         $role = UserRoles::where('user_id', '=', $data->id)->get();
         if ($role) {
             foreach ($role as $r) {
@@ -880,6 +895,29 @@ class WebController extends Controller
         $welcomedata->email = $email;
         $welcomedata->plan_name = $plan->plan_name;
         $welcomedata->duration = $plan->validity . " Days";
+        $welcomedata->amount = number_format((float) $signupInvoiceAmount, 2);
+        $welcomedata->subscription_type = $plan->plan_name;
+        $welcomedata->start_date = !empty($data->membership_start_date)
+            ? (($data->membership_start_date instanceof \DateTimeInterface)
+                ? $data->membership_start_date->format('d-m-Y')
+                : date("d-m-Y", strtotime((string) $data->membership_start_date)))
+            : '-';
+        $welcomedata->end_date = !empty($data->membership_expiry_date)
+            ? (($data->membership_expiry_date instanceof \DateTimeInterface)
+                ? $data->membership_expiry_date->format('d-m-Y')
+                : date("d-m-Y", strtotime((string) $data->membership_expiry_date)))
+            : '-';
+        $welcomedata->paid_amount = number_format((float) $signupInvoiceAmount, 2);
+
+        if ($company) {
+            $welcomedata->from_email = $company->email;
+            $welcomedata->from_name = $company->organization ?: 'adwiseri';
+        }
+        if ($internalInvoice && $company) {
+            $welcomedata->invoice_id = $internalInvoice->id;
+            $welcomedata->token = $internalInvoice->token;
+            $welcomedata->invoice_pdf_data = $this->buildInvoicePdfData($internalInvoice, $data, $company);
+        }
         try {
             Mail::to($email)->cc('care@adwiseri.com')->send(new WelcomeMail($welcomedata));
         } catch (\Exception $e) {
