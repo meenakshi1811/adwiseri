@@ -898,10 +898,14 @@ class WebController extends Controller
         $welcomedata->amount = number_format((float) $signupInvoiceAmount, 2);
         $welcomedata->subscription_type = $plan->plan_name;
         $welcomedata->start_date = !empty($data->membership_start_date)
-            ? date("d-m-Y", strtotime($data->membership_start_date))
+            ? (($data->membership_start_date instanceof \DateTimeInterface)
+                ? $data->membership_start_date->format('d-m-Y')
+                : date("d-m-Y", strtotime((string) $data->membership_start_date)))
             : '-';
         $welcomedata->end_date = !empty($data->membership_expiry_date)
-            ? date("d-m-Y", strtotime($data->membership_expiry_date))
+            ? (($data->membership_expiry_date instanceof \DateTimeInterface)
+                ? $data->membership_expiry_date->format('d-m-Y')
+                : date("d-m-Y", strtotime((string) $data->membership_expiry_date)))
             : '-';
         $welcomedata->paid_amount = number_format((float) $signupInvoiceAmount, 2);
 
