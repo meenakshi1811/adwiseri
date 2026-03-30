@@ -59,7 +59,7 @@ use DataTables;
 use App\Services\EmailTemplateService;
 
 class AdminController extends Controller
-{
+{ 
     public function index()
     {
         //return view('admin.web_home_page');
