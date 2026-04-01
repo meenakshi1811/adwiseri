@@ -122,6 +122,17 @@ $support_roles = UserRoles::where('user_id','=',$user->id)->where('module','=','
     </script>
     <script>
           document.addEventListener("DOMContentLoaded", function() {
+    const headerCells = Array.from(document.querySelectorAll("#clientTable thead th"));
+    const uploadHeaderIndex = headerCells.findIndex((th) => (th.textContent || "").trim().toLowerCase() === "upload invoice");
+    if (uploadHeaderIndex !== -1) {
+        headerCells[uploadHeaderIndex].remove();
+        document.querySelectorAll("#clientTable tbody tr").forEach((row) => {
+            const rowCells = row.querySelectorAll("td");
+            if (rowCells[uploadHeaderIndex]) {
+                rowCells[uploadHeaderIndex].remove();
+            }
+        });
+    }
     var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
     var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
         return new bootstrap.Tooltip(tooltipTriggerEl);
