@@ -149,7 +149,7 @@ class WebController extends Controller
         $internalInvoice->pincode = $company->pincode;
         $internalInvoice->address = $company->address_line;
         $internalInvoice->logo = $company->organization_logo;
-        $internalInvoice->to_name = $subscriber->name;
+        $internalInvoice->to_name = 'adwiseri.com';
         $internalInvoice->to_email = $subscriber->email;
         $internalInvoice->to_phone = $subscriber->phone;
         $internalInvoice->to_country = $subscriber->country;
@@ -171,11 +171,11 @@ class WebController extends Controller
         PaymentARs::create([
             'subscriber_id' => $subscriber->id,
             'invoice_no' => $internalInvoice->invoice_no,
-            'service_provider' => $company->organization ?: 'adwiseri.com',
+            'service_provider' => 'adwiseri.com',
             'service_taken' => $detail,
             'amount' => $amount,
             'paid_amount' => $amount,
-            'payment_mode' => $paymentMode,
+            'payment_mode' => 'Online',
             'payment_date' => now(),
             'type' => 'ap',
         ]);
