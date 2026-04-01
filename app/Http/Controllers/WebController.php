@@ -1180,6 +1180,12 @@ class WebController extends Controller
         $activities = Activities::where('subscriber_id', '=', $subscriber->id)->orderBy('created_at', 'desc')->limit(15)->get();
         $applications = Applications::where('subscriber_id', '=', $subscriber->id)->get();
         $invoices = Internal_Invoices::where('subscriber_id', '=', $subscriber->id)->get();
+        $invoiceARCount = $invoices->filter(function ($invoice) {
+            return strtolower((string) $invoice->type) === 'ar';
+        })->count();
+        $invoiceAPCount = $invoices->filter(function ($invoice) {
+            return strtolower((string) $invoice->type) === 'ap';
+        })->count();
         // $referrals = Referrals::where('referral_code', '=', $subscriber->referral)->get();
         // $startDate = Carbon::createFromFormat('d-m-Y', request()->input('startDate'))->startOfDay();
         // $endDate = Carbon::createFromFormat('d-m-Y', request()->input('endDate'))->endOfDay();
@@ -1199,7 +1205,7 @@ class WebController extends Controller
         $referrals = $query->where('referrals.type', 'Referral Commission') // Apply specific condition for Subscriber
         ->get();
 
-        return view('web.dashboard', compact('meetings', 'totalPayments','totalPaymentsAR', 'user', 'countries', 'total_countries', 'total_clients', 'total_payments', 'states', 'page', 'clients', 'users', 'activities', 'applications', 'invoices', 'referrals', 'total_assignments'));
+        return view('web.dashboard', compact('meetings', 'totalPayments','totalPaymentsAR', 'invoiceARCount', 'invoiceAPCount', 'user', 'countries', 'total_countries', 'total_clients', 'total_payments', 'states', 'page', 'clients', 'users', 'activities', 'applications', 'invoices', 'referrals', 'total_assignments'));
     }
 
     public function analytics()

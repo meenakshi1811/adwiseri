@@ -39,9 +39,9 @@
                     <div class="client-box col-12 m-0"  style="background-color: #725a11; border-radius: 10px;color: #ffffff;">
                         {{-- <img src="{{ asset('web_assets/images/clientdta.png') }}" width="50" height="50" alt=""> --}}
                         <i style="font-size: 30px;width:50px;height:50px; background: #ffffff;border-radius:50%;" class="fa fa-file-invoice text-info p-1 d-flex text-center align-items-center justify-content-center"></i>
-                        <!--<i style="display:flex;align-items:center;justify-content:center;font-size: 32px;border:2px solid rgb(118, 210, 247);border-radius:50%;width:50px;height:50px;text-align:center;" class="fa fa-users text-info p-1"></i>-->
-                        <h4>{{ count($invoices) }}</h4>
-                        <p style="font-weight: bolder!important;">@if(count($invoices) > 1) Invoices @else Invoice @endif</p>
+                        <h4 style="font-weight: bolder!important;font-size:18px;margin-top:4px">AR : &nbsp; {{ $invoiceARCount }}</h4>
+                        <h4 style="font-weight: bolder!important;font-size:18px;margin-top:4px">AP : &nbsp; {{ $invoiceAPCount }}</h4>
+                        <p style="font-weight: bolder!important;">Invoices</p>
                     </div>
                   </div>
 
