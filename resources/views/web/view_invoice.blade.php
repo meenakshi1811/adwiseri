@@ -221,6 +221,15 @@ else{
             </tbody>
         </table>
         <div style="margin-top: 60px; text-align: center; font-size: 0.9rem; line-height: 1.6;">
+            @if($invoice->type === 'ap' && !empty($invoice->uploaded_invoice))
+                <div class="mb-3">
+                    <strong>Uploaded Invoice:</strong>
+                    <a href="{{ asset('web_assets/users/' . $invoice->uploaded_invoice) }}" target="_blank" rel="noopener noreferrer">Open PDF</a>
+                </div>
+                <div class="mb-3">
+                    <iframe src="{{ asset('web_assets/users/' . $invoice->uploaded_invoice) }}" title="Uploaded Invoice PDF" style="width:100%;height:500px;border:1px solid #ddd;"></iframe>
+                </div>
+            @endif
             <div>
                 Thanks for your business !
             </div>

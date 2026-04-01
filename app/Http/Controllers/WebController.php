@@ -4357,6 +4357,10 @@ class WebController extends Controller
             'vendor_name' => 'required|string|min:2|max:150',
             'service_taken' => 'required|string|min:2|max:200',
             'amount' => 'required|numeric|min:0',
+            'discount' => 'required|numeric|min:0|max:100',
+            'tax' => 'required|numeric|min:0|max:100',
+            'total_to_pay' => 'required|numeric|min:0',
+            'upload_invoice' => 'required|file|mimes:pdf|max:10240',
         ]);
         $user = Auth::user();
         $this->set_timezone();
@@ -4396,8 +4400,8 @@ class WebController extends Controller
                 $invoice->to_address = optional($client)->address;
                 $invoice->detail = $serviceTaken;
                 $invoiceAmount = (float) $request['amount'];
-                $discountPercent = max(0, min(100, (float) ($inv_setting->discount ?? 0)));
-                $taxPercent = max(0, min(100, (float) ($inv_setting->tax ?? 0)));
+                $discountPercent = max(0, min(100, (float) $request->discount));
+                $taxPercent = max(0, min(100, (float) $request->tax));
                 $discountRate = $discountPercent / 100;
                 $taxRate = $taxPercent / 100;
 
@@ -4406,10 +4410,18 @@ class WebController extends Controller
                 $invoice->discount = $discountPercent;
                 $invoice->tax = $taxPercent;
                 $subtotal = $invoiceAmount - ($invoiceAmount * $discountRate);
-                $invoice->total = max(0, $subtotal + ($subtotal * $taxRate));
+                $calculatedTotal = max(0, $subtotal + ($subtotal * $taxRate));
+                $invoice->total = (float) $request->total_to_pay > 0 ? (float) $request->total_to_pay : $calculatedTotal;
                 $invoice->status = $request['status'];
                 $invoice->due_date = $this->normalizeInvoiceDueDate($request['due_date']);
                 $invoice->token = $this->generateInternalInvoiceToken();
+                if ($request->hasFile('upload_invoice')) {
+                    $pdfFile = $request->file('upload_invoice');
+                    $fileName = time() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '', $pdfFile->getClientOriginalName());
+                    $destinationPath = 'web_assets/users/user' . $subscriber->id . '/invoice_uploads';
+                    $pdfFile->move($destinationPath, $fileName);
+                    $invoice->uploaded_invoice = 'user' . $subscriber->id . '/invoice_uploads/' . $fileName;
+                }
                 $invoice->save();
 
                 if ($invoice->status == "Paid") {

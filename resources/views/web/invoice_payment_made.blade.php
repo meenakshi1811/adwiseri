@@ -56,6 +56,7 @@ $support_roles = UserRoles::where('user_id','=',$user->id)->where('module','=','
                             <th class="p-1 text-center">Discount</th>
                             <th class="p-1 text-center">Tax</th>
                             <th class="p-1 text-center">Total</th>
+                            <th class="p-1 text-center">Upload Invoice</th>
                             <th class="p-1 text-center">Status</th>
                             <th class="p-1 text-center">Due Date</th>
                             <th class="p-1 text-center">Action</th>
@@ -77,6 +78,13 @@ $support_roles = UserRoles::where('user_id','=',$user->id)->where('module','=','
                                 <td class="p-1 text-center">{{ $invoice->discount }}%</td>
                                 <td class="p-1 text-center">{{ $invoice->tax }}%</td>
                                 <td class="p-1 text-center">{{ $invoice->total }}</td>
+                                <td class="p-1 text-center">
+                                    @if(!empty($invoice->uploaded_invoice))
+                                        <a href="{{ asset('web_assets/users/' . $invoice->uploaded_invoice) }}" target="_blank" rel="noopener noreferrer">View PDF</a>
+                                    @else
+                                        -
+                                    @endif
+                                </td>
                                 <td class="p-1 text-center">
                                     @if($user->user_type == "Subscriber")
                                     <select class="form-control" id="inv_status{{$invoice->id}}" style="font-size: 14px;">

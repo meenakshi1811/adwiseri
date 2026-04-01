@@ -34,6 +34,7 @@ class Internal_Invoices extends Model
         'total',
         'due_date',
         'type',
+        'uploaded_invoice',
     ];
     public function getFormattedDueDateAttribute()
     {
