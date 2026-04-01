@@ -27,14 +27,13 @@
 </style>
 
 <body style="background: #F5F5F5; margin:0px;">
-    <div style="text-align: center;">
-        <a class="navbar-brand text-white" href="https://adwiseri.com/">
-            <img width="170" src="{{ url('web_assets/images/Style2_blue.png') }}" />
-        </a>
-    </div>
-
     <div style="margin:40px 0px;">
         <div style="border-radius: 10px;width:50%;background:white;padding-bottom:40px;position:relative;margin:auto;">
+            <div style="background:#695EEE;padding:16px 0px;text-align:center;border-radius:10px 10px 0 0;">
+                <a class="navbar-brand text-white" href="https://adwiseri.com/">
+                    <img width="170" src="{{ url('web_assets/images/Style2.png') }}" alt="adwiseri logo" />
+                </a>
+            </div>
             <h2 style="text-align:center;padding:20px 0px;">Welcome to Adwiseri</h2>
             <div style="margin-bottom:20px;text-align:center;">
                 <img src="{{ url('web_assets/images/handshake.png') }}" width="150px" height="auto"
