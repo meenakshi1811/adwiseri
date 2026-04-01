@@ -4059,7 +4059,11 @@ class WebController extends Controller
                     $html = '<a style="background:none; border:none;"';
 
                     if ($user->user_type == "admin" || $invoice_roles->read_only == 1 || $invoice_roles->read_write_only == 1) {
-                        $html .= ' href="' . route('view_invoice', $row->id) . '"';
+                        if (!empty($row->uploaded_invoice)) {
+                            $html .= ' href="' . asset('web_assets/users/' . $row->uploaded_invoice) . '" target="_blank" rel="noopener noreferrer"';
+                        } else {
+                            $html .= ' href="#"';
+                        }
                     } else {
                         $html .= ' href="#"';
                     }
@@ -4133,7 +4137,11 @@ class WebController extends Controller
                     $html = '<a style="background:none; border:none;"';
 
                     if ($user->user_type == "admin" || $invoice_roles->read_only == 1 || $invoice_roles->read_write_only == 1) {
-                        $html .= ' href="' . route('view_invoice', $row->id) . '"';
+                        if (!empty($row->uploaded_invoice)) {
+                            $html .= ' href="' . asset('web_assets/users/' . $row->uploaded_invoice) . '" target="_blank" rel="noopener noreferrer"';
+                        } else {
+                            $html .= ' href="#"';
+                        }
                     } else {
                         $html .= ' href="#"';
                     }
@@ -4530,6 +4538,9 @@ class WebController extends Controller
         $roles = UserRoles::where('user_id', '=', $user->id)->first();
         $page = "invoices";
         $invoice = Internal_Invoices::find($id);
+        if ($invoice && $invoice->type === 'ap' && !empty($invoice->uploaded_invoice)) {
+            return redirect(asset('web_assets/users/' . $invoice->uploaded_invoice));
+        }
         $u = User::where('email', '=', $invoice->email)->first();
         $invoiceSetting = Invoice_settings::where('user_id', $u->id)->first();
         if ($invoiceSetting) {
