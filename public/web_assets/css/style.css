@@ -1657,7 +1657,11 @@ span {
 }
 
 .thanks-box a {
-    padding: 5px 147px !important;
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    text-align: center;
+    padding: 10px 12px !important;
     color: #fff;
     text-decoration: none;
     background: #17CFCF;
