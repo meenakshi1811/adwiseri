@@ -91,7 +91,7 @@ $support_roles = UserRoles::where('user_id','=',$user->id)->where('module','=','
                                 </td>
                                 <td class="p-1 text-center">{{ $invoice->formatted_due_date }} </td>
                                 <td class="p-1 text-center"><a style="background:none; border:none;" @if($invoice_roles->read_only == 1 or $invoice_roles->read_write_only == 1)
-                                        href="{{ route('view_invoice', $invoice->id) }}" @else href="#" @endif class="m-0 p-0"><i
+                                        href="{{ !empty($invoice->uploaded_invoice) ? asset('web_assets/users/' . $invoice->uploaded_invoice) : '#' }}" target="_blank" rel="noopener noreferrer" @else href="#" @endif class="m-0 p-0"><i
                                             class="fa-solid fa-eye btn p-1 text-info" style="font-size:14px;"></i></a></td>
                             </tr>
                         @endforeach
