@@ -51,10 +51,24 @@ $support_roles = UserRoles::where('user_id','=',$user->id)->where('module','=','
 }
 
 .flow-wrapper {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 20px;
-    align-items: stretch;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    align-items: center;
+    justify-content: center;
+}
+
+.flow-step {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.flow-arrow {
+    font-size: 26px;
+    color: #0d6efd;
+    font-weight: 700;
+    line-height: 1;
 }
 
 .status-circle {
@@ -114,6 +128,15 @@ $support_roles = UserRoles::where('user_id','=',$user->id)->where('module','=','
 
     .circle-status {
         font-size: 16px;
+    }
+
+    .flow-step {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .flow-arrow {
+        display: none;
     }
 }
 </style>
@@ -268,6 +291,9 @@ $support_roles = UserRoles::where('user_id','=',$user->id)->where('module','=','
             return;
         }
 
+        const clientText = $('#client').find('option:selected').text() || '--';
+        const applicationText = $('#application').find('option:selected').text() || '--';
+
         const printableWindow = window.open('', '_blank');
         printableWindow.document.write(`
             <html>
@@ -275,10 +301,13 @@ $support_roles = UserRoles::where('user_id','=',$user->id)->where('module','=','
                     <title>Application Tracking Status</title>
                     <style>
                         body { font-family: Arial, sans-serif; padding: 20px; }
-                        .flow-wrapper { display: grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap: 20px; }
+                        .summary-row { margin-bottom: 6px; font-size: 14px; }
+                        .summary-label { font-weight: 700; color: #163c76; }
+                        .flow-wrapper { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: center; }
+                        .flow-step { display: flex; align-items: center; gap: 14px; }
+                        .flow-arrow { font-size: 26px; color: #0d6efd; font-weight: 700; line-height: 1; }
                         .status-circle { width: 220px; height: 220px; border-radius: 50%; border: 2px solid #d6dce3; margin: 0 auto; padding: 18px; display: flex; flex-direction: column; justify-content: center; text-align: center; box-sizing: border-box; background: #eceff3; }
                         .status-circle hr { width: 100%; margin: 9px 0; border-color: rgba(0,83,196,0.35); }
-                        .circle-date { font-size: 14px; font-weight: 700; color: #003f95; }
                         .circle-range { font-size: 13px; color: #1d3e72; font-weight: 600; }
                         .circle-status { font-size: 18px; font-weight: 700; color: #163c76; }
                         .circle-user { font-size: 14px; color: #0f2950; font-weight: 600; }
@@ -286,6 +315,9 @@ $support_roles = UserRoles::where('user_id','=',$user->id)->where('module','=','
                 </head>
                 <body>
                     <h2>Application Tracking Status</h2>
+                    <div class="summary-row"><span class="summary-label">Client Name (ID) :-</span> ${clientText}</div>
+                    <div class="summary-row"><span class="summary-label">Application (ID) :-</span> ${applicationText}</div>
+                    <br>
                     <div>${chartContent}</div>
                 </body>
             </html>
@@ -295,19 +327,46 @@ $support_roles = UserRoles::where('user_id','=',$user->id)->where('module','=','
         printableWindow.print();
     }
 
+    function formatDateRange(item) {
+        const startDate = item.start_date || '--';
+        const endDate = item.end_date || '';
+        const status = (item.status || '').toLowerCase();
+
+        if (status === 'registration') {
+            return startDate;
+        }
+
+        if (status === 'pending') {
+            return `${startDate} - `;
+        }
+
+        if (!endDate || endDate === '--') {
+            return `${startDate} - `;
+        }
+
+        if (startDate === endDate) {
+            return startDate;
+        }
+
+        return `${startDate} - ${endDate}`;
+    }
+
     function renderFlowChart(statuses) {
       let html = '<div class="flow-wrapper">';
       
       statuses.forEach((item, index) => {
-          const dateRange = (item.start_date || '--') + ' - ' + (item.end_date || '--');
+          const dateRange = formatDateRange(item);
 
           html += `
-              <div class="status-circle">
-                  <div class="circle-range">${dateRange}</div>
-                  <hr>
-                  <div class="circle-status">${item.status || '--'}</div>
-                  <hr>
-                  <div class="circle-user">${item.user || '--'}</div>
+              <div class="flow-step">
+                  <div class="status-circle">
+                      <div class="circle-range">${dateRange}</div>
+                      <hr>
+                      <div class="circle-status">${item.status || '--'}</div>
+                      <hr>
+                      <div class="circle-user">${item.user || '--'}</div>
+                  </div>
+                  ${index < statuses.length - 1 ? '<div class="flow-arrow">→</div>' : ''}
               </div>
           `;
       });
@@ -411,7 +470,7 @@ $support_roles = UserRoles::where('user_id','=',$user->id)->where('module','=','
                                       <tr>
                                           <td class="text-center">${item.index}</td>
                                           <td class="text-center">${item.status}</td>
-                                          <td class="text-center">${item.start_date} - ${item.end_date}</td>
+                                          <td class="text-center">${formatDateRange(item)}</td>
                                           <td class="text-center">${item.user}</td>
                                       </tr>
                                   `;
