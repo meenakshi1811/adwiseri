@@ -68,9 +68,9 @@ $support_roles = UserRoles::where('user_id','=',$user->id)->where('module','=','
                                 <td class="p-1 text-center">{{ $key + 1 }}</td>
                                 <td class="p-1 text-center">{{ $invoice->invoice_no }}</td>
                                 <td  data-bs-toggle="tooltip" data-bs-placement="top" title="{{ $invoice->to_name }}"  class="p-1 text-center" style="position: relative;">@if(strlen($invoice->to_name) > 22){{ substr($invoice->to_name, 0, 22) }}... <span onmouseover="this.style.opacity='1';" onmouseout="this.style.opacity='0';" style="display:flex;opacity:0;align-items:center;padding:5px;position: absolute;left:0px;top:25px;height:100%;background:lightgrey;min-width:100%; width:fit-content;">
-                                {{$invoice->to_name}} @php $data = \App\Models\Clients::where('name', $invoice->to_name)->where('user_id', $invoice->user_id)->first(); if($data){ echo "($data->id)"; }   @endphp </span> 
-                                @else 
-                                {{$invoice->to_name}}  @php $data = \App\Models\Clients::where('name', $invoice->to_name)->where('user_id', $invoice->user_id)->first(); if($data){ echo "($data->id)"; }   @endphp 
+                                {{$invoice->to_name}}{{ !empty($invoice->vendor_id) ? ' (' . $invoice->vendor_id . ')' : '' }}</span>
+                                @else
+                                {{$invoice->to_name}}{{ !empty($invoice->vendor_id) ? ' (' . $invoice->vendor_id . ')' : '' }}
                                 @endif</td>
                                 <td class="p-1 text-center">{{ $invoice->detail }}</td>
                                 {{-- <td style="position: relative;">@if(strlen($invoice->to_email) > 22){{ substr($invoice->to_email, 0, 22) }}... <span onmouseover="this.style.opacity='1';" onmouseout="this.style.opacity='0';" style="display:flex;opacity:0;align-items:center;padding:5px;position: absolute;left:0px;top:25px;height:100%;background:lightgrey;min-width:100%; width:fit-content;">{{$invoice->to_email}}</span> @else {{$invoice->to_email}} @endif</td> --}}
@@ -99,7 +99,7 @@ $support_roles = UserRoles::where('user_id','=',$user->id)->where('module','=','
                                 </td>
                                 <td class="p-1 text-center">{{ $invoice->formatted_due_date }} </td>
                                 <td class="p-1 text-center"><a style="background:none; border:none;" @if($invoice_roles->read_only == 1 or $invoice_roles->read_write_only == 1)
-                                        href="{{ !empty($invoice->uploaded_invoice) ? asset('web_assets/users/' . $invoice->uploaded_invoice) : '#' }}" target="_blank" rel="noopener noreferrer" @else href="#" @endif class="m-0 p-0"><i
+                                        href="{{ route('view_invoice', $invoice->id) }}" @else href="#" @endif class="m-0 p-0"><i
                                             class="fa-solid fa-eye btn p-1 text-info" style="font-size:14px;"></i></a></td>
                             </tr>
                         @endforeach
