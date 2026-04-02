@@ -2713,8 +2713,8 @@ class WebController extends Controller
         $timeline->push([
             'index' => $index++,
             'status' => 'Registration',
-            'start_date' => $application->start_date ? date("d-m-Y", strtotime($application->start_date)) : '--',
-            'end_date' => $application->start_date ? date("d-m-Y", strtotime($application->start_date)) : '--',
+            'start_date' => $application->start_date ? date("d/m/Y", strtotime($application->start_date)) : '--',
+            'end_date' => $application->start_date ? date("d/m/Y", strtotime($application->start_date)) : '--',
             'user' => $subscriber ? $subscriber->name . ' (' . $subscriber->id . ')' : '--',
         ]);
 
@@ -2726,12 +2726,12 @@ class WebController extends Controller
                     $query->orWhere('application_id', $application->application_id);
                 }
             })
-            ->orderBy('created_at')
+            ->orderBy('id')
             ->get();
 
         foreach ($assignments as $assignment) {
             $assignedUser = $assignment->user;
-            $assignedDate = $assignment->created_at ? $assignment->created_at->format('d-m-Y') : '--';
+            $assignedDate = $assignment->created_at ? $assignment->created_at->format('d/m/Y') : '--';
 
             $timeline->push([
                 'index' => $index++,
@@ -2747,8 +2747,10 @@ class WebController extends Controller
         $timeline->push([
             'index' => $index,
             'status' => $application->application_status ?: 'Decision',
-            'start_date' => $application->end_date ? date("d-m-Y", strtotime($application->end_date)) : '--',
-            'end_date' => $application->end_date ? date("d-m-Y", strtotime($application->end_date)) : '--',
+            'start_date' => $application->end_date
+                ? date("d/m/Y", strtotime($application->end_date))
+                : ($application->start_date ? date("d/m/Y", strtotime($application->start_date)) : '--'),
+            'end_date' => $application->end_date ? date("d/m/Y", strtotime($application->end_date)) : '--',
             'user' => $assignedToUser
                 ? $assignedToUser->name . ' (' . $assignedToUser->id . ')'
                 : ($subscriber ? $subscriber->name . ' (' . $subscriber->id . ')' : '--'),
