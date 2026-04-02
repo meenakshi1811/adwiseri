@@ -43,6 +43,13 @@ $support_roles = UserRoles::where('user_id','=',$user->id)->where('module','=','
     flex-wrap: wrap;
 }
 
+.tracking-action-btn.active {
+    background-color: #0d6efd !important;
+    color: #fff !important;
+    border-color: #0d6efd !important;
+    box-shadow: 0 4px 10px rgba(13, 110, 253, 0.25);
+}
+
 .flow-wrapper {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -54,7 +61,7 @@ $support_roles = UserRoles::where('user_id','=',$user->id)->where('module','=','
     width: 220px;
     height: 220px;
     border-radius: 50%;
-    border: 2px solid rgba(0, 87, 217, 0.35);
+    border: 2px solid #d6dce3;
     margin: 0 auto;
     padding: 18px;
     display: flex;
@@ -62,7 +69,8 @@ $support_roles = UserRoles::where('user_id','=',$user->id)->where('module','=','
     justify-content: center;
     text-align: center;
     box-sizing: border-box;
-    box-shadow: 0 8px 16px rgba(11, 84, 172, 0.08);
+    background: #eceff3;
+    box-shadow: 0 8px 16px rgba(35, 48, 64, 0.08);
 }
 
 .circle-date {
@@ -177,9 +185,9 @@ $support_roles = UserRoles::where('user_id','=',$user->id)->where('module','=','
                             <div class="col-md-3 p-1">
                             </div>
                             <div class="col-md-12 p-3 text-center tracking-action-row">
-                                <button type="button" id="view_status" class="btn btn-primary" onclick="viewChart(); verifyDropDowns();">View Status</button>
-                                <button type="button" id="download_status" class="btn btn-outline-primary" onclick="downloadStatus(); verifyDropDowns();">Download Status</button>
-                                <button type="button" id="view_report" class="btn btn-light border" onclick="viewReport(); verifyDropDowns();">View Table</button>
+                                <button type="button" id="view_status" class="btn btn-primary tracking-action-btn" onclick="viewChart(); verifyDropDowns();">View Status</button>
+                                <button type="button" id="download_status" class="btn btn-outline-primary tracking-action-btn" onclick="downloadStatus(); verifyDropDowns();">Download Status</button>
+                                <button type="button" id="view_report" class="btn btn-light border tracking-action-btn" onclick="viewReport(); verifyDropDowns();">View Table</button>
                             </div>
                             
                         </div>
@@ -224,7 +232,15 @@ $support_roles = UserRoles::where('user_id','=',$user->id)->where('module','=','
   </script>
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script>
+    function setActiveActionButton(activeButtonId) {
+        $('.tracking-action-btn').removeClass('active');
+        if (activeButtonId) {
+            $('#' + activeButtonId).addClass('active');
+        }
+    }
+
     function viewReport() {
+        setActiveActionButton('view_report');
         // Toggle buttons
         $('#view_report').prop('disabled', true);
         $('#view_status').prop('disabled', false);
@@ -235,6 +251,7 @@ $support_roles = UserRoles::where('user_id','=',$user->id)->where('module','=','
     }
 
     function viewChart() {
+        setActiveActionButton('view_status');
         // Toggle buttons
         $('#view_status').prop('disabled', true);
         $('#view_report').prop('disabled', false);
@@ -245,6 +262,7 @@ $support_roles = UserRoles::where('user_id','=',$user->id)->where('module','=','
     }
 
     function downloadStatus() {
+        setActiveActionButton('download_status');
         const chartContent = document.getElementById('application_flow_chart').innerHTML;
         if (!chartContent.trim()) {
             return;
@@ -258,7 +276,7 @@ $support_roles = UserRoles::where('user_id','=',$user->id)->where('module','=','
                     <style>
                         body { font-family: Arial, sans-serif; padding: 20px; }
                         .flow-wrapper { display: grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap: 20px; }
-                        .status-circle { width: 220px; height: 220px; border-radius: 50%; border: 2px solid rgba(0, 87, 217, 0.35); margin: 0 auto; padding: 18px; display: flex; flex-direction: column; justify-content: center; text-align: center; box-sizing: border-box; }
+                        .status-circle { width: 220px; height: 220px; border-radius: 50%; border: 2px solid #d6dce3; margin: 0 auto; padding: 18px; display: flex; flex-direction: column; justify-content: center; text-align: center; box-sizing: border-box; background: #eceff3; }
                         .status-circle hr { width: 100%; margin: 9px 0; border-color: rgba(0,83,196,0.35); }
                         .circle-date { font-size: 14px; font-weight: 700; color: #003f95; }
                         .circle-range { font-size: 13px; color: #1d3e72; font-weight: 600; }
@@ -278,19 +296,13 @@ $support_roles = UserRoles::where('user_id','=',$user->id)->where('module','=','
     }
 
     function renderFlowChart(statuses) {
-      const circleColors = [
-        '#e8f0ff', '#e6fbf3', '#fff5e8', '#f8edff', '#ffeaf1', '#eaf8ff', '#f5ffe8'
-      ];
       let html = '<div class="flow-wrapper">';
       
       statuses.forEach((item, index) => {
-          const circleBgColor = circleColors[index % circleColors.length];
-          const dateText = item.start_date || item.end_date ? `Date ${index + 1}` : `Date ${index + 1}`;
           const dateRange = (item.start_date || '--') + ' - ' + (item.end_date || '--');
 
           html += `
-              <div class="status-circle" style="background:${circleBgColor};">
-                  <div class="circle-date">${dateText}</div>
+              <div class="status-circle">
                   <div class="circle-range">${dateRange}</div>
                   <hr>
                   <div class="circle-status">${item.status || '--'}</div>
@@ -384,8 +396,8 @@ $support_roles = UserRoles::where('user_id','=',$user->id)->where('module','=','
               const applicationId = $(this).val();
               const applicationText = $(this).find('option:selected').text();  // This gets the text of the selected option
               if (applicationId) {
-                  $.ajax({
-                      url: '/admin/get-application-data/' + applicationId,
+                          $.ajax({
+                      url: '{{ route('application.data', '') }}/' + applicationId,
                       type: 'GET',
                       success: function (data) {
                           let rows = '';

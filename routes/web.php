@@ -188,6 +188,7 @@ Route::get('/applications', [App\Http\Controllers\WebController::class, 'applica
 Route::get('/user_application_tracking', [App\Http\Controllers\WebController::class, 'user_application_tracking'])->name('user_application_tracking')->middleware(['auth','check.device']);
 Route::get('/clients/by-subscriber', [App\Http\Controllers\WebController::class, 'getClientsBySubscriber'])->name('clients.bySubscriber')->middleware(['auth','check.device']);
 Route::get('/get-applications-by-client/{clientId}', [App\Http\Controllers\WebController::class, 'getApplicationsByClient'])->name('applications.byClient')->middleware(['auth','check.device']);
+Route::get('/get-application-data/{id}', [App\Http\Controllers\WebController::class, 'getApplicationData'])->name('application.data')->middleware(['auth','check.device']);
 
 Route::get('/add_application', [App\Http\Controllers\WebController::class, 'add_application'])->name('add_application')->middleware(['auth','check.device']);
 Route::get('/update_application/{id?}', [App\Http\Controllers\WebController::class, 'update_application'])->name('update_application')->middleware(['auth','check.device']);
