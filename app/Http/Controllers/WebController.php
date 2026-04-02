@@ -4035,8 +4035,7 @@ class WebController extends Controller
             return DataTables::of($invoices)
                 ->addIndexColumn()
                 ->editColumn('to_name', function ($row) {
-
-                    return $row->to_name;
+                    return trim($row->to_name . (!empty($row->vendor_id) ? ' (' . $row->vendor_id . ')' : ''));
                 })
                 ->editColumn('to_email', function ($row) {
 
@@ -4059,11 +4058,7 @@ class WebController extends Controller
                     $html = '<a style="background:none; border:none;"';
 
                     if ($user->user_type == "admin" || $invoice_roles->read_only == 1 || $invoice_roles->read_write_only == 1) {
-                        if (!empty($row->uploaded_invoice)) {
-                            $html .= ' href="' . asset('web_assets/users/' . $row->uploaded_invoice) . '" target="_blank" rel="noopener noreferrer"';
-                        } else {
-                            $html .= ' href="#"';
-                        }
+                        $html .= ' href="' . route('view_invoice', $row->id) . '"';
                     } else {
                         $html .= ' href="#"';
                     }
@@ -4113,8 +4108,7 @@ class WebController extends Controller
             return DataTables::of($invoices)
                 ->addIndexColumn()
                 ->editColumn('to_name', function ($row) {
-
-                    return $row->to_name;
+                    return trim($row->to_name . (!empty($row->vendor_id) ? ' (' . $row->vendor_id . ')' : ''));
                 })
                 ->editColumn('to_email', function ($row) {
 
@@ -4137,11 +4131,7 @@ class WebController extends Controller
                     $html = '<a style="background:none; border:none;"';
 
                     if ($user->user_type == "admin" || $invoice_roles->read_only == 1 || $invoice_roles->read_write_only == 1) {
-                        if (!empty($row->uploaded_invoice)) {
-                            $html .= ' href="' . asset('web_assets/users/' . $row->uploaded_invoice) . '" target="_blank" rel="noopener noreferrer"';
-                        } else {
-                            $html .= ' href="#"';
-                        }
+                        $html .= ' href="' . route('view_invoice', $row->id) . '"';
                     } else {
                         $html .= ' href="#"';
                     }
@@ -4218,6 +4208,16 @@ class WebController extends Controller
         }
 
         return $value;
+    }
+
+    private function generateApVendorId(int $subscriberId): string
+    {
+        do {
+            $candidate = 'VND-' . $subscriberId . '-' . strtoupper(\Illuminate\Support\Str::random(6));
+            $exists = Internal_Invoices::where('vendor_id', $candidate)->exists();
+        } while ($exists);
+
+        return $candidate;
     }
 
     public function create_new_invoice(Request $request)
@@ -4391,8 +4391,10 @@ class WebController extends Controller
             $vendorName = trim((string) $request->vendor_name);
             $vendorInvoiceId = trim((string) $request->invoice_vendor_id);
             $serviceTaken = trim((string) $request->service_taken);
+            $vendorId = $this->generateApVendorId((int) $subscriber->id);
             $invoice = new Internal_Invoices();
                 $invoice->invoice_no = $vendorInvoiceId;
+                $invoice->vendor_id = $vendorId;
                 $invoice->subscriber_id = $subscriber->id;
                 $invoice->user_id = $user->id;
                 $invoice->name = $subscriber->name;
@@ -4538,9 +4540,6 @@ class WebController extends Controller
         $roles = UserRoles::where('user_id', '=', $user->id)->first();
         $page = "invoices";
         $invoice = Internal_Invoices::find($id);
-        if ($invoice && $invoice->type === 'ap' && !empty($invoice->uploaded_invoice)) {
-            return redirect(asset('web_assets/users/' . $invoice->uploaded_invoice));
-        }
         $u = User::where('email', '=', $invoice->email)->first();
         $invoiceSetting = Invoice_settings::where('user_id', $u->id)->first();
         if ($invoiceSetting) {
