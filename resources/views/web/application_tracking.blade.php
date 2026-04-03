@@ -208,9 +208,9 @@ $support_roles = UserRoles::where('user_id','=',$user->id)->where('module','=','
                             <div class="col-md-3 p-1">
                             </div>
                             <div class="col-md-12 p-3 text-center tracking-action-row">
-                                <button type="button" id="view_status" class="btn btn-primary tracking-action-btn" onclick="viewChart(); verifyDropDowns();">View Status</button>
+                                <button type="button" id="view_status" class="btn btn-outline-primary tracking-action-btn" onclick="viewChart(); verifyDropDowns();">View Status</button>
                                 <button type="button" id="download_status" class="btn btn-outline-primary tracking-action-btn" onclick="downloadStatus(); verifyDropDowns();">Download Status</button>
-                                <button type="button" id="view_report" class="btn btn-light border tracking-action-btn" onclick="viewReport(); verifyDropDowns();">View Table</button>
+                                <button type="button" id="view_report" class="btn btn-outline-primary tracking-action-btn" onclick="viewReport(); verifyDropDowns();">View Table</button>
                             </div>
                             
                         </div>
@@ -441,6 +441,7 @@ $support_roles = UserRoles::where('user_id','=',$user->id)->where('module','=','
                 $('#chart_section').hide();
                 $('#view_report').prop('disabled', false);
                 $('#view_status').prop('disabled', false);
+                setActiveActionButton(null);
             } else {
                 
                 $('#tracking_id').css("color", "#0D6EFD"); 
