@@ -2705,17 +2705,17 @@ class WebController extends Controller
         }
 
         $timeline = collect([]);
-        $index = 1;
 
         $client = $application->client;
         $subscriber = $client && $client->user ? $client->user : null;
+        $registrationDate = $application->start_date ? Carbon::parse($application->start_date) : ($application->created_at ? $application->created_at->copy() : null);
 
         $timeline->push([
-            'index' => $index++,
             'status' => 'Registration',
-            'start_date' => $application->start_date ? date("d/m/Y", strtotime($application->start_date)) : '--',
-            'end_date' => $application->start_date ? date("d/m/Y", strtotime($application->start_date)) : '--',
+            'start_date' => $registrationDate ? $registrationDate->format('d/m/Y') : '--',
+            'end_date' => $registrationDate ? $registrationDate->format('d/m/Y') : '--',
             'user' => $subscriber ? $subscriber->name . ' (' . $subscriber->id . ')' : '--',
+            'sort_at' => $registrationDate,
         ]);
 
         $assignments = Application_assignments::with('user')
@@ -2734,29 +2734,41 @@ class WebController extends Controller
             $assignedDate = $assignment->created_at ? $assignment->created_at->format('d/m/Y') : '--';
 
             $timeline->push([
-                'index' => $index++,
                 'status' => 'Assigned',
                 'start_date' => $assignedDate,
                 'end_date' => $assignedDate,
                 'user' => $assignedUser ? $assignedUser->name . ' (' . $assignedUser->id . ')' : '--',
+                'sort_at' => $assignment->created_at ? $assignment->created_at->copy() : null,
             ]);
         }
 
         $assignedToUser = $application->assign_to ? User::find($application->assign_to) : null;
+        $statusDate = $application->end_date
+            ? Carbon::parse($application->end_date)
+            : ($application->updated_at ? $application->updated_at->copy() : $registrationDate);
 
         $timeline->push([
-            'index' => $index,
             'status' => $application->application_status ?: 'Decision',
-            'start_date' => $application->end_date
-                ? date("d/m/Y", strtotime($application->end_date))
-                : ($application->start_date ? date("d/m/Y", strtotime($application->start_date)) : '--'),
+            'start_date' => $statusDate ? $statusDate->format('d/m/Y') : '--',
             'end_date' => $application->end_date ? date("d/m/Y", strtotime($application->end_date)) : '--',
             'user' => $assignedToUser
                 ? $assignedToUser->name . ' (' . $assignedToUser->id . ')'
                 : ($subscriber ? $subscriber->name . ' (' . $subscriber->id . ')' : '--'),
+            'sort_at' => $statusDate,
         ]);
 
-        return response()->json($timeline->values());
+        $timeline = $timeline
+            ->sortBy(function ($item) {
+                return isset($item['sort_at']) && $item['sort_at'] ? $item['sort_at']->timestamp : PHP_INT_MAX;
+            })
+            ->values()
+            ->map(function ($item, $idx) {
+                unset($item['sort_at']);
+                $item['index'] = $idx + 1;
+                return $item;
+            });
+
+        return response()->json($timeline);
     }
 
     public function add_application()
