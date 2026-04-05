@@ -25,18 +25,22 @@ class PaymentReminderMail extends Mailable
         $template = app(EmailTemplateService::class)->getTemplateForUser($this->subscriber, 'subscriber', 'payment_reminder');
 
         $defaultSubject = 'Reminder : Outstanding Payment (' . ($this->payload['subscriber_name'] ?? '') . ' - Invoice No ' . ($this->payload['invoice_no'] ?? '') . ')';
-        $defaultBody = 'Dear {{client_first_name}},<br><br>' .
-            'You have an outstanding to pay, settle the same to avoid interruptions in services, details of which is as below.<br><br>' .
-            'Amount To Pay :- {{currency_symbol}} {{amount}}<br>' .
-            'Invoice No :- {{invoice_no}}<br>' .
-            'Service Description :- {{service_description}}<br>' .
-            'Due Date :- {{payment_due_date}}';
+        $defaultBody = 'Outstanding Payment Reminder<br>=========================<br><br>' .
+            'Dear {{client_name}},<br><br>' .
+            'You have an outstanding to pay.<br><br>' .
+            'Application/Service :- {{application_service}}<br>' .
+            'Outstanding Amount :- {{currency_symbol}} {{outstanding_amount}}<br><br>' .
+            'Due Date :- {{due_date}}<br>' .
+            'Payment Link :- {{payment_link}}<br><br>' .
+            'Clear the outstanding to avoid interruptions in services.<br><br>' .
+            'Regards,<br>{{subscriber_name}}';
 
         $subjectTemplate = $template?->subject ?: $defaultSubject;
         $bodyTemplate = $template?->body ?: $defaultBody;
+        $resolvedPayload = $this->withDynamicAliases($this->payload);
 
-        $subject = $this->replacePlaceholders($subjectTemplate, $this->payload);
-        $content = $this->replacePlaceholders($bodyTemplate, $this->payload);
+        $subject = $this->replacePlaceholders($subjectTemplate, $resolvedPayload);
+        $content = $this->replacePlaceholders($bodyTemplate, $resolvedPayload);
 
         return $this->subject($subject)->view('web.dynamic_email_template', compact('content'));
     }
@@ -45,10 +49,33 @@ class PaymentReminderMail extends Mailable
     {
         $content = (string) $text;
         foreach ($data as $key => $value) {
-            $content = str_replace('{{' . $key . '}}', (string) $value, $content);
-            $content = str_replace('<' . $key . '>', (string) $value, $content);
+            $quotedKey = preg_quote((string) $key, '/');
+            $content = preg_replace('/{{\s*' . $quotedKey . '\s*}}/i', (string) $value, $content);
+            $content = preg_replace('/<\s*' . $quotedKey . '\s*>/i', (string) $value, $content);
         }
 
         return $content;
+    }
+
+    private function withDynamicAliases(array $data): array
+    {
+        $amount = $data['outstanding_amount'] ?? $data['amount'] ?? '';
+        $clientName = $data['client_name'] ?? $data['client_first_name'] ?? $data['name'] ?? '';
+        $dueDate = $data['due_date'] ?? $data['payment_due_date'] ?? '';
+        $applicationService = $data['application_service'] ?? $data['service_description'] ?? '';
+        $paymentLink = $data['payment_link'] ?? '-';
+
+        return array_merge($data, [
+            'name' => $clientName,
+            'client_name' => $clientName,
+            'client_first_name' => $data['client_first_name'] ?? $clientName,
+            'amount' => $amount,
+            'outstanding_amount' => $amount,
+            'payment_due_date' => $dueDate,
+            'due_date' => $dueDate,
+            'application_service' => $applicationService,
+            'service_description' => $applicationService,
+            'payment_link' => $paymentLink,
+        ]);
     }
 }

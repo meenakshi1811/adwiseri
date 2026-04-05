@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Mail\PaymentReminderMail;
+use App\Models\Invoice_settings;
 use App\Models\PaymentARs;
 use App\Models\PaymentReminderSetting;
 use App\Models\User;
@@ -31,21 +32,33 @@ class SendPaymentReminderEmails extends Command
             }
 
             $rows = $this->outstandingRowsForSubscriber($subscriber->id, $setting->client_group);
+            $invoiceSetting = Invoice_settings::where('user_id', $subscriber->id)->first();
+            $paymentLink = $invoiceSetting?->payment_link ?: '-';
 
             foreach ($rows as $row) {
                 if (empty($row->client_email)) {
                     continue;
                 }
 
+                $outstandingAmount = number_format((float) $row->outstanding_amount, 2, '.', '');
+                $serviceDescription = (string) ($row->service_description ?: '-');
+                $dueDate = $row->due_date ? Carbon::parse($row->due_date)->format('d-m-Y') : '-';
+
                 $payload = [
                     'subscriber_name' => (string) $subscriber->name,
                     'client_first_name' => $this->firstName((string) $row->client_name),
+                    'client_name' => (string) $row->client_name,
+                    'name' => (string) $row->client_name,
                     'currency_symbol' => $this->currencySymbol((string) $subscriber->currency),
-                    'amount' => number_format((float) $row->outstanding_amount, 2, '.', ''),
+                    'amount' => $outstandingAmount,
+                    'outstanding_amount' => $outstandingAmount,
                     'invoice_no' => (string) $row->invoice_no,
                     'invoice_id' => (string) $row->invoice_no,
-                    'service_description' => (string) ($row->service_description ?: '-'),
-                    'payment_due_date' => $row->due_date ? Carbon::parse($row->due_date)->format('d-m-Y') : '-',
+                    'service_description' => $serviceDescription,
+                    'application_service' => $serviceDescription,
+                    'payment_due_date' => $dueDate,
+                    'due_date' => $dueDate,
+                    'payment_link' => $paymentLink,
                 ];
 
                 // Testing override: send all payment reminders to this inbox instead of real clients.

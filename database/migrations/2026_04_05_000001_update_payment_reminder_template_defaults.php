@@ -1,0 +1,38 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Support\Facades\DB;
+
+return new class extends Migration {
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        DB::table('email_templates')
+            ->whereNull('owner_user_id')
+            ->where('audience', 'subscriber')
+            ->where('template_key', 'payment_reminder')
+            ->update([
+                'subject' => 'Outstanding Payment Reminder - {{client_name}} (Invoice {{invoice_no}})',
+                'body' => '<p>Outstanding Payment Reminder</p><p>=========================</p><p>Dear {{client_name}},</p><p>You have an outstanding to pay.</p><p>Application/Service :- {{application_service}}<br>Outstanding Amount :- {{currency_symbol}} {{outstanding_amount}}</p><p>Due Date :- {{due_date}}<br>Payment Link :- {{payment_link}}</p><p>Clear the outstanding to avoid interruptions in services.</p><p>Regards,<br>{{subscriber_name}}</p>',
+                'updated_at' => now(),
+            ]);
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        DB::table('email_templates')
+            ->whereNull('owner_user_id')
+            ->where('audience', 'subscriber')
+            ->where('template_key', 'payment_reminder')
+            ->update([
+                'subject' => 'Payment Reminder',
+                'body' => '<p>Hello {{name}},</p><p>This is your payment reminder.</p>',
+                'updated_at' => now(),
+            ]);
+    }
+};
