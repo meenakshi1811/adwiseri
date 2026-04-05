@@ -16,7 +16,7 @@
     </style>
 </head>
 <body>
-    <h1>{{ $document_title === 'Client Care Letter' ? 'Client Care Letter – IAA Model' : 'Service Agreement' }}</h1>
+    <h1>{{ $document_title === 'Client Care Letter' ? 'Client Care Letter' : 'Service Agreement' }}</h1>
     <p class="muted">Our ref: {{ $reference_no }} | Issued on: {{ $issue_date }}</p>
 
     <h2>Introduction</h2>

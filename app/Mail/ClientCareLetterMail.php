@@ -21,11 +21,24 @@ class ClientCareLetterMail extends Mailable
 
     public function build()
     {
-        return $this->subject('Client Care Letter / Service Agreement for Signature')
+        $subscriberName = $this->data['subscriber']->name ?? 'Subscriber';
+        $subscriberEmail = $this->data['subscriber']->email ?? null;
+        $isClientCareLetter = ($this->data['letter_type'] ?? null) === 'oisc_iaa';
+        $subject = $isClientCareLetter ? 'Client Care Letter' : 'Service Agreement';
+
+        $mail = $this->subject($subject)
+            ->from('alerts@adwiseri.com', 'Sent on behalf of ' . $subscriberName)
             ->view('web.client_care_letter_email', ['data' => $this->data])
             ->attach($this->attachmentPath, [
                 'as' => str_replace(' ', '-', $this->data['document_title']) . '.pdf',
                 'mime' => 'application/pdf',
             ]);
+
+        if (!empty($subscriberEmail)) {
+            $mail->replyTo($subscriberEmail, $subscriberName)
+                ->cc($subscriberEmail);
+        }
+
+        return $mail;
     }
 }
