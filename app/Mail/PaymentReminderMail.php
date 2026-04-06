@@ -25,15 +25,14 @@ class PaymentReminderMail extends Mailable
         $template = app(EmailTemplateService::class)->getTemplateForUser($this->subscriber, 'subscriber', 'payment_reminder');
 
         $defaultSubject = 'Reminder : Outstanding Payment (' . ($this->payload['subscriber_name'] ?? '') . ' - Invoice No ' . ($this->payload['invoice_no'] ?? '') . ')';
-        $defaultBody = 'Outstanding Payment Reminder<br>=========================<br><br>' .
-            'Dear {{client_name}},<br><br>' .
-            'You have an outstanding to pay.<br><br>' .
-            'Application/Service :- {{application_service}}<br>' .
-            'Outstanding Amount :- {{currency_symbol}} {{outstanding_amount}}<br><br>' .
-            'Due Date :- {{due_date}}<br>' .
-            'Payment Link :- {{payment_link}}<br><br>' .
-            'Clear the outstanding to avoid interruptions in services.<br><br>' .
-            'Regards,<br>{{subscriber_name}}';
+        $defaultBody = '<p>Dear {{client_name}},</p>' .
+            '<p>This is a friendly reminder for your pending payment. Please see the details below:</p>' .
+            '<p><strong>Application/Service:</strong> {{application_service}}<br>' .
+            '<strong>Outstanding Amount:</strong> {{currency_symbol}} {{outstanding_amount}}<br>' .
+            '<strong>Due Date:</strong> {{due_date}}<br>' .
+            '<strong>Payment Link:</strong> {{payment_link_html}}</p>' .
+            '<p>Please clear the outstanding amount to avoid interruption of services.</p>' .
+            '<p>Regards,<br>{{subscriber_name}}</p>';
 
         $subjectTemplate = $template?->subject ?: $defaultSubject;
         $bodyTemplate = $template?->body ?: $defaultBody;
@@ -63,7 +62,10 @@ class PaymentReminderMail extends Mailable
         $clientName = $data['client_name'] ?? $data['client_first_name'] ?? $data['name'] ?? '';
         $dueDate = $data['due_date'] ?? $data['payment_due_date'] ?? '';
         $applicationService = $data['application_service'] ?? $data['service_description'] ?? '';
-        $paymentLink = $data['payment_link'] ?? '-';
+        $paymentLink = trim((string) ($data['payment_link'] ?? ''));
+        $paymentLinkHtml = filter_var($paymentLink, FILTER_VALIDATE_URL)
+            ? '<a href="' . e($paymentLink) . '" target="_blank" rel="noopener noreferrer">Pay Now</a>'
+            : 'Not available';
 
         return array_merge($data, [
             'name' => $clientName,
@@ -75,7 +77,8 @@ class PaymentReminderMail extends Mailable
             'due_date' => $dueDate,
             'application_service' => $applicationService,
             'service_description' => $applicationService,
-            'payment_link' => $paymentLink,
+            'payment_link' => $paymentLink !== '' ? $paymentLink : 'Not available',
+            'payment_link_html' => $data['payment_link_html'] ?? $paymentLinkHtml,
         ]);
     }
 }
