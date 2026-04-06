@@ -294,7 +294,7 @@ $support_roles = UserRoles::where('user_id','=',$user->id)->where('module','=','
 
                     <div class="mb-3">
                         <label>Document Type</label>
-                        <select name="letter_type" class="form-select" required>
+                        <select name="letter_type" id="letter_type" class="form-select" required>
                             <option value="">Select</option>
                             <option value="oisc_iaa">Client Care Letter (UK IAA/OISC)</option>
                             <option value="service_agreement">Service Agreement (Non-IAA)</option>
@@ -426,7 +426,7 @@ $support_roles = UserRoles::where('user_id','=',$user->id)->where('module','=','
                         <label>Complaint Handling Details</label>
                         <textarea name="complaint_handling_details" class="form-control" rows="3" maxlength="1500"></textarea>
                     </div>
-                    <div class="row">
+                    <div class="row oisc-only-field" style="display:none;">
                         <div class="col-md-6 mb-3">
                             <label>OISC / IAA Registration No.</label>
                             <input type="text" name="oisc_registration_number" class="form-control" maxlength="100">
@@ -776,6 +776,20 @@ $support_roles = UserRoles::where('user_id','=',$user->id)->where('module','=','
             setInterval(() => {
                 $("#messages").load(location.href + " #messages>*", "");
             }, 1000);
+
+            function toggleOiscFields() {
+                var letterType = $('#letter_type').val();
+                if (letterType === 'oisc_iaa') {
+                    $('.oisc-only-field').show();
+                } else {
+                    $('.oisc-only-field').hide();
+                    $('input[name="oisc_registration_number"]').val('');
+                    $('input[name="authorisation_level"]').val('');
+                }
+            }
+
+            $('#letter_type').on('change', toggleOiscFields);
+            toggleOiscFields();
         });
     </script>
 
