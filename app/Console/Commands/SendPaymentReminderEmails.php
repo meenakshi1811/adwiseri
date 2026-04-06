@@ -35,14 +35,21 @@ class SendPaymentReminderEmails extends Command
             $invoiceSetting = Invoice_settings::where('user_id', $subscriber->id)->first();
             $paymentLink = trim((string) ($invoiceSetting?->payment_link ?? ''));
 
+            $sentCount = 0;
+
             foreach ($rows as $row) {
-                if (empty($row->client_email)) {
+                if (empty($row->client_email) || (float) $row->outstanding_amount <= 0) {
+                    continue;
+                }
+
+                $dueDateObject = $row->due_date ? Carbon::parse($row->due_date) : null;
+                if ($dueDateObject && $dueDateObject->isFuture()) {
                     continue;
                 }
 
                 $outstandingAmount = number_format((float) $row->outstanding_amount, 2, '.', '');
                 $serviceDescription = (string) ($row->service_description ?: '-');
-                $dueDate = $row->due_date ? Carbon::parse($row->due_date)->format('d-m-Y') : '-';
+                $dueDate = $dueDateObject ? $dueDateObject->format('d-m-Y') : '-';
 
                 $payload = [
                     'subscriber_name' => (string) $subscriber->name,
@@ -61,20 +68,19 @@ class SendPaymentReminderEmails extends Command
                     'payment_link' => $paymentLink,
                 ];
 
-                // Testing override: send all payment reminders to this inbox instead of real clients.
-                $mail = Mail::to('nanta1811@gmail.com');
-                // $mail = Mail::to($row->client_email);
+                $mail = Mail::to($row->client_email);
                 if ($setting->email_to === 'client_bcc_subscriber' && !empty($subscriber->email)) {
                     $mail->bcc($subscriber->email);
                 }
 
                 $mail->send(new PaymentReminderMail($subscriber, $payload));
+                $sentCount++;
             }
 
             $setting->last_sent_at = now();
             $setting->save();
 
-            $this->info('Processed payment reminders for subscriber_id ' . $subscriber->id . ' (' . $rows->count() . ' invoice reminders).');
+            $this->info('Processed payment reminders for subscriber_id ' . $subscriber->id . ' (' . $sentCount . ' overdue outstanding invoice reminders sent).');
         }
 
         return Command::SUCCESS;
