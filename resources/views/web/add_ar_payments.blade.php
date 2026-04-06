@@ -197,14 +197,10 @@
                                 class="form-control date @error('payment_date') is-invalid @enderror"
                                 id="payment_date"
                                 aria-describedby="emailHelp"
-                                value="{{ old('payment_date') ? date('Y-m-d', strtotime(old('payment_date'))) : '' }}"
-                                placeholder="{{date('d-m-Y')}}"
-                                autocomplete="dob"
-                                max={{ date('Y-m-d')}}
-
-                               onfocus="(this.type='date')"
-                               onblur="if(!this.value) this.type='text'"
-
+                                value="{{ old('payment_date') }}"
+                                placeholder="{{ date('d-m-Y') }}"
+                                autocomplete="off"
+                                min="{{ date('d-m-Y') }}"
                                 />
                                 @error('payment_date')
                                     <span class="invalid-feedback" role="alert">
@@ -307,21 +303,6 @@
     <script>
         $(document).ready(() => {
             
-            document.getElementById('payment_date').addEventListener('change', function () {
-                var inputField = this;
-                var inputDate = new Date(inputField.value); // Get the selected date
-                var today = new Date(); // Current date
-
-                // Check if the input date is in the future
-                if (inputDate > today) {
-                    inputField.value = ""; // Clear the invalid value
-                    inputField.placeholder = "Future dates are not allowed!"; // Show error in the placeholder
-                    inputField.classList.add('is-invalid'); // Add red border for invalid input
-                } else {
-                    inputField.classList.remove('is-invalid'); // Remove error state
-                    inputField.placeholder = "Payment Date"; // Reset placeholder
-                }
-            });
             $("#subscriber").change(function() {
                 var subscriber = $(this).val();
                 $.ajax({
