@@ -287,14 +287,14 @@
                             <div class="col-12">
                                 <div class="border rounded p-3 bg-light">
                                     <p class="mb-2 fw-bold">Auto-email Format</p>
-                                    <p class="mb-2">Subject: Reminder : Outstanding Payment (&lt;Subscriber Name&gt; - Invoice No &lt;Invoice No&gt;)</p>
-                                    <p class="mb-2">Dear &lt;Client_FirstName&gt;,</p>
-                                    <p class="mb-2">You have an outstanding to pay, settle the same to avoid interruptions in services, details of which is as below.</p>
+                                    <p class="mb-2">Subject: Outstanding Payment Reminder - &lt;Client Name&gt; (Invoice &lt;Invoice No&gt;)</p>
+                                    <p class="mb-2">Dear &lt;Client Name&gt;,</p>
+                                    <p class="mb-2">This is a friendly reminder for your pending payment. Please see the details below:</p>
                                     <p class="mb-0">
-                                        Amount To Pay: &lt;Currency Symbol&gt; &lt;Amount&gt;<br>
-                                        Invoice No: &lt;Invoice ID&gt;<br>
-                                        Service Description: &lt;Service Description&gt;<br>
-                                        Due Date: &lt;Payment Due Date&gt;
+                                        Application/Service: &lt;Application Service&gt;<br>
+                                        Outstanding Amount: &lt;Currency Symbol&gt; &lt;Outstanding Amount&gt;<br>
+                                        Due Date: &lt;Due Date&gt;<br>
+                                        Payment Link: &lt;Payment Link&gt;
                                     </p>
                                     <p class="mb-0 mt-2 text-muted">If one client has multiple invoices, reminders are sent one-by-one for each invoice.</p>
                                 </div>

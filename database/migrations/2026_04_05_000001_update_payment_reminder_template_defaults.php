@@ -15,7 +15,7 @@ return new class extends Migration {
             ->where('template_key', 'payment_reminder')
             ->update([
                 'subject' => 'Outstanding Payment Reminder - {{client_name}} (Invoice {{invoice_no}})',
-                'body' => '<p>Outstanding Payment Reminder</p><p>=========================</p><p>Dear {{client_name}},</p><p>You have an outstanding to pay.</p><p>Application/Service :- {{application_service}}<br>Outstanding Amount :- {{currency_symbol}} {{outstanding_amount}}</p><p>Due Date :- {{due_date}}<br>Payment Link :- {{payment_link}}</p><p>Clear the outstanding to avoid interruptions in services.</p><p>Regards,<br>{{subscriber_name}}</p>',
+                'body' => '<p>Dear {{client_name}},</p><p>This is a friendly reminder for your pending payment. Please see the details below:</p><p><strong>Application/Service:</strong> {{application_service}}<br><strong>Outstanding Amount:</strong> {{currency_symbol}} {{outstanding_amount}}<br><strong>Due Date:</strong> {{due_date}}<br><strong>Payment Link:</strong> {{payment_link_html}}</p><p>Please clear the outstanding amount to avoid interruption of services.</p><p>Regards,<br>{{subscriber_name}}</p>',
                 'updated_at' => now(),
             ]);
     }
