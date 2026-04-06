@@ -33,7 +33,7 @@ class SendPaymentReminderEmails extends Command
 
             $rows = $this->outstandingRowsForSubscriber($subscriber->id, $setting->client_group);
             $invoiceSetting = Invoice_settings::where('user_id', $subscriber->id)->first();
-            $paymentLink = $invoiceSetting?->payment_link ?: '-';
+            $paymentLink = trim((string) ($invoiceSetting?->payment_link ?? ''));
 
             foreach ($rows as $row) {
                 if (empty($row->client_email)) {

@@ -29,8 +29,8 @@ class PaymentReminderMail extends Mailable
             '<p>This is a friendly reminder for your pending payment. Please see the details below:</p>' .
             '<p><strong>Application/Service:</strong> {{application_service}}<br>' .
             '<strong>Outstanding Amount:</strong> {{currency_symbol}} {{outstanding_amount}}<br>' .
-            '<strong>Due Date:</strong> {{due_date}}<br>' .
-            '<strong>Payment Link:</strong> {{payment_link_html}}</p>' .
+            '<strong>Due Date:</strong> {{due_date}}</p>' .
+            '{{payment_link_section}}' .
             '<p>Please clear the outstanding amount to avoid interruption of services.</p>' .
             '<p>Regards,<br>{{subscriber_name}}</p>';
 
@@ -41,7 +41,9 @@ class PaymentReminderMail extends Mailable
         $subject = $this->replacePlaceholders($subjectTemplate, $resolvedPayload);
         $content = $this->replacePlaceholders($bodyTemplate, $resolvedPayload);
 
-        return $this->subject($subject)->view('web.dynamic_email_template', compact('content'));
+        $headerTitle = 'Outstanding Payment Reminder';
+
+        return $this->subject($subject)->view('web.dynamic_email_template', compact('content', 'headerTitle'));
     }
 
     private function replacePlaceholders(?string $text, array $data): string
@@ -63,9 +65,13 @@ class PaymentReminderMail extends Mailable
         $dueDate = $data['due_date'] ?? $data['payment_due_date'] ?? '';
         $applicationService = $data['application_service'] ?? $data['service_description'] ?? '';
         $paymentLink = trim((string) ($data['payment_link'] ?? ''));
-        $paymentLinkHtml = filter_var($paymentLink, FILTER_VALIDATE_URL)
+        $hasPaymentLink = filter_var($paymentLink, FILTER_VALIDATE_URL);
+        $paymentLinkHtml = $hasPaymentLink
             ? '<a href="' . e($paymentLink) . '" target="_blank" rel="noopener noreferrer">Pay Now</a>'
-            : 'Not available';
+            : '';
+        $paymentLinkSection = $hasPaymentLink
+            ? '<p><strong>Payment Link:</strong> ' . $paymentLinkHtml . '</p>'
+            : '';
 
         return array_merge($data, [
             'name' => $clientName,
@@ -77,8 +83,9 @@ class PaymentReminderMail extends Mailable
             'due_date' => $dueDate,
             'application_service' => $applicationService,
             'service_description' => $applicationService,
-            'payment_link' => $paymentLink !== '' ? $paymentLink : 'Not available',
+            'payment_link' => $paymentLink,
             'payment_link_html' => $data['payment_link_html'] ?? $paymentLinkHtml,
+            'payment_link_section' => $data['payment_link_section'] ?? $paymentLinkSection,
         ]);
     }
 }
