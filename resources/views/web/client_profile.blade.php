@@ -309,16 +309,54 @@ $support_roles = UserRoles::where('user_id','=',$user->id)->where('module','=','
                         <input type="text" name="application_type" class="form-control" minlength="3" maxlength="150" required>
                     </div>
                     <div class="mb-3">
+                        <label>Application Name</label>
+                        <input type="text" name="application_name" class="form-control" minlength="2" maxlength="150" required>
+                    </div>
+                    <div class="mb-3">
+                        <label>Immigration Status</label>
+                        <input type="text" name="immigration_status" class="form-control" maxlength="255" placeholder="e.g. Student Visa, Skilled Worker, Visitor">
+                    </div>
+                    <div class="mb-3">
                         <label>Estimated Timeline</label>
                         <input type="text" name="estimated_timeline" class="form-control" minlength="2" maxlength="150" required>
+                    </div>
+                    <div class="mb-3">
+                        <label>Key Dates</label>
+                        <textarea name="key_dates" class="form-control" rows="2" maxlength="1000" placeholder="Any hearing dates, expiry dates, filing deadlines"></textarea>
                     </div>
                     <div class="mb-3">
                         <label>Merits of the case (%)</label>
                         <input type="number" name="merits_of_case" class="form-control" min="0" max="100" required>
                     </div>
                     <div class="mb-3">
+                        <label>Case Notes</label>
+                        <textarea name="case_notes" class="form-control" rows="2" maxlength="1500"></textarea>
+                    </div>
+                    <div class="mb-3">
                         <label>Professional Fee Details</label>
                         <textarea name="fee_details" class="form-control" rows="2" maxlength="1200"></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label>Fixed Fee (£)</label>
+                            <input type="text" name="fixed_fee" class="form-control" maxlength="100">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label>Home Office Fee (£)</label>
+                            <input type="text" name="home_office_fee" class="form-control" maxlength="100">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label>IHS Fee (£)</label>
+                            <input type="text" name="ihs_fee" class="form-control" maxlength="100">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label>Additional Costs</label>
+                        <textarea name="additional_costs" class="form-control" rows="2" maxlength="1200"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label>VAT Note</label>
+                        <input type="text" name="vat_note" class="form-control" maxlength="255">
                     </div>
                     <div class="mb-3">
                         <label>Client Instructions</label>
@@ -331,6 +369,72 @@ $support_roles = UserRoles::where('user_id','=',$user->id)->where('module','=','
                     <div class="mb-3">
                         <label>Work Agreed to be Done</label>
                         <textarea name="work_agreed" class="form-control" rows="3" maxlength="4000"></textarea>
+                    </div>
+                    <hr>
+                    <h6>Adviser and Organisation Details</h6>
+                    <div class="mb-3">
+                        <label>Adviser Name</label>
+                        <input type="text" name="adviser_name" class="form-control" maxlength="150" value="{{ $user->name }}">
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label>Adviser Phone</label>
+                            <input type="text" name="adviser_phone" class="form-control" maxlength="50" value="{{ $user->phone }}">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label>Adviser Email</label>
+                            <input type="email" name="adviser_email" class="form-control" maxlength="150" value="{{ $user->email }}">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label>Line Manager Name</label>
+                        <input type="text" name="line_manager_name" class="form-control" maxlength="150">
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label>Line Manager Phone</label>
+                            <input type="text" name="line_manager_phone" class="form-control" maxlength="50">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label>Line Manager Email</label>
+                            <input type="email" name="line_manager_email" class="form-control" maxlength="150">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label>Organisation Name</label>
+                        <input type="text" name="organisation_name" class="form-control" maxlength="191" value="{{ $subscriber->organization ?: $subscriber->name }}">
+                    </div>
+                    <div class="mb-3">
+                        <label>Organisation Address</label>
+                        <textarea name="organisation_address" class="form-control" rows="2" maxlength="300">{{ $subscriber->address }}</textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label>Organisation Phone</label>
+                            <input type="text" name="organisation_phone" class="form-control" maxlength="50" value="{{ $subscriber->phone }}">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label>Organisation Email</label>
+                            <input type="email" name="organisation_email" class="form-control" maxlength="150" value="{{ $subscriber->email }}">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label>Office Hours</label>
+                        <input type="text" name="office_hours" class="form-control" maxlength="150" placeholder="e.g. 9am to 5pm weekdays">
+                    </div>
+                    <div class="mb-3">
+                        <label>Complaint Handling Details</label>
+                        <textarea name="complaint_handling_details" class="form-control" rows="3" maxlength="1500"></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label>OISC / IAA Registration No.</label>
+                            <input type="text" name="oisc_registration_number" class="form-control" maxlength="100">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label>Authorisation Level</label>
+                            <input type="text" name="authorisation_level" class="form-control" maxlength="150">
+                        </div>
                     </div>
                     <div class="mb-3 form-check">
                         <input class="form-check-input" type="checkbox" value="1" id="allowResend" name="allow_resend">

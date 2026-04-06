@@ -99,7 +99,9 @@
     <div class="signature">
         <p>Yours sincerely,</p>
         <p>{{ $adviser_name }}</p>
-        <p>{{ $organisation_name }}</p>
+        @if(strcasecmp(trim((string) $organisation_name), trim((string) $adviser_name)) !== 0)
+            <p>{{ $organisation_name }}</p>
+        @endif
         <br>
         <p><strong>Client Signature:</strong> ____________________________</p>
         <p><strong>Dated:</strong> ____________________________</p>
