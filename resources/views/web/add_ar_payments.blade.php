@@ -197,14 +197,10 @@
                                 class="form-control date @error('payment_date') is-invalid @enderror"
                                 id="payment_date"
                                 aria-describedby="emailHelp"
-                                value="{{ old('payment_date') ? date('Y-m-d', strtotime(old('payment_date'))) : '' }}"
-                                placeholder="{{date('d-m-Y')}}"
-                                autocomplete="dob"
-                                max={{ date('Y-m-d')}}
-
-                               onfocus="(this.type='date')"
-                               onblur="if(!this.value) this.type='text'"
-
+                                value="{{ old('payment_date') }}"
+                                placeholder="{{ date('d-m-Y') }}"
+                                autocomplete="off"
+                                min="{{ date('Y-m-d') }}"
                                 />
                                 @error('payment_date')
                                     <span class="invalid-feedback" role="alert">
