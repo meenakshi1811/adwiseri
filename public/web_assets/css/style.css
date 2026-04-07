@@ -1854,8 +1854,17 @@ span {
     }
 
     .client-box {
-        margin-left: 80px;
+        margin: 0;
         margin-top: 5px;
+        padding: 16px 12px;
+    }
+
+    .client-box h4 {
+        font-size: 24px;
+    }
+
+    .client-box p {
+        font-size: 13px;
     }
 
     .activity-box {
