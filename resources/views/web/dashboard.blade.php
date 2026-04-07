@@ -5,7 +5,7 @@
           <div class="col-lg-7">
             <div class="data-box">
               <div class="row m-0" style="width:100%;">
-                <div class="col-md-3 m-0 p-1">
+                <div class="col-6 col-md-3 m-0 p-1">
                   <div class="client-box col-12 m-0" style="background-color: #ee5e85; border-radius: 10px;color: #ffffff;">
                       {{-- <img src="{{ asset('web_assets/images/clientdta.png') }}" width="50" height="50" alt=""> --}}
                       {{-- <i style="display:flex;align-items:center;justify-content:center;font-size: 32px;border-radius:50%;width:50px;height:50px;text-align:center;" class="fa fa-user text-info p-1"></i> --}}
@@ -15,7 +15,7 @@
                       <p style="font-weight: bolder!important;">@if(count($clients) > 1)Clients @else Client @endif</p>
                   </div>
                 </div>
-                <div class="col-md-3 m-0 p-1">
+                <div class="col-6 col-md-3 m-0 p-1">
                     <div class="client-box col-12 m-0" style="background-color: #49bd27; border-radius: 10px;color:#ffffff;">
                         {{-- <img src="{{ asset('web_assets/images/clientdta.png') }}" width="50" height="50" alt=""> --}}
                         <i style="font-size: 30px;width:50px;height:50px; background:#ffffff;border-radius:50%;"
@@ -25,7 +25,7 @@
                         <p style="font-weight: bolder!important;">@if(count($applications) > 1)Applications @else Application @endif</p>
                     </div>
                   </div>
-                <div class="col-md-3 m-0 p-1" >
+                <div class="col-6 col-md-3 m-0 p-1" >
                   <div class="client-box col-12 m-0" style="background-color: #337cff; border-radius: 10px;color: #ffffff;">
                       {{-- <img src="{{ asset('web_assets/images/clientdta.png') }}" width="50" height="50" alt=""> --}}
                       {{-- <i style="display:flex;align-items:center;background:#ffffff;justify-content:center;font-size: 32px;border:border-radius:50%;width:50px;height:50px;text-align:center;" class="fa fa-users text-info p-1"></i> --}}
@@ -35,7 +35,7 @@
                       <p style="font-weight: bolder!important;">@if(count($users) > 1) Users @else User @endif</p>
                   </div>
                 </div>
-                <div class="col-md-3 m-0 p-1">
+                <div class="col-6 col-md-3 m-0 p-1">
                     <div class="client-box col-12 m-0"  style="background-color: #725a11; border-radius: 10px;color: #ffffff;">
                         {{-- <img src="{{ asset('web_assets/images/clientdta.png') }}" width="50" height="50" alt=""> --}}
                         <i style="font-size: 30px;width:50px;height:50px; background: #ffffff;border-radius:50%;" class="fa fa-file-invoice text-info p-1 d-flex text-center align-items-center justify-content-center"></i>
@@ -45,7 +45,7 @@
                     </div>
                   </div>
 
-                  <div class="col-md-3 m-0 p-1">
+                  <div class="col-6 col-md-3 m-0 p-1">
                     <div class="client-box col-12 m-0" style="background-color: #afa94c; border-radius: 10px;color: #ffffff;">
                         <i style="font-size: 30px;width:50px;height:50px; background: #ffffff;border-radius:50%;" class="fa fa-credit-card text-info p-1 d-flex text-center align-items-center justify-content-center"></i>
                         <!--<i style="display:flex;align-items:center;justify-content:center;font-size: 36px;border:2px solid rgb(118, 210, 247);border-radius:50%;width:50px;height:50px;text-align:center;" class="fa fa-dollar text-info p-1"></i>-->
@@ -56,7 +56,7 @@
                     </div>
                   </div>
 
-                <div class="col-md-3 m-0 p-1">
+                <div class="col-6 col-md-3 m-0 p-1">
                   <div class="client-box col-12 m-0" style="background-color: #a56911fc; border-radius: 10px;color: #ffffff;">
                       <i style="font-size: 30px;width:50px;height:50px; background: #ffffff;border-radius:50%;" class="fa fa-handshake text-info p-1 d-flex text-center align-items-center justify-content-center"></i>
                       <!--<i style="display:flex;align-items:center;justify-content:center;font-size: 36px;border:2px solid rgb(118, 210, 247);border-radius:50%;width:50px;height:50px;text-align:center;" class="fa fa-dollar text-info p-1"></i>-->
@@ -64,7 +64,7 @@
                       <p style="font-weight: bolder!important;">Referrals</p>
                   </div>
                 </div>
-                <div class="col-md-3 m-0 p-1">
+                <div class="col-6 col-md-3 m-0 p-1">
                     <div class="client-box col-12 m-0" style="background-color: #9C27B0; border-radius: 10px;color: #ffffff;">
                         {{-- <i style="display:flex;align-items:center;justify-content:center;font-size: 36px;border:2px solid rgb(118, 210, 247);border-radius:50%;width:50px;height:50px;text-align:center;" class="fa fa-dollar text-info p-1"></i> --}}
                         <i style="font-size: 30px; width: 50px; height: 50px; background: #ffffff; border-radius: 50%;"
@@ -73,7 +73,7 @@
                         <p style="font-weight: bolder!important;">Wallet (USD)</p>
                     </div>
                   </div>
-                  <div class="col-md-3 m-0 p-1">
+                  <div class="col-6 col-md-3 m-0 p-1">
                     <div class="client-box col-12 m-0" style="background-color: #185487; border-radius: 10px;color: #ffffff;">
                         {{-- <i style="display:flex;align-items:center;justify-content:center;font-size: 36px;border:2px solid rgb(118, 210, 247);border-radius:50%;width:50px;height:50px;text-align:center;" class="fa fa-calendar text-info p-1"></i> --}}
                         <i style="font-size: 30px; width: 50px; height: 50px; background: #ffffff; border-radius: 50%;"
