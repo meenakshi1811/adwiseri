@@ -2284,11 +2284,12 @@ class WebController extends Controller
             // $states = States::get();
             $page = "clients";
             $roles = UserRoles::where('user_id', '=', $user->id)->first();
+            $subscriber = $user->user_type == "Subscriber" ? $user : User::find($user->added_by);
             $documents = Client_Docs::where('client_id', '=', $id)->get();
             $applications = Applications::where('client_id', '=', $client->id)->get();
             $messages = Messages::where('client_id', '=', $client->id)->orderBy('created_at', 'desc')->get();
             $activities = Activities::where('client_id', '=', $client->id)->orderBy('created_at', 'desc')->get();
-            return view('web.client_profile', compact('client', 'user', 'countries', 'states', 'page', 'documents', 'activities', 'messages', 'applications', 'roles'));
+            return view('web.client_profile', compact('client', 'user', 'subscriber', 'countries', 'states', 'page', 'documents', 'activities', 'messages', 'applications', 'roles'));
         } else { //view the page.
             return back();
         }
@@ -2304,7 +2305,7 @@ class WebController extends Controller
             'client_id' => 'required|exists:clients,id',
             'letter_type' => 'required|in:oisc_iaa,service_agreement',
             'application_type' => 'required|string|min:3|max:150',
-            'application_name' => 'nullable|string|max:150',
+            'application_name' => 'required|string|min:2|max:150',
             'consultation_date' => 'required|date',
             'immigration_status' => 'nullable|string|max:255',
             'client_instructions' => 'nullable|string|max:4000',
@@ -2327,6 +2328,13 @@ class WebController extends Controller
             'complaint_handling_details' => 'nullable|string|max:1500',
             'oisc_registration_number' => 'nullable|string|max:100',
             'authorisation_level' => 'nullable|string|max:150',
+            'adviser_name' => 'nullable|string|max:150',
+            'adviser_phone' => 'nullable|string|max:50',
+            'adviser_email' => 'nullable|email|max:150',
+            'organisation_name' => 'nullable|string|max:191',
+            'organisation_address' => 'nullable|string|max:300',
+            'organisation_phone' => 'nullable|string|max:50',
+            'organisation_email' => 'nullable|email|max:150',
             'allow_resend' => 'nullable|in:0,1',
             'correction_note' => 'nullable|string|max:500',
         ]);
@@ -2360,7 +2368,7 @@ class WebController extends Controller
             'issue_date' => now()->format('d-m-Y'),
             'consultation_date' => date('d F Y', strtotime($validated['consultation_date'])),
             'application_type' => $validated['application_type'],
-            'application_name' => $validated['application_name'] ?? '-',
+            'application_name' => $validated['application_name'],
             'immigration_status' => $validated['immigration_status'] ?? 'As stated during consultation and based on documents shared.',
             'client_instructions' => $validated['client_instructions'] ?? 'As discussed with the adviser during initial consultation.',
             'advice_given' => $validated['advice_given'] ?? 'Advice provided based on information and documents shared by the client.',
@@ -2375,16 +2383,16 @@ class WebController extends Controller
             'vat_note' => $validated['vat_note'] ?? 'No VAT will be charged unless otherwise stated in writing.',
             'merits_of_case' => $validated['merits_of_case'],
             'case_notes' => $validated['case_notes'] ?? '',
-            'adviser_name' => $user->name,
-            'adviser_phone' => $user->phone ?? '-',
-            'adviser_email' => $user->email,
+            'adviser_name' => $validated['adviser_name'] ?? $user->name,
+            'adviser_phone' => $validated['adviser_phone'] ?? ($user->phone ?? '-'),
+            'adviser_email' => $validated['adviser_email'] ?? $user->email,
             'line_manager_name' => $validated['line_manager_name'] ?? 'N/A',
             'line_manager_phone' => $validated['line_manager_phone'] ?? '-',
             'line_manager_email' => $validated['line_manager_email'] ?? '-',
-            'organisation_name' => $subscriber->organization ?: $subscriber->name,
-            'organisation_address' => $subscriber->address ?: 'Address available on request.',
-            'organisation_phone' => $subscriber->phone ?: '-',
-            'organisation_email' => $subscriber->email,
+            'organisation_name' => $validated['organisation_name'] ?? ($subscriber->organization ?: $subscriber->name),
+            'organisation_address' => $validated['organisation_address'] ?? ($subscriber->address ?: 'Address available on request.'),
+            'organisation_phone' => $validated['organisation_phone'] ?? ($subscriber->phone ?: '-'),
+            'organisation_email' => $validated['organisation_email'] ?? $subscriber->email,
             'office_hours' => $validated['office_hours'] ?? '9am to 5pm during weekdays',
             'complaint_handling_details' => $validated['complaint_handling_details'] ?? 'Please raise concerns first with your case adviser or their line manager in writing.',
             'oisc_registration_number' => $validated['oisc_registration_number'] ?? 'To be provided by organisation',
