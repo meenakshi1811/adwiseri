@@ -289,13 +289,14 @@
                                     <p class="mb-2 fw-bold">Auto-email Format</p>
                                     <p class="mb-2">Subject: Outstanding Payment Reminder - &lt;Client Name&gt; (Invoice &lt;Invoice No&gt;)</p>
                                     <p class="mb-2">Dear &lt;Client Name&gt;,</p>
-                                    <p class="mb-2">This is a friendly reminder for your pending payment. Please see the details below:</p>
+                                    <p class="mb-2">This is a friendly reminder for "Outstanding" payment for the invoice &lt;InvoiceID&gt;.</p>
                                     <p class="mb-0">
-                                        Application/Service: &lt;Application Service&gt;<br>
-                                        Outstanding Amount: &lt;Currency Symbol&gt; &lt;Outstanding Amount&gt;<br>
-                                        Due Date: &lt;Due Date&gt;<br>
-                                        Payment Link: &lt;Payment Link&gt;
+                                        Application/Service : &lt;Application Service&gt;<br>
+                                        Outstanding Amount : &lt;Currency Symbol&gt; &lt;Outstanding Amount&gt;<br>
+                                        Due Date : &lt;Due Date&gt;<br>
+                                        Payment Link : &lt;Payment Link&gt;
                                     </p>
+                                    <p class="mb-0 mt-2">Sincerely,<br>&lt;Subscriber Name&gt;</p>
                                     <p class="mb-0 mt-2 text-muted">If one client has multiple invoices, reminders are sent one-by-one for each invoice.</p>
                                 </div>
                             </div>

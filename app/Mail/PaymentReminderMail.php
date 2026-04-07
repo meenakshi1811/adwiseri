@@ -26,13 +26,13 @@ class PaymentReminderMail extends Mailable
 
         $defaultSubject = 'Reminder : Outstanding Payment (' . ($this->payload['subscriber_name'] ?? '') . ' - Invoice No ' . ($this->payload['invoice_no'] ?? '') . ')';
         $defaultBody = '<p>Dear {{client_name}},</p>' .
-            '<p>This is a friendly reminder for your pending payment. Please see the details below:</p>' .
-            '<p><strong>Application/Service:</strong> {{application_service}}<br>' .
-            '<strong>Outstanding Amount:</strong> {{currency_symbol}} {{outstanding_amount}}<br>' .
-            '<strong>Due Date:</strong> {{due_date}}</p>' .
+            '<p>This is a friendly reminder for "Outstanding" payment for the invoice {{invoice_id}}.</p>' .
+            '<p><strong>Application/Service :</strong> {{application_service}}<br>' .
+            '<strong>Outstanding Amount :</strong> {{currency_symbol}} {{outstanding_amount}}<br>' .
+            '<strong>Due Date :</strong> {{due_date}}</p>' .
             '{{payment_link_section}}' .
             '<p>Please clear the outstanding amount to avoid interruption of services.</p>' .
-            '<p>Regards,<br>{{subscriber_name}}</p>';
+            '<p>Sincerely,<br>{{subscriber_name}}</p>';
 
         $subjectTemplate = $template?->subject ?: $defaultSubject;
         $bodyTemplate = $template?->body ?: $defaultBody;
@@ -70,8 +70,9 @@ class PaymentReminderMail extends Mailable
             ? '<a href="' . e($paymentLink) . '" target="_blank" rel="noopener noreferrer">Pay Now</a>'
             : '';
         $paymentLinkSection = $hasPaymentLink
-            ? '<p><strong>Payment Link:</strong> ' . $paymentLinkHtml . '</p>'
+            ? '<p><strong>Payment Link :</strong> ' . $paymentLinkHtml . '</p>'
             : '';
+        $subscriberName = $data['subscriber_name'] ?? $data['subscriber_display_name'] ?? '';
 
         return array_merge($data, [
             'name' => $clientName,
@@ -86,6 +87,8 @@ class PaymentReminderMail extends Mailable
             'payment_link' => $paymentLink,
             'payment_link_html' => $data['payment_link_html'] ?? $paymentLinkHtml,
             'payment_link_section' => $data['payment_link_section'] ?? $paymentLinkSection,
+            'subscriber_name' => $subscriberName,
+            'subscriber_display_name' => $subscriberName,
         ]);
     }
 }

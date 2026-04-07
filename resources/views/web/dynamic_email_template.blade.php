@@ -8,7 +8,7 @@
 <body style="margin:0;padding:0;background:#f3f5fb;font-family:Arial,Helvetica,sans-serif;color:#1f2937;">
     <div style="width:100%;padding:28px 12px;">
         <div style="max-width:640px;margin:0 auto;background:#ffffff;border-radius:10px;border:1px solid #e5e7eb;overflow:hidden;">
-            <div style="background:#1f4bb8;color:#ffffff;padding:18px 24px;text-align:center;">
+            <div style="background:#695EEE;color:#ffffff;padding:18px 24px;text-align:center;">
                 @if(!empty($headerTitle))
                     <h1 style="margin:0;font-size:24px;font-weight:700;color:#ffffff;">{{ $headerTitle }}</h1>
                 @else
