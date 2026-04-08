@@ -65,6 +65,8 @@ class PaymentReminderMail extends Mailable
         }
 
         $patterns = [
+            '/<br\s*\/?>\s*<strong>\s*Payment Link\s*:?\s*<\/strong>\s*(?:<a[^>]*>\s*<\/a>\s*)?(?=<br\s*\/?>|<\/p>)/i',
+            '/<strong>\s*Payment Link\s*:?\s*<\/strong>\s*(?:<a[^>]*>\s*<\/a>\s*)?(?:<br\s*\/?>)?/i',
             '/<p>\s*<strong>\s*Payment Link\s*:\s*<\/strong>\s*(?:<a[^>]*>\s*<\/a>\s*)?<\/p>/i',
             '/<p>\s*Payment Link\s*:\s*(?:<a[^>]*>\s*<\/a>\s*)?<\/p>/i',
             '/^\s*Payment Link\s*:\s*$/im',
