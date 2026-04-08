@@ -26,12 +26,12 @@ class PaymentReminderMail extends Mailable
 
         $defaultSubject = 'Reminder : Outstanding Payment (' . ($this->payload['subscriber_name'] ?? '') . ' - Invoice No ' . ($this->payload['invoice_no'] ?? '') . ')';
         $defaultBody = '<p>Dear {{client_name}},</p>' .
-            '<p>This is a friendly reminder for "Outstanding" payment for the invoice {{invoice_id}}.</p>' .
+            '<p>This is a friendly reminder for outstanding payment for the invoice {{invoice_id}}.</p>' .
             '<p><strong>Application/Service :</strong> {{application_service}}<br>' .
             '<strong>Outstanding Amount :</strong> {{currency_symbol}} {{outstanding_amount}}<br>' .
             '<strong>Due Date :</strong> {{due_date}}</p>' .
             '{{payment_link_section}}' .
-            '<p>Please clear the outstanding amount to avoid interruption of services.</p>' .
+            '<p>Please clear the outstanding amount to avoid delays in service and/or late payment charges.</p>' .
             '<p>Sincerely,<br>{{subscriber_name}}</p>';
 
         $subjectTemplate = $template?->subject ?: $defaultSubject;
@@ -55,7 +55,22 @@ class PaymentReminderMail extends Mailable
             $content = preg_replace('/<\s*' . $quotedKey . '\s*>/i', (string) $value, $content);
         }
 
-        return $content;
+        return $this->removeEmptyPaymentLinkLine($content);
+    }
+
+    private function removeEmptyPaymentLinkLine(string $content): string
+    {
+        if (stripos($content, 'Payment Link') === false) {
+            return $content;
+        }
+
+        $patterns = [
+            '/<p>\s*<strong>\s*Payment Link\s*:\s*<\/strong>\s*(?:<a[^>]*>\s*<\/a>\s*)?<\/p>/i',
+            '/<p>\s*Payment Link\s*:\s*(?:<a[^>]*>\s*<\/a>\s*)?<\/p>/i',
+            '/^\s*Payment Link\s*:\s*$/im',
+        ];
+
+        return trim((string) preg_replace($patterns, '', $content));
     }
 
     private function withDynamicAliases(array $data): array
