@@ -24,7 +24,7 @@ class PaymentReminderMail extends Mailable
     {
         $template = app(EmailTemplateService::class)->getTemplateForUser($this->subscriber, 'subscriber', 'payment_reminder');
 
-        $defaultSubject = 'Reminder : Outstanding Payment (' . ($this->payload['subscriber_name'] ?? '') . ' - Invoice No ' . ($this->payload['invoice_no'] ?? '') . ')';
+        $defaultSubject = 'Sent on behalf of {{subscriber_name}} - Outstanding Payment Reminder - {{client_name}} (Invoice {{invoice_no}})';
         $defaultBody = '<p>Dear {{client_name}},</p>' .
             '<p>This is a friendly reminder for outstanding payment for the invoice {{invoice_id}}.</p>' .
             '<p><strong>Application/Service :</strong> {{application_service}}<br>' .
@@ -43,7 +43,22 @@ class PaymentReminderMail extends Mailable
 
         $headerTitle = 'Outstanding Payment Reminder';
 
-        return $this->subject($subject)->view('web.dynamic_email_template', compact('content', 'headerTitle'));
+        $subscriberName = trim((string) ($this->subscriber->name ?? ''));
+        $subscriberEmail = trim((string) ($this->subscriber->email ?? ''));
+
+        $mail = $this->subject($subject)
+            ->from(
+                config('mail.from.address'),
+                'Sent on behalf of ' . ($subscriberName !== '' ? $subscriberName : 'Subscriber')
+            )
+            ->view('web.dynamic_email_template', compact('content', 'headerTitle'));
+
+        if ($subscriberEmail !== '') {
+            $mail->replyTo($subscriberEmail);
+            $mail->cc($subscriberEmail);
+        }
+
+        return $mail;
     }
 
     private function replacePlaceholders(?string $text, array $data): string
